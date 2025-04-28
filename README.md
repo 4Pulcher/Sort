@@ -1,4 +1,4 @@
-Hey,
+## Hey,
 
 # !! BE CAREFULL WITH THIS SCRIPT !!
 I strongly advise you to understand the scripts content before you use it!
