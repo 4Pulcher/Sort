@@ -20,22 +20,22 @@ cd Pictures/Wallpapers ;
 
 # Exp2)
 
-cd Pictures/Wallpapers ;
-~/BASH/Sort.sh --Move --Recursive --Replace --Rename=sha256sum --Dirs=mime-sub --SubDirs=format+size .
+	cd Pictures/Wallpapers ;
+	~/BASH/Sort.sh --Move --Recursive --Replace --Rename=sha256sum --Dirs=mime-sub --SubDirs=format+size .
 
 "This moves all files in WorkingDirectory - renaming to SHA256SUM of the files as filename - in to WorkingDirectory/MIME-TYPE/MIME-SUBTYPE/FORMAT/FORMAT2/WIDTHxHEIGHT - recursively!"
 
 # Exp3)
 
-cd Pictures/Sorted ;
-~/BASH/Sort.sh --Copy --Recursive --Replace --Dirs=mime-sub --SubDirs=format+size ~/Pictures/2Sort
+	cd Pictures/Sorted ;
+	~/BASH/Sort.sh --Copy --Recursive --Replace --Dirs=mime-sub --SubDirs=format+size ~/Pictures/2Sort
 
 "This copies all files from the directory $HOME/Pictures/2Sort - keeping filenames - in to WorkingDirectory/MIME-SUBTYPE/FORMAT/FORMAT2/WIDTHxHEIGTH - recursively!"
 
 # Exp4)
 
-cd Pictures/2Sort ;
-~/BASH/Sort.sh --Remove --Recursive --Dirs=mime-sub --SubDirs=format+size ~/Pictures/Sorted
+	cd Pictures/2Sort ;
+	~/BASH/Sort.sh --Remove --Recursive --Dirs=mime-sub --SubDirs=format+size ~/Pictures/Sorted
 
 "This removes all files in WorkingDirectory - all files with simalar names - from the $HOME/Pictures/Sorted/FORMAT/FORMAT2/WIDTHxHEIGHT - recursively!"
 
