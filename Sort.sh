@@ -24,7 +24,7 @@ RESET='\e[0m'      # Resets the terminal color to default.
 declare -A Required=(
 	[file]='Linux Base' [stat]='Linux Base' [cp]='Linux Base'
 	[mv]='Linux Base' [rm]='Linux Base' [find]='Linux Base'
-	[sha256sum]='Linux Base' [ffprobe]='FFMPEG' [identify]='ImageMagick'
+	[sha256sum]='Linux Base' [ffprobe]='FFMPEG'
 )
 
 # Loop through the required commands to ensure they are installed in the system PATH.
@@ -98,7 +98,7 @@ function Get_Date_Part {
 
 # Image Metadata: Retrieves Width x Height resolution via ImageMagick's 'identify'.
 function Get_Image_WxH {
-	local res=$(timeout 10s identify -format "%wx%h" "$1" 2>/dev/null)
+	local res=$(timeout 10s ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$1" 2>/dev/null)
 	printf "${res:-0x0}"
 }
 
@@ -143,7 +143,7 @@ function Get_Doc_Title {
 
 # Image Metadata Helper: Extracts Camera Make and Model tags.
 function Get_Image_Meta {
-    local model=$(timeout 5s identify -format "%[standard:make] %[standard:model]" "$1" 2>/dev/null)
+    local model=$(timeout 5s ffprobe -v error -show_entries format_tags=make,model -of default=noprint_wrappers=1:nokey=1 "$1" 2>/dev/null | tr '\n' ' ')
     if [ -z "$model" ] || [ "$model" = " " ]; then
         Get_File_Name "$1"
     else
