@@ -281,13 +281,14 @@ function Sort {
 					# After returning from a recursive move, try to cleanup the now-empty source folder.
 					if [ "$Mode" = "move" ]; then
 						local CleanupLog
-						CleanupLog=$(rmdir -v "$Item" 2>&1)
+						local RMDir=${Item%\*}
+						CleanupLog=$(rmdir -v "$RMDir" 2>&1)
 
 						if [ $? -eq 0 ]; then
 							printf "$BLUE CLEANUP:$RESET %s\n" "$CleanupLog"
 						else
 							# If folder isn't empty (due to filtered files), ignore but log the event.
-							Log "$RED ERROR:$RESET Directory not empty, skipping cleanup: $Item"
+							printf "$RED ERROR:$RESET Directory not empty, skipping cleanup: $Item\n"
 						fi
 					fi
 				else
@@ -319,6 +320,7 @@ function Sort {
 					printf "$YELLOW TARGET:$RESET $Loc\n"
 
 					# Step 2: Build the Target Filename.
+					Name=""
 					# If --title flag is set, attempt to pull metadata based on the file type.
 					if [ -n "$Title" ] ; then
 						case "${MIMEMain,,}" in
