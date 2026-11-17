@@ -1,4 +1,6 @@
 {*******************************************************************************}
+{  NB/This code is not tested yet!                                             }
+{                                                                              }
 {  Script  : Sort-V6.3.pas                                                     }
 {  Version : 6.3                                                               }
 {  Desc    : Ejder file organizer - FreePascal translation of Sort.sh v6.3     }

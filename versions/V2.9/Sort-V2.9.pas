@@ -1,4 +1,6 @@
 {*******************************************************************************}
+{  NB/This code is not tested yet!                                             }
+{                                                                              }
 {  Script  : Sort-V2.9.pas                                                     }
 {  Version : 2.9                                                               }
 {  Desc    : Prototype micro script (extension sorter)                         }

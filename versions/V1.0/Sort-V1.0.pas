@@ -1,4 +1,6 @@
 {*******************************************************************************}
+{  NB/This code is not tested yet!                                             }
+{                                                                              }
 {  Script  : Sort-V1.0.pas                                                     }
 {  Version : 1.0                                                               }
 {  Desc    : Ejder file organizer (first generation)                           }
