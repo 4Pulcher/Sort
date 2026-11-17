@@ -5,9 +5,9 @@ they are inconsistent (re-used, re-arranged, out of order). Each `Sort-V#.#.sh` 
 started as a byte-exact copy of one uploaded script (or the GitHub `Sort.sh`), then was turned
 into the **HEjder edition** (see bottom of this file).
 
-- **96 files**: `Sort-V1.0.sh` … `Sort-V15.1.sh` (92 reconstructed) + the rewrite editions `Sort-V16.0.sh`, `Sort-V16.1.sh`, `Sort-V17.0.sh`, `Sort-V17.1.sh`
+- **97 files**: `Sort-V1.0.sh` … `Sort-V15.1.sh` (92 reconstructed) + the rewrite editions `Sort-V16.0.sh`, `Sort-V16.1.sh`, `Sort-V17.0.sh`, `Sort-V17.1.sh`, `Sort-V17.2.sh`
 - **V11.0 = `./Sort`** (the `Sort.sh` from the GitHub repo `4Pulcher/Sort`)
-- **V17.1 = the root `Sort.sh`** (self-contained + 20 UI languages; the last version is always the main one)
+- **V17.2 = the root `Sort.sh`** (self-contained + 20 UI languages + performance edition; the last version is always the main one)
 - Ordering method: family clustering by header/signature, then greedy nearest-neighbor
   chain on pairwise `diff` distances, corrected by feature evidence (option growth,
   helper vocabulary, structural sophistication).
@@ -192,6 +192,7 @@ self-contained file and is the current main script (root `Sort.sh`).
 | V16.1 | commit `6d13ab3` | 584 | All 12 modules; `--exif`, `--strip`, `--title`, Break trap, banner |
 | V17.0 | commit `6811f9a` (+ `bdbf63b`) | 6025 | Self-contained: all lineage features merged, dynamic values, modes copy/move/remove/trash/shred, `--undo`, `--log`, init-system |
 | V17.1 | this release | 8694 | Adds `--lang=XX`: complete UI translated in 20 built-in languages (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa, default `en`) — help, usage, prompts, errors, summary — in both `.sh` and `.pas` |
+| V17.2 | this release | 8809 | Performance edition, verified by a 2000-file benchmark (87.6 s → 61.9 s, −29%): ONE ffprobe per video (`Get_Media_Info`), fork-free thread-pool counter in `Run_Threads`, `du`-free human sizes (stat + bash arithmetic), side-effect-free preview (no `mkdir` in dry-run), cached date segments (`Sort_Stat_Cache`/`Sort_Date_Cache`) — external forks per 2000 files down from ~12 000 to ~8 000; `.pas` parity via version bump (the native port already threads, stats and previews without forking) |
 
 ## Duplicates found (not double-counted)
 
@@ -260,7 +261,7 @@ Every version in this archive now also exists as a FreePascal program:
 
 | | |
 |---|---|
-| **Files** | `versions/V#.#/Sort-V#.#.pas` (96) + root `Sort.pas` (V17.1 port) |
+| **Files** | `versions/V#.#/Sort-V#.#.pas` (97) + root `Sort.pas` (V17.2 port) |
 | **Target** | FreePascal 3.2.2, `{$MODE OBJFPC}{$H+}` (stated in every header) |
 | **Compile** | `fpc -Mobjfpc -Sh <file>.pas` |
 | **Native libraries** | SysUtils, Classes, Math, SyncObjs, MD5, SHA1, Zipper, BaseUnix (per version, as needed) |

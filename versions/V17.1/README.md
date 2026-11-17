@@ -8,9 +8,9 @@
 | **Era** | V17.x — self-contained rewrite |
 | **Source** | V17.0 + built-in UI translation (`--lang=XX`) |
 | **Size** | 8694 lines (.sh) |
-| **Role** | Current main script — identical to the root `Sort.sh` |
+| **Role** | Previous main script — superseded by V17.2 (performance edition) |
 | **Preceded by** | V17.0 |
-| **Followed by** | — (last version) |
+| **Followed by** | V17.2 (performance edition) |
 
 ## About this version
 

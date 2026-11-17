@@ -3,7 +3,7 @@
 ###############################################################################
 #                                                                             #
 # Script  : Sort.sh                                                           #
-# Version : 17.1                                                              #
+# Version : 17.2                                                              #
 # Desc    : Self-contained threaded organizer - all lineage features merged    #
 # Author  : HEjder                                                            #
 #                                                                             #
@@ -600,15 +600,31 @@ Get_File_Size() {
 	printf '%d' "${Size:-0}"
 }
 
+# Human-readable size from a byte count - pure bash arithmetic, no du fork.
+# Human_From_Bytes <bytes>
+Human_From_Bytes() {
+	local S=$1 Frac=0 U=0
+	local -a Unit=('B' 'K' 'M' 'G' 'T')
+
+	while [ "$S" -ge 1024 ] && [ "$U" -lt 4 ]; do
+		Frac=$((S % 1024))
+		S=$((S / 1024))
+		U=$((U + 1))
+	done
+	if [ "$U" -eq 0 ]; then
+		printf '%s%s' "$S" "${Unit[$U]}"
+	else
+		printf '%s.%s%s' "$S" "$((Frac * 10 / 1024))" "${Unit[$U]}"
+	fi
+}
+
+# Human-readable size of a file (stat + arithmetic instead of du | cut).
+# Get_File_Size_Human <file>
 Get_File_Size_Human() {
-	local File=$1
 	local Size
 
-	[ -e "$File" ] || return 1
-	command -v du >/dev/null || return 127
-
-	Size=$(du -h -- "$File" 2>/dev/null | cut -f1)
-	printf '%s' "${Size:-ERROR}"
+	Size=$(Get_File_Size "$1") || return 1
+	Human_From_Bytes "$Size"
 }
 
 Get_File_Block_Size() {
@@ -3675,6 +3691,41 @@ Get_Media_WxH() {
 	printf '%s' "${Resolution:-0x0}"
 }
 
+# Width, height and duration in ONE ffprobe call - "<WxH>|<HH-MM-SS>".
+# Get_Media_Info <file>
+Get_Media_Info() {
+	local File=$1 Out W H WxH Dur
+
+	# First use without ffprobe: propose the install, then fall back.
+	command -v ffprobe >/dev/null 2>&1 ||
+		{ declare -F Deps_Ensure >/dev/null 2>&1 && Deps_Ensure ffprobe; }
+
+	Out=$(timeout 10s ffprobe \
+		-v error \
+		-select_streams v:0 \
+		-show_entries stream=width,height:format=duration \
+		-of default=noprint_wrappers=1:nokey=1 \
+		-- "$File" 2>/dev/null) || {
+		printf '0x0|unknown'
+		return 1
+	}
+
+	# Lines: width, height, duration - flatten and read them back
+	Out=${Out//$'\n'/ }
+	read -r W H Dur <<<"$Out"
+
+	if [[ "$W" =~ ^[0-9]+$ ]] && [[ "$H" =~ ^[0-9]+$ ]]; then
+		WxH="${W}x${H}"
+	else
+		WxH='0x0'
+	fi
+
+	[[ "$Dur" =~ ^[0-9]+([.][0-9]+)?$ ]] || Dur=''
+	[ -n "$Dur" ] && Dur=$(Duration_Tag_From_Seconds "$Dur") || Dur='unknown'
+
+	printf '%s|%s' "$WxH" "$Dur"
+}
+
 # ---------------------------------------------------------------------------
 # Codecs, container, duration, bitrate, FPS, channels, sample rate
 # ---------------------------------------------------------------------------
@@ -4754,6 +4805,9 @@ Max_Jobs=$(command -v nproc >/dev/null && nproc || echo 4) # thread pool size
 Decompress=0                                               # 1 = extract archives first and sort the contents
 Decompress_Depth=0                                         # current --decompress nesting depth
 
+declare -A Sort_Stat_Cache=() # <file> = "<birth>|<mtime>" (one stat per file)
+declare -A Sort_Date_Cache=() # "<file>|<format>" = formatted date (one date fork per pair)
+
 Files=()   # raw arguments that are files/directories
 Targets=() # every single file to treat, collected up front
 
@@ -4775,7 +4829,7 @@ T() {
 		zh)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' 缺失且其包名未知' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - 自包含的多线程文件整理器' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - 自包含的多线程文件整理器' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '用法: Sort.sh [选项] <文件|目录> ...' ;;
 				'Common starts:') printf '%s' '常用启动示例:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' '使用 --help 查看完整选项列表和动态值。' ;;
@@ -4911,7 +4965,7 @@ T() {
 		hi)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' अनुपस्थित है और उसका पैकेज नाम अज्ञात है' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'उपयोग: Sort.sh [विकल्प] <फ़ाइल|निर्देशिका> ...' ;;
 				'Common starts:') printf '%s' 'सामान्य शुरुआत:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'पूर्ण विकल्प सूची और डायनामिक मानों के लिए --help देखें।' ;;
@@ -5047,7 +5101,7 @@ T() {
 		es)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' falta y su nombre de paquete es desconocido' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - organizador con hilos, autónomo' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - organizador con hilos, autónomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opciones] <archivo|directorio> ...' ;;
 				'Common starts:') printf '%s' 'Inicios comunes:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para la lista completa de opciones y valores dinámicos.' ;;
@@ -5183,7 +5237,7 @@ T() {
 		fr)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps : '\''%s'\'' est absent et son nom de paquet est inconnu' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - organisateur multithread autonome' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - organisateur multithread autonome' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Utilisation : Sort.sh [options] <fichier|répertoire> ...' ;;
 				'Common starts:') printf '%s' 'Démarrages courants :' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Utilisez --help pour la liste complète des options et des valeurs dynamiques.' ;;
@@ -5319,7 +5373,7 @@ T() {
 		ar)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' مفقود واسم حزمته غير معروف' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'الاستخدام: Sort.sh [الخيارات] <ملف|دليل> ...' ;;
 				'Common starts:') printf '%s' 'بدايات شائعة:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'استخدم --help لقائمة الخيارات الكاملة والقيم الديناميكية.' ;;
@@ -5455,7 +5509,7 @@ T() {
 		bn)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' অনুপস্থিত এবং এর প্যাকেজ নাম অজানা' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'ব্যবহার: Sort.sh [বিকল্প] <ফাইল|ডিরেক্টরি> ...' ;;
 				'Common starts:') printf '%s' 'সাধারণ শুরু:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'সম্পূর্ণ বিকল্প তালিকা ও ডায়নামিক মানের জন্য --help দেখুন।' ;;
@@ -5591,7 +5645,7 @@ T() {
 		pt)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' está ausente e seu nome de pacote é desconhecido' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - organizador com threads, autônomo' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - organizador com threads, autônomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opções] <arquivo|diretório> ...' ;;
 				'Common starts:') printf '%s' 'Inícios comuns:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para a lista completa de opções e valores dinâmicos.' ;;
@@ -5727,7 +5781,7 @@ T() {
 		ru)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' отсутствует, и имя его пакета неизвестно' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - автономный многопоточный сортировщик' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - автономный многопоточный сортировщик' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Использование: Sort.sh [параметры] <файл|каталог> ...' ;;
 				'Common starts:') printf '%s' 'Типичные запуски:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Используйте --help для полного списка параметров и динамических значений.' ;;
@@ -5863,7 +5917,7 @@ T() {
 		ur)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غائب ہے اور اس کا پیکج نام نامعلوم ہے' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - خود انحصار ملٹی تھریڈ منتظم' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - خود انحصار ملٹی تھریڈ منتظم' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استعمال: Sort.sh [اختیارات] <فائل|ڈائریکٹری> ...' ;;
 				'Common starts:') printf '%s' 'عام آغاز:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'مکمل آپشن فہرست اور متحرک اقدار کے لیے --help استعمال کریں۔' ;;
@@ -5999,7 +6053,7 @@ T() {
 		id)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' hilang dan nama paketnya tidak diketahui' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - penyusun berkas multithread mandiri' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - penyusun berkas multithread mandiri' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Penggunaan: Sort.sh [opsi] <berkas|direktori> ...' ;;
 				'Common starts:') printf '%s' 'Awalan umum:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Gunakan --help untuk daftar opsi lengkap dan nilai dinamis.' ;;
@@ -6135,7 +6189,7 @@ T() {
 		de)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' fehlt und sein Paketname ist unbekannt' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - eigenständiger Sortierer mit Threads' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - eigenständiger Sortierer mit Threads' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Aufruf: Sort.sh [Optionen] <Datei|Verzeichnis> ...' ;;
 				'Common starts:') printf '%s' 'Häufige Aufrufe:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Verwenden Sie --help für die vollständige Optionsliste und dynamische Werte.' ;;
@@ -6271,7 +6325,7 @@ T() {
 		ja)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' が不足しており、そのパッケージ名は不明です' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - 自己完結型マルチスレッド整理ツール' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - 自己完結型マルチスレッド整理ツール' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '使い方: Sort.sh [オプション] <ファイル|ディレクトリ> ...' ;;
 				'Common starts:') printf '%s' 'よく使う起動例:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'オプション一覧と動的な値は --help をご利用ください。' ;;
@@ -6407,7 +6461,7 @@ T() {
 		tr)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' eksik ve paket adı bilinmiyor' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Kullanım: Sort.sh [seçenekler] <dosya|dizin> ...' ;;
 				'Common starts:') printf '%s' 'Sık kullanılan başlangıçlar:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Tam seçenek listesi ve dinamik değerler için --help kullanın.' ;;
@@ -6543,7 +6597,7 @@ T() {
 		ko)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\''이(가) 없으며 패키지 이름을 알 수 없습니다' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '사용법: Sort.sh [옵션] <파일|디렉터리> ...' ;;
 				'Common starts:') printf '%s' '자주 쓰는 시작 예:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' '전체 옵션 목록과 동적 값은 --help를 사용하세요.' ;;
@@ -6679,7 +6733,7 @@ T() {
 		vi)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' bị thiếu và tên gói của nó không rõ' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - công cụ sắp xếp đa luồng tự chứa' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - công cụ sắp xếp đa luồng tự chứa' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Cách dùng: Sort.sh [tùy chọn] <tệp|thư mục> ...' ;;
 				'Common starts:') printf '%s' 'Khởi động thường dùng:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Dùng --help để xem đầy đủ danh sách tùy chọn và giá trị động.' ;;
@@ -6815,7 +6869,7 @@ T() {
 		it)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' manca e il nome del suo pacchetto è sconosciuto' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - organizzatore multithread autonomo' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - organizzatore multithread autonomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opzioni] <file|directory> ...' ;;
 				'Common starts:') printf '%s' 'Avvii comuni:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Usa --help per l'\''elenco completo delle opzioni e i valori dinamici.' ;;
@@ -6951,7 +7005,7 @@ T() {
 		pl)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' jest brakujące, a nazwa pakietu jest nieznana' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - samodzielny wielowątkowy organizator plików' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - samodzielny wielowątkowy organizator plików' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Użycie: Sort.sh [opcje] <plik|katalog> ...' ;;
 				'Common starts:') printf '%s' 'Częste starty:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Użyj --help, aby zobaczyć pełną listę opcji i wartości dynamiczne.' ;;
@@ -7087,7 +7141,7 @@ T() {
 		nl)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' ontbreekt en de pakketnaam is onbekend' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - zelfstandige multithread bestandsorganisator' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - zelfstandige multithread bestandsorganisator' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Gebruik: Sort.sh [opties] <bestand|map> ...' ;;
 				'Common starts:') printf '%s' 'Veelgebruikte starts:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Gebruik --help voor de volledige optielijst en dynamische waarden.' ;;
@@ -7223,7 +7277,7 @@ T() {
 		fa)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غایب است و نام بسته آن نامعلوم است' ;;
-				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - سازمان‌دهنده چندنخستی خودکفا' ;;
+				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - سازمان‌دهنده چندنخستی خودکفا' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استفاده: Sort.sh [گزینه‌ها] <فایل|پوشه> ...' ;;
 				'Common starts:') printf '%s' 'شروع‌های رایج:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'برای فهرست کامل گزینه‌ها و مقادیر پویا از --help استفاده کنید.' ;;
@@ -7407,7 +7461,7 @@ Lang_List() {
 
 
 Usage() {
-	Print_Header "$(T 'Sort 17.1 - self-contained threaded organizer')"
+	Print_Header "$(T 'Sort 17.2 - self-contained threaded organizer')"
 	Print_Message 'Usage: Sort.sh [options] <file|directory> ...'
 	printf '\n'
 	Print_Message 'Common starts:'
@@ -7426,7 +7480,7 @@ Usage() {
 # ---------------------------------------------------------------------------
 
 Help() {
-	Print_Header "$(T 'Sort 17.1 - self-contained threaded organizer')"
+	Print_Header "$(T 'Sort 17.2 - self-contained threaded organizer')"
 	Print_Message 'Sorts files into a dynamic directory tree built from MIME, dates,'
 	Print_Message 'sizes, media dimensions, checksums and metadata titles.'
 	printf '\n'
@@ -7646,7 +7700,7 @@ Parse_Arguments() {
 			exit 0
 			;;
 		--version)
-			printf 'Sort 17.1\n'
+			printf 'Sort 17.2\n'
 			exit 0
 			;;
 		--lang=*)
@@ -7801,10 +7855,10 @@ Media_Orient() {
 }
 
 # Decimal unit name from the file size: Byte / Kilo / Mega / Giga / Tera
-Size_Unit_Name() {
-	local Size
-
-	Size=$(Get_File_Size "$1") || return 1
+# Size class name from a byte count - shared core for the size segments.
+# Size_Unit_From_Bytes <bytes>
+Size_Unit_From_Bytes() {
+	local Size=$1
 
 	if [ "$Size" -lt 1024 ]; then
 		printf 'Byte'
@@ -7817,6 +7871,15 @@ Size_Unit_Name() {
 	else
 		printf 'Tera'
 	fi
+}
+
+# Size class name of a file (Byte / Kilo / Mega / Giga / Tera).
+# Size_Unit_Name <file>
+Size_Unit_Name() {
+	local Size
+
+	Size=$(Get_File_Size "$1") || return 1
+	Size_Unit_From_Bytes "$Size"
 }
 
 # EXIF capture date as a YYYY-MM-DD tag, empty when unusable
@@ -7877,38 +7940,68 @@ Title_Name() {
 
 # Resolve one dynamic keyword for a file.
 # Prints the value; rc 0 = resolved, rc 1 = failed (tool missing), rc 2 = unknown keyword.
+# Cached file timestamps - ONE stat call per file returns birth and mtime.
+# Get_File_Timestamps <file>  ->  "<birth>|<mtime>"
+Get_File_Timestamps() {
+	local Ts
+
+	Ts=${Sort_Stat_Cache[$1]-}
+	if [ -z "$Ts" ]; then
+		Ts=$(stat -c '%w|%y' -- "$1" 2>/dev/null)
+		Sort_Stat_Cache[$1]=$Ts
+	fi
+	printf '%s' "$Ts"
+}
+
+# Cached date formatting - one date fork per <file,format> pair.
+# Get_Cached_Date <file> <timestamp> <format> <fallback>
+Get_Cached_Date() {
+	local Key="$1|$3" Out
+
+	Out=${Sort_Date_Cache[$Key]-}
+	if [ -z "$Out" ]; then
+		Out=$(date -d "${2%%.*}" "$3" 2>/dev/null) || Out=$4
+		Sort_Date_Cache[$Key]=$Out
+	fi
+	printf '%s' "$Out"
+}
+
 Resolve_Segment() {
 	local Key=${1,,} File=$2 Mime=$3 Main=$4
-	local Ts T WxH N Out Folder
+	local Ts T TsB TsM WxH N Out Folder
 
 	case "$Key" in
 	# Date and file times
 	year | month | day | year+month | year+month+day)
-		Ts=$(stat -c %w -- "$File" 2>/dev/null)
-		[[ -z "$Ts" || "$Ts" == '-'* ]] && Ts=$(stat -c %y -- "$File" 2>/dev/null)
+		Ts=$(Get_File_Timestamps "$File")
+		TsB=${Ts%%|*}
+		TsM=${Ts#*|}
+		[[ -z "$TsB" || "$TsB" == '-'* ]] && Ts=$TsM || Ts=$TsB
 		case "$Key" in
 		year)
-			date -d "${Ts%%.*}" +%Y 2>/dev/null || printf '0000'
+			Get_Cached_Date "$File" "$Ts" +%Y '0000'
 			;;
 		month)
-			date -d "${Ts%%.*}" +%m 2>/dev/null || printf '00'
+			Get_Cached_Date "$File" "$Ts" +%m '00'
 			;;
 		day)
-			date -d "${Ts%%.*}" +%d 2>/dev/null || printf '00'
+			Get_Cached_Date "$File" "$Ts" +%d '00'
 			;;
 		year+month)
-			date -d "${Ts%%.*}" +%Y/%m 2>/dev/null || printf '0000/00'
+			Get_Cached_Date "$File" "$Ts" +%Y/%m '0000/00'
 			;;
 		year+month+day)
-			date -d "${Ts%%.*}" +%Y/%m/%d 2>/dev/null || printf '0000/00/00'
+			Get_Cached_Date "$File" "$Ts" +%Y/%m/%d '0000/00/00'
 			;;
 		esac
 		;;
 	created)
-		stat -c %w -- "$File" 2>/dev/null | sed 's/\..*//; s/ /_/'
+		Ts=$(Get_File_Timestamps "$File")
+		printf '%s' "${Ts%%|*}" | sed 's/\..*//; s/ /_/'
 		;;
 	modified)
-		stat -c %y -- "$File" 2>/dev/null | sed 's/\..*//; s/ /_/'
+		Ts=$(Get_File_Timestamps "$File")
+		printf '%s' "${Ts#*|}" | sed 's/\..*//; s/ /_/'
 		;;
 	accessed)
 		stat -c %x -- "$File" 2>/dev/null | sed 's/\..*//; s/ /_/'
@@ -8196,12 +8289,12 @@ Build_Extension() {
 Prepare_Optional_Output() {
 	if [ -n "$LogFile" ]; then
 		mkdir -p -- "$(dirname -- "$LogFile")" 2>/dev/null
-		printf '# Sort 17.1 log started at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" >>"$LogFile"
+		printf '# Sort 17.2 log started at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" >>"$LogFile"
 	fi
 	if [ -n "$UndoFile" ]; then
 		{
 			printf '#!/usr/bin/env bash\n'
-			printf '# Undo script generated by Sort 17.1 at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+			printf '# Undo script generated by Sort 17.2 at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')"
 			printf '# Run this script to reverse the copy/move actions.\n'
 		} >"$UndoFile"
 	fi
@@ -8253,18 +8346,25 @@ Image_Form() {
 }
 
 # Duration as a filename-safe HH-MM-SS tag
-Video_Duration_Tag() {
-	local Seconds H M S
-
-	Seconds=$(Get_Duration "$1") || return 1
-	Seconds=${Seconds%.*}
+# HH-MM-SS tag from a seconds value - shared core for the duration segments.
+# Duration_Tag_From_Seconds <seconds>
+Duration_Tag_From_Seconds() {
+	local Seconds=${1%.*}
 	Seconds=${Seconds:-0}
-
-	H=$((Seconds / 3600))
-	M=$(((Seconds % 3600) / 60))
-	S=$((Seconds % 60))
+	local H=$((Seconds / 3600))
+	local M=$(((Seconds % 3600) / 60))
+	local S=$((Seconds % 60))
 
 	printf '%02d-%02d-%02d' "$H" "$M" "$S"
+}
+
+# EXIF-style duration tag of a video, empty when unusable.
+# Video_Duration_Tag <file>
+Video_Duration_Tag() {
+	local Seconds
+
+	Seconds=$(Get_Duration "$1") || return 1
+	Duration_Tag_From_Seconds "$Seconds"
 }
 
 # Handle one archive under --decompress: test it, extract it into a temp dir,
@@ -8428,16 +8528,22 @@ Process_File() {
 			fi
 			;;
 		video)
-			local WxH Dur
-			WxH=$(Get_Media_WxH "$File") || WxH='unknown'
-			Dur=$(Video_Duration_Tag "$File") || Dur='unknown'
-			SubPart="$WxH/$Dur"
+			local Info WxH Dur
+
+			# ONE ffprobe call for both dimensions and duration
+			Info=$(Get_Media_Info "$File")
+			WxH=${Info%%|*}
+			Dur=${Info#*|}
+			SubPart="${WxH:-unknown}/${Dur:-unknown}"
 			;;
 		*)
-			local Unit
-			Unit=$(Size_Unit_Name "$File")
+			local Size Unit
+
+			# ONE stat call for both the size class and the human size
+			Size=$(Get_File_Size "$File") || Size=0
+			Unit=$(Size_Unit_From_Bytes "$Size")
 			[ "$Unit" = 'Byte' ] || Unit="${Unit}Byte"
-			SubPart="$Unit/$(Get_File_Size_Human "$File")"
+			SubPart="$Unit/$(Human_From_Bytes "$Size")"
 			;;
 		esac
 	fi
@@ -8452,10 +8558,15 @@ Process_File() {
 	}
 	Ext=$(Build_Extension "$File" "$Mime")
 
-	mkdir -p -- "$NewDir" || {
-		Print_Error "$(Tf 'Cannot create: %s' "$NewDir")"
-		return 1
-	}
+	# Only Copy/Move need the target tree - preview stays side-effect free
+	case "$Modus" in
+	Copy | Move)
+		mkdir -p -- "$NewDir" || {
+			Print_Error "$(Tf 'Cannot create: %s' "$NewDir")"
+			return 1
+		}
+		;;
+	esac
 	New="$NewDir/$Name$Ext"
 
 	# Without --replace, never clobber: slide a ~(N) counter in.
@@ -8575,14 +8686,17 @@ Process_File() {
 
 Run_Threads() {
 	local Tmp Idx=0 Total=$#
+	local -i Running=0
 	local -i Done_Copied=0 Done_Moved=0 Done_Preview=0 Done_Skipped=0 Done_Failed=0 Done_Other=0 Done_Extracted=0
 
 	Tmp=$(mktemp -d) || return 1
 
-	# Launch every file, keeping at most Max_Jobs running at once
+	# Launch every file, keeping at most Max_Jobs running at once.
+	# A bash counter tracks the pool - no jobs|wc forks per submission.
 	while [ "$Idx" -lt "$Total" ]; do
-		while [ "$(jobs -rp | wc -l)" -ge "$Max_Jobs" ]; do
+		while [ "$Running" -ge "$Max_Jobs" ]; do
 			wait -n || true
+			Running=$((Running - 1))
 		done
 
 		(
@@ -8590,6 +8704,7 @@ Run_Threads() {
 			printf '%s\n' "$Status" >"$Tmp/tag.$Idx"
 		) >"$Tmp/out.$Idx" 2>&1 &
 
+		Running=$((Running + 1))
 		Idx=$((Idx + 1))
 	done
 	wait
