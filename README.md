@@ -26,7 +26,7 @@ For real translations the script itself speaks 20 UI languages: `--lang=XX` (`en
 
 ---
 
-# Sort.sh — V17.2, the self-contained edition
+# Sort.sh — V17.3, the self-contained edition
 
 One single file, no external libraries: a comparison with **all 92 lineage
 versions** was made and **every functionality from V1.0–V15.1 is merged in**,
@@ -37,7 +37,7 @@ array through a bounded pool of background jobs (threading).
 - **Dry-run preview by default** — nothing moves until you say `--copy` or `--move`
 - **Verbose by default**, colored output with `--colored`
 - **Modes**: `--copy`, `--move`, `--remove`/`--delete`, `--trash`, `--shred` (destructive modes act on the calculated TARGET path and refuse source = target)
-- **Dynamic values**: `--dirs=`, `--subdirs=`, `--rename=`, `--extension=` accept keywords — dates (`year`, `year+month`, `modified`, ...), `mime`, `mime-main`, `mime-sub`, `extension`, `mime-ext` (best matching extension for the MIME type), checksums (`md5` … `sha512`, `b2`, `crc32`), `random`, `randomN`, `size`, `format` (tiers `TINY…HUGE` × `SQUARE/WIDE/HIGH`), `duration`, `camera`, `exifdate`, `title` — unknown words become literal names
+- **Dynamic values**: `--dirs=`, `--subdirs=`, `--rename=`, `--extension=` accept keywords — dates (`year`, `year+month`, `modified`, ...), `mime`, `mime-main`, `mime-sub`, `extension`, `mime-ext` (best matching extension for the MIME type), checksums (`md5` … `sha512`, `b2`, `crc32`), `random`, `randomN`, `size`, `format` (tiers `TINY…HUGE` × `SQUARE/WIDE/HIGH`), `duration`, `camera`, `exifdate`, `title`, audio tags (`id3`/`audio` → `Artist/Year - Album`, plus `id3-title`, `id3-artist`, `id3-album`, `id3-year`, `id3-genre`, `id3-track`) — unknown words become literal names
 - **Default naming**: without `--rename=`/`--title`, files keep their plain name when they come from the working directory itself; files found in other folders get their folder prefixed (`sub_b.txt`) so same-named files never collide
 - **Filtering**: `--type=image|video|...` (MIME substring), `--recursive`, `--hidden`, `--links`
 - **Metadata**: `--title` (PDF `/Title`, EXIF date, audio/video tags), `--exif` (`<Camera>/<date>` levels), `--strip` (remove EXIF/GPS from targets)
@@ -47,6 +47,7 @@ array through a bounded pool of background jobs (threading).
 - **Archives**: `--decompress` (extract to a temp dir, sort the contents, then delete the archive — `--trash`/`--shred` apply that fate to it), `--rename=compressed` (name = main dir / single file inside the archive); compound extensions like `.tar.gz`/`.TAR.GZ` count as one extension
 - **Init-system**: missing tools (`identify`, `ffprobe`, `exiftool`, `trash-put`, `7z`, `unrar`, ...) are proposed for install on first use
 - **Performance edition (V17.2)**: one ffprobe per video, fork-free thread-pool counter, `du`-free human sizes (stat + bash arithmetic), side-effect-free preview, cached date segments — measured **−29%** on a 2000-file benchmark (87.6 s → 61.9 s), external forks per file down from ~6 to ~4
+- **Audio tags (V17.3)**: ID3v1 + ID3v2.2/2.3/2.4 reading in **pure bash** (no external tag tool) — 126-entry genre table, UTF-16/UTF-8/ISO-8859-1 text decoding, EXIF-tool fallback for FLAC/Ogg/M4A/WMA; `--extension=lower|upper|mime-main` added
 
 Full reference: `./Sort.sh --help` — short reminder: `./Sort.sh --usage`.
 
@@ -144,18 +145,18 @@ cd Pictures/Sorted ;
 
 # The version archive
 
-This repository keeps the **complete history of the Sort script** — 97 versions:
+This repository keeps the **complete history of the Sort script** — 98 versions:
 92 reconstructed from content evolution and numbered `V1.0` → `V15.1` (the version labels
 found inside the old files were inconsistent, so they were discarded and re-derived),
-plus the five rewrite editions `V16.0`, `V16.1`, `V17.0`, `V17.1` and `V17.2`. The last version is always
-the main one: root `Sort.sh` = `V17.2`
+plus the six rewrite editions `V16.0`, `V16.1`, `V17.0`, `V17.1`, `V17.2` and `V17.3`. The last version is always
+the main one: root `Sort.sh` = `V17.3`
 (see [Sort-Versions.md](Sort-Versions.md) for the full map, sources and reasoning).
 
 ## Layout
 
 ```
-Sort.sh                 <- MAIN script (V17.2, self-contained, all lineage features, 20 UI languages, performance edition)
-Sort.pas                <- MAIN FreePascal translation (V17.2 port)
+Sort.sh                 <- MAIN script (V17.3, self-contained, all lineage features, 20 UI languages, performance + audio tags)
+Sort.pas                <- MAIN FreePascal translation (V17.3 port)
 Sort-Versions.md        <- the full version map: every version, its source, its notes
 FUNCTIONS/              <- legacy helper library sourced by Sort.sh (V15.1)
   get_file.sh           <- get_file_*, built on functions/file + functions/hash
@@ -182,16 +183,20 @@ versions/
     Sort-V17.1.pas
     README.md
   V17.2/
-    Sort-V17.2.sh        <- identical to the root Sort.sh
-    Sort-V17.2.pas       <- identical to the root Sort.pas
+    Sort-V17.2.sh
+    Sort-V17.2.pas
+    README.md
+  V17.3/
+    Sort-V17.3.sh        <- identical to the root Sort.sh
+    Sort-V17.3.pas       <- identical to the root Sort.pas
     README.md
 functions/              <- isolated function library (see functions/README.md)
   system/  ui/  file/  hash/  mime/  imagemagick/  ffmpeg/  exif/
-  compression/  docs/    core/  colors/  deps/
+  compression/  tags/  docs/    core/  colors/  deps/
 ```
 
-- `functions/` — the modern, isolated per-resource toolkit (197 functions:
-  file, hash, mime, imagemagick, ffmpeg, exif, compression, colors, deps,
+- `functions/` — the modern, isolated per-resource toolkit (212 functions:
+  file, hash, mime, imagemagick, ffmpeg, exif, compression, tags, colors, deps,
   system, ui, docs, core), each module with its own ASCII header and README
 - `FUNCTIONS/` — the legacy lowercase adapter layer that V15.1 sources
 - Every version folder contains the script and its own README with: era,
@@ -227,12 +232,12 @@ functions/              <- isolated function library (see functions/README.md)
 | V14.x | 14.0–14.1 | Safe Transport Engine |
 | V15.x | 15.0–15.1 | Modular library era |
 | V16.x | 16.0–16.1 | Rewrite on the `functions/` toolkit (threaded) |
-| V17.x | 17.0–17.2 | Self-contained all-features edition (17.2 = performance edition, the current main) |
+| V17.x | 17.0–17.3 | Self-contained all-features edition (17.2 = performance edition, 17.3 = audio tags, the current main) |
 
 ## FreePascal translations
 
-**Every version — all 97 plus the main script — is also available as a
-FreePascal program**: root `Sort.pas` (the V17.2 port) and
+**Every version — all 98 plus the main script — is also available as a
+FreePascal program**: root `Sort.pas` (the V17.3 port) and
 `versions/V#.#/Sort-V#.#.pas` for each version.
 
 - Written for **FreePascal 3.2.2**, `{$MODE OBJFPC}{$H+}` — stated in every

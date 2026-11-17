@@ -3,8 +3,8 @@
 {                                                                             }
 {                                                                             }
 {  Script  : Sort.pas                                                         }
-{  Version : 17.2                                                             }
-{  Desc    : Ejder file organizer - FreePascal translation of Sort.sh v17.2   }
+{  Version : 17.3                                                             }
+{  Desc    : Ejder file organizer - FreePascal translation of Sort.sh v17.3   }
 {  Author  : HEjder                                                           }
 {                                                                             }
 {  Translated to FreePascal 3.2.2 (target: FPC 3.2.2, mode objfpc, H+).       }
@@ -32,7 +32,7 @@ uses
     SysUtils, Classes, Math, SyncObjs, MD5, SHA1, Zipper, BaseUnix, Process;
 
 const
-    ScriptVersion = '17.2';
+    ScriptVersion = '17.3';
     ClosingPhrase = 'Thanks for using HEjder scripts!';
 
     C_Reset  = #27 + '[0m';
@@ -1028,6 +1028,421 @@ begin
             Result[I] := '_';
 end;
 
+{ ================= TAGS MODULE ================= }
+
+{ The 80 standard ID3v1 genres plus the Winamp extensions (0-125) }
+const
+    Genre_Table: array[0..125] of string = (
+        'Blues', 'Classic Rock', 'Country', 'Dance', 'Disco', 'Funk',
+        'Grunge', 'Hip-Hop', 'Jazz', 'Metal', 'New Age', 'Oldies', 'Other',
+        'Pop', 'R&B', 'Rap', 'Reggae', 'Rock', 'Techno', 'Industrial',
+        'Alternative', 'Ska', 'Death Metal', 'Pranks', 'Soundtrack',
+        'Euro-Techno', 'Ambient', 'Trip-Hop', 'Vocal', 'Jazz+Funk', 'Fusion',
+        'Trance', 'Classical', 'Instrumental', 'Acid', 'House', 'Game',
+        'Sound Clip', 'Gospel', 'Noise', 'Alternative Rock', 'Bass', 'Soul',
+        'Punk', 'Space', 'Meditation', 'Instrumental Pop', 'Instrumental Rock',
+        'Ethnic', 'Gothic', 'Darkwave', 'Techno-Industrial', 'Electronic',
+        'Pop-Folk', 'Eurodance', 'Dream', 'Southern Rock', 'Comedy', 'Cult',
+        'Gangsta', 'Top 40', 'Christian Rap', 'Pop/Funk', 'Jungle',
+        'Native US', 'Cabaret', 'New Wave', 'Psychadelic', 'Rave',
+        'Showtunes', 'Trailer', 'Lo-Fi', 'Tribal', 'Acid Punk', 'Acid Jazz',
+        'Polka', 'Retro', 'Musical', 'Rock & Roll', 'Hard Rock', 'Folk',
+        'Folk-Rock', 'National Folk', 'Swing', 'Fast Fusion', 'Bebob',
+        'Latin', 'Revival', 'Celtic', 'Bluegrass', 'Avantgarde',
+        'Gothic Rock', 'Progressive Rock', 'Psychedelic Rock',
+        'Symphonic Rock', 'Slow Rock', 'Big Band', 'Chorus', 'Easy Listening',
+        'Acoustic', 'Humour', 'Speech', 'Chanson', 'Opera', 'Chamber Music',
+        'Sonata', 'Symphony', 'Booty Bass', 'Primus', 'Porn Groove', 'Satire',
+        'Slow Jam', 'Club', 'Tango', 'Samba', 'Folklore', 'Ballad',
+        'Power Ballad', 'Rhythmic Soul', 'Freestyle', 'Duet', 'Punk Rock',
+        'Drum Solo', 'A cappella', 'Euro-House', 'Dance Hall');
+
+{ Trim_Tags: strip NUL bytes and trailing spaces from a raw tag field }
+function Trim_Tags(const S: string): string;
+var
+    T: string;
+begin
+    T := StringReplace(S, #0, '', [rfReplaceAll]);
+    while (T <> '') and (T[Length(T)] = ' ') do
+        Delete(T, Length(T), 1);
+    Result := T;
+end;
+
+{ Latin1_To_Utf8: ISO-8859-1 bytes to UTF-8 text }
+function Latin1_To_Utf8(const S: string): string;
+var
+    I: Integer;
+    C: Byte;
+begin
+    Result := '';
+    for I := 1 to Length(S) do
+    begin
+        C := Ord(S[I]);
+        if C < 128 then
+            Result := Result + S[I]
+        else
+            Result := Result + Chr($C0 or (C shr 6)) + Chr($80 or (C and $3F));
+    end;
+end;
+
+{ Utf16_To_Utf8: UTF-16 bytes (with or without BOM) to UTF-8 text;
+  BE selects big-endian when no BOM is present }
+function Utf16_To_Utf8(const S: string; BE: Boolean): string;
+var
+    WS: WideString;
+    I, N: Integer;
+    W: Word;
+    Swap: Boolean;
+begin
+    Result := '';
+    N := Length(S) div 2;
+    if N = 0 then
+        Exit;
+    Swap := False;
+    SetLength(WS, N);
+    for I := 0 to N - 1 do
+    begin
+        if BE then
+            W := (Ord(S[I * 2 + 1]) shl 8) or Ord(S[I * 2 + 2])
+        else
+            W := (Ord(S[I * 2 + 2]) shl 8) or Ord(S[I * 2 + 1]);
+        if (I = 0) and ((W = $FEFF) or (W = $FFFE)) then
+        begin
+            { byte order mark - remember the real order, skip the mark }
+            if ((W = $FFFE) and (not BE)) or ((W = $FEFF) and BE) then
+                Swap := True;
+            continue;
+        end;
+        if Swap then
+            W := (W shl 8) or (W shr 8);
+        WS[I + 1] := WideChar(W);
+    end;
+    Result := Utf8Encode(WS);
+end;
+
+{ Id3v1_Present: true when the file ends with an ID3v1 tag }
+function Id3v1_Present(const F: string): Boolean;
+var
+    FS: TFileStream;
+    Buf: array[0..2] of Byte;
+begin
+    Result := False;
+    if not FileExists(F) then
+        Exit;
+    FS := TFileStream.Create(F, fmOpenRead or fmShareDenyWrite);
+    try
+        if FS.Size < 128 then
+            Exit;
+        FS.Position := FS.Size - 128;
+        FS.ReadBuffer(Buf, 3);
+        Result := (Buf[0] = Ord('T')) and (Buf[1] = Ord('A')) and (Buf[2] = Ord('G'));
+    finally
+        FS.Free;
+    end;
+end;
+
+{ Id3v1_Field: one ID3v1 field by name, empty when unusable }
+function Id3v1_Field(const F, Field: string): string;
+var
+    FS: TFileStream;
+    Buf: array[0..127] of Byte;
+    Off, Len, I: Integer;
+    Field_L: string;
+begin
+    Result := '';
+    if not Id3v1_Present(F) then
+        Exit;
+    FS := TFileStream.Create(F, fmOpenRead or fmShareDenyWrite);
+    try
+        FS.Position := FS.Size - 128;
+        FS.ReadBuffer(Buf, 128);
+    finally
+        FS.Free;
+    end;
+    Field_L := LowerCase(Field);
+    if Field_L = 'track' then
+    begin
+        { track byte only valid when the comment zero-separator is there }
+        if (Buf[125] = 0) and (Buf[126] <> 0) then
+            Result := IntToStr(Buf[126]);
+        Exit;
+    end;
+    if Field_L = 'genre' then
+    begin
+        if (Buf[127] < 255) and (Buf[127] <= 125) then
+            Result := Genre_Table[Buf[127]]
+        else if Buf[127] < 255 then
+            Result := IntToStr(Buf[127]);
+        Exit;
+    end;
+    if Field_L = 'title' then
+    begin
+        Off := 3;
+        Len := 30;
+    end
+    else if Field_L = 'artist' then
+    begin
+        Off := 33;
+        Len := 30;
+    end
+    else if Field_L = 'album' then
+    begin
+        Off := 63;
+        Len := 30;
+    end
+    else if Field_L = 'year' then
+    begin
+        Off := 93;
+        Len := 4;
+    end
+    else if Field_L = 'comment' then
+    begin
+        Off := 97;
+        Len := 28;
+    end
+    else
+        Exit;
+    for I := Off to Off + Len - 1 do
+        Result := Result + Chr(Buf[I]);
+    Result := Trim_Tags(Result);
+end;
+
+{ Id3v1_Genre_Name: genre name for an index, empty when unknown }
+function Id3v1_Genre_Name(Idx: Integer): string;
+begin
+    Result := '';
+    if (Idx >= 0) and (Idx <= 125) then
+        Result := Genre_Table[Idx];
+end;
+
+{ Id3v2_Present: true when the file starts with an ID3v2 tag }
+function Id3v2_Present(const F: string): Boolean;
+var
+    FS: TFileStream;
+    Buf: array[0..2] of Byte;
+begin
+    Result := False;
+    if not FileExists(F) then
+        Exit;
+    FS := TFileStream.Create(F, fmOpenRead or fmShareDenyWrite);
+    try
+        if FS.Size < 10 then
+            Exit;
+        FS.ReadBuffer(Buf, 3);
+        Result := (Buf[0] = Ord('I')) and (Buf[1] = Ord('D')) and (Buf[2] = Ord('3'));
+    finally
+        FS.Free;
+    end;
+end;
+
+{ Id3v2_Major: ID3v2 major version, 0 when absent }
+function Id3v2_Major(const F: string): Integer;
+var
+    FS: TFileStream;
+    B: Byte;
+begin
+    Result := 0;
+    if not Id3v2_Present(F) then
+        Exit;
+    FS := TFileStream.Create(F, fmOpenRead or fmShareDenyWrite);
+    try
+        FS.Position := 3;
+        FS.ReadBuffer(B, 1);
+        Result := B;
+    finally
+        FS.Free;
+    end;
+end;
+
+{ Id3v2_Tag_Size: synchsafe size from the 10-byte header }
+function Id3v2_Tag_Size(const F: string): Integer;
+var
+    FS: TFileStream;
+    Buf: array[0..3] of Byte;
+begin
+    Result := 0;
+    if not Id3v2_Present(F) then
+        Exit;
+    FS := TFileStream.Create(F, fmOpenRead or fmShareDenyWrite);
+    try
+        FS.Position := 6;
+        FS.ReadBuffer(Buf, 4);
+        Result := (Buf[0] shl 21) or (Buf[1] shl 14) or (Buf[2] shl 7) or Buf[3];
+    finally
+        FS.Free;
+    end;
+end;
+
+{ Id3v2_Field: walk the frames, return the wanted text frame decoded }
+function Id3v2_Field(const F, Frame: string): string;
+var
+    FS: TFileStream;
+    Hdr: array[0..9] of Byte;
+    Ver, TagSize, Off, EndOff, HdrLen, FSize, I: Integer;
+    FID: string;
+    Payload: string;
+    Enc: Byte;
+begin
+    Result := '';
+    if not Id3v2_Present(F) then
+        Exit;
+    Ver := Id3v2_Major(F);
+    TagSize := Id3v2_Tag_Size(F);
+    FS := TFileStream.Create(F, fmOpenRead or fmShareDenyWrite);
+    try
+        Off := 10;
+        EndOff := 10 + TagSize;
+        while Off < EndOff do
+        begin
+            FS.Position := Off;
+            if FS.Read(Hdr, 10) < 10 then
+                Break;
+            if Ver = 2 then
+            begin
+                { v2.2: 3-char frame id, 3-byte big-endian size, no flags }
+                HdrLen := 6;
+                FID := '';
+                for I := 0 to 2 do
+                    FID := FID + Chr(Hdr[I]);
+                if not (Hdr[0] in [Ord('A')..'Z', Ord('0')..'9']) then
+                    Break;
+                FSize := (Hdr[3] shl 16) or (Hdr[4] shl 8) or Hdr[5];
+            end
+            else
+            begin
+                HdrLen := 10;
+                FID := '';
+                for I := 0 to 3 do
+                    FID := FID + Chr(Hdr[I]);
+                if not (Hdr[0] in [Ord('A')..'Z', Ord('0')..'9']) then
+                    Break;
+                if Ver >= 4 then
+                    FSize := (Hdr[4] shl 21) or (Hdr[5] shl 14) or (Hdr[6] shl 7) or Hdr[7]
+                else
+                    FSize := (Hdr[4] shl 24) or (Hdr[5] shl 16) or (Hdr[6] shl 8) or Hdr[7];
+            end;
+            if (FSize <= 0) or (Off + HdrLen + FSize > FS.Size) then
+                Break;
+
+            if FID = Frame then
+            begin
+                SetLength(Payload, FSize);
+                FS.Position := Off + HdrLen;
+                FS.ReadBuffer(Payload[1], FSize);
+                Enc := Ord(Payload[1]);
+                Delete(Payload, 1, 1);
+                case Enc of
+                    1: Result := Trim_Tags(Utf16_To_Utf8(Payload, False));
+                    2: Result := Trim_Tags(Utf16_To_Utf8(Payload, True));
+                    0: Result := Trim_Tags(Latin1_To_Utf8(Payload));
+                else
+                    Result := Trim_Tags(Payload);
+                end;
+                Exit;
+            end;
+            Off := Off + HdrLen + FSize;
+        end;
+    finally
+        FS.Free;
+    end;
+end;
+
+{ Id3_Field: friendly name -> ID3v2 frames, then ID3v1 field }
+function Id3_Field(const F, Field: string): string;
+var
+    Field_L: string;
+begin
+    Result := '';
+    Field_L := LowerCase(Field);
+    case Field_L of
+        'title':
+            Result := Id3v2_Field(F, 'TIT2');
+        'artist':
+            Result := Id3v2_Field(F, 'TPE1');
+        'album':
+            Result := Id3v2_Field(F, 'TALB');
+        'year':
+        begin
+            Result := Id3v2_Field(F, 'TDRC');
+            if Result = '' then
+                Result := Id3v2_Field(F, 'TYER');
+        end;
+        'genre':
+            Result := Id3v2_Field(F, 'TCON');
+        'track':
+            Result := Id3v2_Field(F, 'TRCK');
+    else
+        Exit;
+    end;
+
+    { v2.2 3-character ids }
+    if Result = '' then
+        case Field_L of
+            'title': Result := Id3v2_Field(F, 'TT2');
+            'artist': Result := Id3v2_Field(F, 'TP1');
+            'album': Result := Id3v2_Field(F, 'TAL');
+            'year': Result := Id3v2_Field(F, 'TYE');
+            'genre': Result := Id3v2_Field(F, 'TCO');
+            'track': Result := Id3v2_Field(F, 'TRK');
+        end;
+
+    { ID3v1 fallback }
+    if Result = '' then
+        Result := Id3v1_Field(F, Field_L);
+
+    { genre: "(17)" or plain "17" -> genre name }
+    if (Field_L = 'genre') and (Result <> '') then
+    begin
+        if (Length(Result) > 2) and (Result[1] = '(') then
+            Result := Copy(Result, 2, Pos(')', Result) - 2);
+        if Result = IntToStr(StrToIntDef(Result, -1)) then
+        begin
+            if Id3v1_Genre_Name(StrToIntDef(Result, -1)) <> '' then
+                Result := Id3v1_Genre_Name(StrToIntDef(Result, -1));
+        end;
+    end;
+end;
+
+{ Tags_Sanitize: make one tag component safe as a directory name }
+function Tags_Sanitize(const S: string): string;
+var
+    I: Integer;
+begin
+    Result := '';
+    for I := 1 to Length(S) do
+        if S[I] = ' ' then
+            Result := Result + '_'
+        else if not (S[I] in ['/', '\\', ':', '*', '?', '"', '<', '>', '|']) then
+            Result := Result + S[I];
+end;
+
+{ Get_Audio_Tags_Dir: "<Artist>/<Year - Album>" composite, empty levels
+  skipped, components sanitized }
+function Get_Audio_Tags_Dir(const F: string): string;
+var
+    A, Y, Al, Sub: string;
+begin
+    Result := '';
+    A := Tags_Sanitize(Id3_Field(F, 'artist'));
+    Y := Id3_Field(F, 'year');
+    Al := Tags_Sanitize(Id3_Field(F, 'album'));
+    if (Y <> '') and (Al <> '') then
+        Sub := Y + ' - ' + Al
+    else
+        Sub := Y + Al;
+    if A <> '' then
+        Result := A;
+    if Sub <> '' then
+    begin
+        if Result <> '' then
+            Result := Result + '/' + Sub
+        else
+            Result := Sub;
+    end;
+end;
+
+{ =============== END TAGS MODULE =============== }
+
 { Resolve one dynamic value for file F.
   Returns 0 = ok (Text = value), 1 = failed, 2 = unknown -> literal. }
 function Resolve_Segment(const Value, F: string; out Text: string): Integer;
@@ -1107,6 +1522,19 @@ begin
         Text := Video_Duration(F);
         if Text = '' then
             Exit(1);
+    end
+    else if (Value = 'id3') or (Value = 'audio') then
+    begin
+        Text := Get_Audio_Tags_Dir(F);
+        if Text = '' then
+            Exit(1);
+    end
+    else if Pos('id3-', Value) = 1 then
+    begin
+        Tmp := Id3_Field(F, Copy(Value, 5, MaxInt));
+        if Tmp = '' then
+            Exit(1);
+        Text := Tags_Sanitize(Tmp);
     end
     else if Value = 'camera' then
     begin
@@ -1230,6 +1658,18 @@ begin
             if NewName = '' then
                 NewName := Get_Base_Name(F);
         end
+        else if (RenameVal = 'id3') or (RenameVal = 'audio') then
+        begin
+            NewName := Get_Audio_Tags_Dir(F);
+            if NewName = '' then
+                NewName := Get_Base_Name(F);
+        end
+        else if Pos('id3-', RenameVal) = 1 then
+        begin
+            NewName := Id3_Field(F, Copy(RenameVal, 5, MaxInt));
+            if NewName = '' then
+                NewName := Get_Base_Name(F);
+        end
         else
             NewName := Get_Base_Name(F);
 
@@ -1260,6 +1700,18 @@ begin
             else
                 Ext := '.' + Get_File_Ext(F);
         end
+        else if ExtensionVal = 'mime-main' then
+        begin
+            Suffix := MIME_Main(Detect_MIME(F));
+            if Suffix <> '' then
+                Ext := '.' + LowerCase(Suffix)
+            else
+                Ext := '.' + Get_File_Ext(F);
+        end
+        else if ExtensionVal = 'lower' then
+            Ext := '.' + LowerCase(Get_File_Ext(F))
+        else if ExtensionVal = 'upper' then
+            Ext := '.' + UpCase(Get_File_Ext(F))
         else if ExtensionVal = 'extension' then
             Ext := '.' + Get_File_Ext(F)
         else if ExtensionVal = '' then
@@ -1679,7 +2131,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := '用法: sort [选项] [目录...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := '请尝试 sort --help 查看完整选项列表。'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder 文件整理器 - Sort.sh v17.2 的 FreePascal 翻译'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder 文件整理器 - Sort.sh v17.3 的 FreePascal 翻译'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= 的快捷方式'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove 的快捷方式'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= 的快捷方式'
@@ -1739,7 +2191,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'उपयोग: sort [विकल्प] [निर्देशिका...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'पूरी विकल्प सूची के लिए sort --help आज़माएँ।'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder फ़ाइल आयोजक - Sort.sh v17.2 का FreePascal अनुवाद'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder फ़ाइल आयोजक - Sort.sh v17.3 का FreePascal अनुवाद'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= के शॉर्टकट'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove का शॉर्टकट'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= के शॉर्टकट'
@@ -1799,7 +2251,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Uso: sort [OPCIONES] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Pruebe sort --help para la lista completa de opciones.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Organizador de archivos Ejder - traducción FreePascal de Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Organizador de archivos Ejder - traducción FreePascal de Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      atajos de --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  atajo de --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    atajos de --mode='
@@ -1859,7 +2311,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Utilisation : sort [OPTIONS] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Essayez ’sort --help’ pour la liste complète des options.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Organiseur de fichiers Ejder - traduction FreePascal de Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Organiseur de fichiers Ejder - traduction FreePascal de Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      raccourcis de --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  raccourci de --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    raccourcis de --mode='
@@ -1919,7 +2371,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'الاستخدام: sort [خيارات] [دليل...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'جرّب sort --help للحصول على قائمة الخيارات الكاملة.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'منظم ملفات Ejder - ترجمة FreePascal لـ Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'منظم ملفات Ejder - ترجمة FreePascal لـ Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      اختصارات لـ --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  اختصار لـ --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    اختصارات لـ --mode='
@@ -1979,7 +2431,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'ব্যবহার: sort [বিকল্প] [ডিরেক্টরি...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'সম্পূর্ণ বিকল্প তালিকার জন্য sort --help দেখুন।'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder ফাইল সংগঠক - Sort.sh v17.2 এর FreePascal অনুবাদ'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder ফাইল সংগঠক - Sort.sh v17.3 এর FreePascal অনুবাদ'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= এর সংক্ষিপ্ত রূপ'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove এর সংক্ষিপ্ত রূপ'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= এর সংক্ষিপ্ত রূপ'
@@ -2039,7 +2491,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Uso: sort [OPÇÕES] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Experimente sort --help para a lista completa de opções.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Organizador de arquivos Ejder - tradução FreePascal de Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Organizador de arquivos Ejder - tradução FreePascal de Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      atalhos para --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  atalho para --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    atalhos para --mode='
@@ -2099,7 +2551,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Использование: sort [ОПЦИИ] [КАТАЛОГ...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Попробуйте sort --help для полного списка опций.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Организатор файлов Ejder - перевод Sort.sh v17.2 на FreePascal'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Организатор файлов Ejder - перевод Sort.sh v17.3 на FreePascal'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      сокращения для --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  сокращение для --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    сокращения для --mode='
@@ -2159,7 +2611,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'استعمال: sort [اختیارات] [ڈائریکٹری...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'مکمل آپشن فہرست کے لیے sort --help آزمائیں۔'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder فائل منتظم - Sort.sh v17.2 کا FreePascal ترجمہ'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder فائل منتظم - Sort.sh v17.3 کا FreePascal ترجمہ'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= کے شارٹ کٹس'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove کا شارٹ کٹ'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= کے شارٹ کٹس'
@@ -2219,7 +2671,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Penggunaan: sort [OPSI] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Coba sort --help untuk daftar opsi lengkap.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Penyusun berkas Ejder - terjemahan FreePascal dari Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Penyusun berkas Ejder - terjemahan FreePascal dari Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      pintasan untuk --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  pintasan untuk --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    pintasan untuk --mode='
@@ -2279,7 +2731,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Aufruf: sort [OPTIONEN] [VERZ...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Versuchen Sie sort --help für die vollständige Optionsliste.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder Datei-Organisator - FreePascal-Übersetzung von Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder Datei-Organisator - FreePascal-Übersetzung von Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      Kurzformen für --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  Kurzform für --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    Kurzformen für --mode='
@@ -2339,7 +2791,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := '使い方: sort [オプション] [ディレクトリ...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := '完全なオプション一覧は sort --help を試してください。'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder ファイル整理ツール - Sort.sh v17.2 の FreePascal 翻訳'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder ファイル整理ツール - Sort.sh v17.3 の FreePascal 翻訳'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= の短縮形'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove の短縮形'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= の短縮形'
@@ -2399,7 +2851,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Kullanım: sort [seçenekler] [dizin...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Tüm seçenek listesi için sort --help deneyin.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder Dosya Düzenleyici - Sort.sh v17.2 FreePascal çevirisi'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder Dosya Düzenleyici - Sort.sh v17.3 FreePascal çevirisi'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= kısayolu'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove kısayolu'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= kısayolu'
@@ -2459,7 +2911,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := '사용법: sort [옵션] [디렉터리...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := '전체 옵션 목록은 sort --help를 실행해 보십시오.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder 파일 정리 도구 - Sort.sh v17.2 FreePascal 번역'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder 파일 정리 도구 - Sort.sh v17.3 FreePascal 번역'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= 의 단축형'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove 의 단축형'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= 의 단축형'
@@ -2519,7 +2971,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Cách dùng: sort [tùy chọn] [thư mục...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Hãy thử sort --help để xem danh sách tùy chọn đầy đủ.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder công cụ sắp xếp tệp - bản dịch FreePascal của Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder công cụ sắp xếp tệp - bản dịch FreePascal của Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      viết tắt của --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  viết tắt của --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    viết tắt của --mode='
@@ -2579,7 +3031,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Uso: sort [opzioni] [directory...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Prova sort --help per l’elenco completo delle opzioni.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder strumento di ordinamento file - traduzione FreePascal di Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder strumento di ordinamento file - traduzione FreePascal di Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      scorciatoia per --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  scorciatoia per --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    scorciatoia per --mode='
@@ -2639,7 +3091,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Użycie: sort [opcje] [katalogi...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Spróbuj sort --help, aby zobaczyć pełną listę opcji.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder narzędzie do porządkowania plików - tłumaczenie FreePascal Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder narzędzie do porządkowania plików - tłumaczenie FreePascal Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      skrót od --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  skrót od --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    skrót od --mode='
@@ -2699,7 +3151,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Gebruik: sort [opties] [mappen...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Probeer sort --help voor de volledige optielijst.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'Ejder bestandsorganisatie-tool - FreePascal-vertaling van Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'Ejder bestandsorganisatie-tool - FreePascal-vertaling van Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      sneltoets voor --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  sneltoets voor --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    sneltoets voor --mode='
@@ -2759,7 +3211,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'روش استفاده: sort [گزینه‌ها] [پوشه‌ها...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'برای فهرست کامل گزینه‌ها «sort --help» را امتحان کنید.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.2' then Result := 'ابزار مرتب‌سازی فایل Ejder - ترجمه FreePascal از Sort.sh v17.2'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v17.3' then Result := 'ابزار مرتب‌سازی فایل Ejder - ترجمه FreePascal از Sort.sh v17.3'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      شکل کوتاه --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  شکل کوتاه --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    شکل کوتاه --mode='
@@ -2863,7 +3315,7 @@ procedure Show_Help;
 begin
     Show_Version;
     WriteLn('');
-    WriteLn(Tr('Ejder file organizer - FreePascal translation of Sort.sh v17.2'));
+    WriteLn(Tr('Ejder file organizer - FreePascal translation of Sort.sh v17.3'));
     WriteLn('');
     WriteLn(Tr('MODES:'));
     WriteLn('  --mode=MODE        print (default) / copy / move / remove / trash / shred');

@@ -45,6 +45,7 @@ fpc -Mobjfpc -Sh <unit>.pas
 | [compression.pas](compression/) | Archives | `Is_Zip_File`, `Is_Tar_Suffix`, `Get_Compound_Ext_Last`, `Archive_Main_Name`, `Archive_Extract` |
 | [coretools.pas](core/) | Naming core | `Sanitize_Name`, `Underscore`, `Unique_Target` |
 | [docs.pas](docs/) | Documents | `Get_Doc_Title` |
+| [tags.pas](tags/) | Audio tags (ID3) | `Id3v1_Present`, `Id3v1_Field`, `Id3v1_Genre_Name`, `Id3v2_Present`, `Id3v2_Major`, `Id3v2_Tag_Size`, `Id3v2_Field`, `Id3_Field`, `Get_Audio_Title`, `Get_Audio_Artist`, `Get_Audio_Album`, `Get_Audio_Year`, `Get_Audio_Genre`, `Get_Audio_Track`, `Get_Audio_Tags_Dir` |
 
 NB/This code is not tested yet!
 
@@ -63,7 +64,8 @@ NB/This code is not tested yet!
 | [colors](colors/) | Complete color toolkit — ANSI colors / print helpers | 13 functions: `C_*` color variables, Print_Message/Info/Ok/Error/Warning/Log/Debug, headers, separators |
 | [mime](mime/) | Complete MIME toolkit — file(1) / magic bytes / extension maps | 21 functions: type/main/sub/description/charset, magic bytes, magic detection, database-sourced MIME↔extension maps (911 extensions / 687 types), best-match extension, pattern match, type predicates |
 | [compression](compression/) | Complete archive toolkit — tar / gz / bz2 / xz / zst / zip / 7z / rar | 12 functions: magic-byte type detection, integrity test, listing, extraction, main-name lookup, creation, single-file compression |
+| [tags](tags/) | Complete audio-tag toolkit — ID3v1 / ID3v2, pure bash | 15 functions: v1 trailer fields, 126-entry genre table, v2.2/v2.3/v2.4 frame walk with 4 text encodings, friendly getters with EXIF fallback, `Artist/Year - Album` naming |
 | [docs](docs/) | Documents (pdftotext / exiftool) | `Get_Doc_Title` |
 | [core](core/) | Organizer core logic | `Resolve_Path_Segment`, `Parse_Arguments`, `Validate_Options`, `Perform_Action`, `Sort`, `Show_Help` |
 
-Total: 197 shell functions in 13 modules, plus 13 FreePascal units.
+Total: 212 shell functions in 14 modules, plus 14 FreePascal units.

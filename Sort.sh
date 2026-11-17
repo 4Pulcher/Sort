@@ -3,7 +3,7 @@
 ###############################################################################
 #                                                                             #
 # Script  : Sort.sh                                                           #
-# Version : 17.2                                                              #
+# Version : 17.3                                                              #
 # Desc    : Self-contained threaded organizer - all lineage features merged    #
 # Author  : HEjder                                                            #
 #                                                                             #
@@ -4302,6 +4302,365 @@ EXIF_Copy() {
 }
 
 # ===========================================================================
+# TAGS MODULE
+# ===========================================================================
+
+# Audio tags - ID3v1 (last 128 bytes) and ID3v2 (v2.2/v2.3/v2.4 frames) are
+# read directly from the file bytes, no external tagger needed. Friendly
+# getters fall back to exiftool via Exif_Field when the file carries no ID3
+# tag (FLAC, Ogg, M4A, WMA...).
+
+# ---------------------------------------------------------------------------
+# ID3v1 - the fixed 128-byte tag at the end of the file
+# ---------------------------------------------------------------------------
+
+# True when the file ends with an ID3v1 tag.
+# Id3v1_Present <file>
+Id3v1_Present() {
+	local File=$1 Tag
+
+	[ -r "$File" ] || return 1
+	Tag=$(tail -c 128 -- "$File" 2>/dev/null | head -c 3)
+	[ "$Tag" = 'TAG' ]
+}
+
+# Genre name for an ID3v1 genre index (0-125: the 80 standard genres plus
+# the Winamp extensions). Unknown or out-of-range indexes fail.
+# Id3v1_Genre_Name <index>
+Id3v1_Genre_Name() {
+	local Idx=$1
+	local -a G=(
+		Blues 'Classic Rock' Country Dance Disco Funk Grunge 'Hip-Hop'
+		Jazz Metal 'New Age' Oldies Other Pop 'R&B' Rap Reggae Rock Techno
+		Industrial Alternative Ska 'Death Metal' Pranks Soundtrack
+		'Euro-Techno' Ambient 'Trip-Hop' Vocal 'Jazz+Funk' Fusion Trance
+		Classical Instrumental Acid House Game 'Sound Clip' Gospel Noise
+		'Alternative Rock' Bass Soul Punk Space Meditation 'Instrumental Pop'
+		'Instrumental Rock' Ethnic Gothic Darkwave 'Techno-Industrial'
+		Electronic 'Pop-Folk' Eurodance Dream 'Southern Rock' Comedy Cult
+		Gangsta 'Top 40' 'Christian Rap' 'Pop/Funk' Jungle 'Native US'
+		Cabaret 'New Wave' Psychadelic Rave Showtunes Trailer 'Lo-Fi' Tribal
+		'Acid Punk' 'Acid Jazz' Polka Retro Musical 'Rock & Roll' 'Hard Rock'
+		Folk 'Folk-Rock' 'National Folk' Swing 'Fast Fusion' Bebob Latin
+		Revival Celtic Bluegrass Avantgarde 'Gothic Rock' 'Progressive Rock'
+		'Psychedelic Rock' 'Symphonic Rock' 'Slow Rock' 'Big Band' Chorus
+		'Easy Listening' Acoustic Humour Speech Chanson Opera 'Chamber Music'
+		Sonata Symphony 'Booty Bass' Primus 'Porn Groove' Satire 'Slow Jam'
+		Club Tango Samba Folklore Ballad 'Power Ballad' 'Rhythmic Soul'
+		Freestyle Duet 'Punk Rock' 'Drum Solo' 'A cappella' 'Euro-House'
+		'Dance Hall'
+	)
+
+	[[ "$Idx" =~ ^[0-9]+$ ]] || return 1
+	[ "$Idx" -lt "${#G[@]}" ] || return 1
+	printf '%s' "${G[$Idx]}"
+}
+
+# One ID3v1 field by name: title artist album year comment track genre.
+# Id3v1_Field <file> <field>
+Id3v1_Field() {
+	local File=$1 Field=${2,,} Raw
+	local Skip Count
+	local B125 B126 Idx
+
+	[ -r "$File" ] || return 1
+	Id3v1_Present "$File" || return 1
+
+	case "$Field" in
+	title) Skip=3 Count=30 ;;
+	artist) Skip=33 Count=30 ;;
+	album) Skip=63 Count=30 ;;
+	year) Skip=93 Count=4 ;;
+	comment) Skip=97 Count=28 ;;
+	track)
+		# Track byte only valid when the comment zero-separator is there
+		B125=$(tail -c 128 -- "$File" 2>/dev/null | tail -c 3 | head -c 1 | od -An -tu1 | tr -d ' ')
+		B126=$(tail -c 128 -- "$File" 2>/dev/null | tail -c 2 | head -c 1 | od -An -tu1 | tr -d ' ')
+		if [ "$B125" = '0' ] && [ -n "$B126" ] && [ "$B126" != '0' ]; then
+			printf '%s' "$B126"
+			return 0
+		fi
+		return 1
+		;;
+	genre)
+		Idx=$(tail -c 128 -- "$File" 2>/dev/null | tail -c 1 | od -An -tu1 | tr -d ' ')
+		if [ -n "$Idx" ] && Id3v1_Genre_Name "$Idx"; then
+			return 0
+		fi
+		[ -n "$Idx" ] && [ "$Idx" != '255' ] && printf '%s' "$Idx"
+		return 0
+		;;
+	*)
+		return 1
+		;;
+	esac
+
+	Raw=$(tail -c 128 -- "$File" 2>/dev/null | tail -c +$((Skip + 1)) | head -c "$Count" | tr -d '\0')
+	Raw="${Raw%"${Raw##*[! ]}"}"
+	[ -n "$Raw" ] && printf '%s' "$Raw"
+}
+
+# ---------------------------------------------------------------------------
+# ID3v2 - the frame-based tag at the start of the file (v2.2 / v2.3 / v2.4)
+# ---------------------------------------------------------------------------
+
+# True when the file starts with an ID3v2 tag.
+# Id3v2_Present <file>
+Id3v2_Present() {
+	local File=$1 Magic
+
+	[ -r "$File" ] || return 1
+	Magic=$(head -c 3 -- "$File" 2>/dev/null)
+	[ "$Magic" = 'ID3' ]
+}
+
+# ID3v2 major version (2, 3 or 4).
+# Id3v2_Major <file>
+Id3v2_Major() {
+	local Ver
+
+	[ -r "$1" ] || return 1
+	Id3v2_Present "$1" || return 1
+	Ver=$(head -c 4 -- "$1" 2>/dev/null | tail -c 1 | od -An -tu1 | tr -d ' ')
+	[ -n "$Ver" ] && printf '%s' "$Ver"
+}
+
+# Total ID3v2 tag size in bytes (the synchsafe header size, header excluded).
+# Id3v2_Tag_Size <file>
+Id3v2_Tag_Size() {
+	local File=$1 Bytes
+	local B0 B1 B2 B3
+
+	[ -r "$File" ] || return 1
+	Id3v2_Present "$File" || return 1
+
+	Bytes=$(head -c 10 -- "$File" 2>/dev/null | tail -c 4 | od -An -tu1 | tr -s ' \n' ' ')
+	read -r B0 B1 B2 B3 <<<"$Bytes"
+	[ -n "$B3" ] || return 1
+	printf '%s' $(((B0 << 21) | (B1 << 14) | (B2 << 7) | B3))
+}
+
+# One ID3v2 text frame by 4-character id (v2.2 files take 3-character ids).
+# Id3v2_Field <file> <frame>
+Id3v2_Field() {
+	local File=$1 Frame=$2
+	local Ver TagSize Off End Hdr FSize FID Bytes B0 B1 B2 B3 Data Enc
+
+	[ -r "$File" ] || return 1
+	Id3v2_Present "$File" || return 1
+
+	Ver=$(Id3v2_Major "$File")
+	TagSize=$(Id3v2_Tag_Size "$File") || return 1
+	Off=10
+	End=$((10 + TagSize))
+
+	while [ "$Off" -lt "$End" ]; do
+		if [ "$Ver" = '2' ]; then
+			# v2.2: 3-char frame id, 3-byte big-endian size, no flags
+			FID=$(dd if="$File" bs=1 skip="$Off" count=3 2>/dev/null)
+			[[ "$FID" =~ ^[A-Z0-9]{3}$ ]] || break
+			Bytes=$(dd if="$File" bs=1 skip=$((Off + 3)) count=3 2>/dev/null | od -An -tu1 | tr -s ' \n' ' ')
+			read -r B0 B1 B2 <<<"$Bytes"
+			[ -n "$B2" ] || break
+			FSize=$(((B0 << 16) | (B1 << 8) | B2))
+			Hdr=6
+		else
+			FID=$(dd if="$File" bs=1 skip="$Off" count=4 2>/dev/null)
+			[[ "$FID" =~ ^[A-Z0-9]{4}$ ]] || break
+			Bytes=$(dd if="$File" bs=1 skip=$((Off + 4)) count=4 2>/dev/null | od -An -tu1 | tr -s ' \n' ' ')
+			read -r B0 B1 B2 B3 <<<"$Bytes"
+			[ -n "$B3" ] || break
+			if [ "$Ver" -ge 4 ]; then
+				# v2.4: synchsafe size
+				FSize=$(((B0 << 21) | (B1 << 14) | (B2 << 7) | B3))
+			else
+				# v2.3: plain big-endian size
+				FSize=$(((B0 << 24) | (B1 << 16) | (B2 << 8) | B3))
+			fi
+			Hdr=10
+		fi
+		[ "$FSize" -gt 0 ] 2>/dev/null || break
+
+		if [ "$FID" = "$Frame" ]; then
+			# First payload byte is the text encoding:
+			# 0 = latin-1, 1 = UTF-16 with BOM, 2 = UTF-16BE, 3 = UTF-8
+			Enc=$(dd if="$File" bs=1 skip=$((Off + Hdr)) count=1 2>/dev/null | od -An -tu1 | tr -d ' ')
+			case "$Enc" in
+			1)
+				Data=$(dd if="$File" bs=1 skip=$((Off + Hdr + 1)) count=$((FSize - 1)) 2>/dev/null |
+					iconv -f UTF-16 -t UTF-8 2>/dev/null | tr -d '\0')
+				if [ -z "$Data" ]; then
+					Data=$(dd if="$File" bs=1 skip=$((Off + Hdr + 1)) count=$((FSize - 1)) 2>/dev/null |
+						iconv -f UTF-16LE -t UTF-8 2>/dev/null | tr -d '\0')
+				fi
+				;;
+			2)
+				Data=$(dd if="$File" bs=1 skip=$((Off + Hdr + 1)) count=$((FSize - 1)) 2>/dev/null |
+					iconv -f UTF-16BE -t UTF-8 2>/dev/null | tr -d '\0')
+				;;
+			0)
+				Data=$(dd if="$File" bs=1 skip=$((Off + Hdr + 1)) count=$((FSize - 1)) 2>/dev/null |
+					iconv -f ISO-8859-1 -t UTF-8 2>/dev/null | tr -d '\0')
+				;;
+			*)
+				Data=$(dd if="$File" bs=1 skip=$((Off + Hdr + 1)) count=$((FSize - 1)) 2>/dev/null | tr -d '\0')
+				;;
+			esac
+			Data="${Data%"${Data##*[! ]}"}"
+			[ -n "$Data" ] && printf '%s' "$Data"
+			return $?
+		fi
+
+		Off=$((Off + Hdr + FSize))
+	done
+
+	return 1
+}
+
+# ---------------------------------------------------------------------------
+# Friendly getters - v2 frames, then v1 fields, then exiftool when loaded
+# ---------------------------------------------------------------------------
+
+# One audio tag by friendly name: title artist album year genre track.
+# Id3_Field <file> <field>
+Id3_Field() {
+	local File=$1 Field=${2,,} Frames F Data
+
+	case "$Field" in
+	title) Frames='TIT2 TT2' ;;
+	artist) Frames='TPE1 TP1' ;;
+	album) Frames='TALB TAL' ;;
+	year) Frames='TDRC TYER TYE' ;;
+	genre) Frames='TCON TCO' ;;
+	track) Frames='TRCK TRK' ;;
+	*)
+		return 2
+		;;
+	esac
+
+	for F in $Frames; do
+		Data=$(Id3v2_Field "$File" "$F") && [ -n "$Data" ] && break
+	done
+
+	# ID3v1 fallback (also fixes v2.2 files when the frame walk failed)
+	if [ -z "$Data" ]; then
+		Data=$(Id3v1_Field "$File" "$Field")
+	fi
+
+	# Genre: "(17)" or plain "17" -> genre name
+	if [ "$Field" = 'genre' ] && [ -n "$Data" ]; then
+		if [[ "$Data" == \(*\) ]]; then
+			Data="${Data#*(}"
+			Data="${Data%%)*}"
+		fi
+		if [[ "$Data" =~ ^[0-9]+$ ]]; then
+			Id3v1_Genre_Name "$Data" && return 0
+		fi
+	fi
+
+	[ -n "$Data" ] && printf '%s' "$Data"
+}
+
+# Get_Audio_Title <file>
+Get_Audio_Title() {
+	local T
+
+	T=$(Id3_Field "$1" title) && [ -n "$T" ] && {
+		printf '%s' "$T"
+		return 0
+	}
+	declare -F Exif_Field >/dev/null 2>&1 && Exif_Field "$1" 'Title'
+}
+
+# Get_Audio_Artist <file>
+Get_Audio_Artist() {
+	local T
+
+	T=$(Id3_Field "$1" artist) && [ -n "$T" ] && {
+		printf '%s' "$T"
+		return 0
+	}
+	declare -F Exif_Field >/dev/null 2>&1 && Exif_Field "$1" 'Artist'
+}
+
+# Get_Audio_Album <file>
+Get_Audio_Album() {
+	local T
+
+	T=$(Id3_Field "$1" album) && [ -n "$T" ] && {
+		printf '%s' "$T"
+		return 0
+	}
+	declare -F Exif_Field >/dev/null 2>&1 && Exif_Field "$1" 'Album'
+}
+
+# Get_Audio_Year <file>
+Get_Audio_Year() {
+	local T
+
+	T=$(Id3_Field "$1" year) && [ -n "$T" ] && {
+		printf '%s' "$T"
+		return 0
+	}
+	declare -F Exif_Field >/dev/null 2>&1 && Exif_Field "$1" 'Year'
+}
+
+# Get_Audio_Genre <file>
+Get_Audio_Genre() {
+	local T
+
+	T=$(Id3_Field "$1" genre) && [ -n "$T" ] && {
+		printf '%s' "$T"
+		return 0
+	}
+	declare -F Exif_Field >/dev/null 2>&1 && Exif_Field "$1" 'Genre'
+}
+
+# Get_Audio_Track <file>
+Get_Audio_Track() {
+	local T
+
+	T=$(Id3_Field "$1" track) && [ -n "$T" ] && {
+		printf '%s' "$T"
+		return 0
+	}
+	declare -F Exif_Field >/dev/null 2>&1 && Exif_Field "$1" 'Track'
+}
+
+# Composite directory for audio files: "<Artist>/<Year - Album>", empty
+# levels skipped; components sanitized when Sanitize_Name is loaded.
+# Get_Audio_Tags_Dir <file>
+Get_Audio_Tags_Dir() {
+	local File=$1 A Y Al Sub Out
+
+	A=$(Get_Audio_Artist "$File" 2>/dev/null)
+	Y=$(Get_Audio_Year "$File" 2>/dev/null)
+	Al=$(Get_Audio_Album "$File" 2>/dev/null)
+
+	if [ -n "$Y" ] && [ -n "$Al" ]; then
+		Sub="$Y - $Al"
+	else
+		Sub="${Y}${Al}"
+	fi
+
+	Out="$A"
+	[ -n "$Sub" ] && Out="${Out:+$Out/}$Sub"
+
+	if [ -n "$Out" ] && declare -F Sanitize_Name >/dev/null 2>&1; then
+		local -a Parts
+		local P Result=''
+		IFS='/' read -ra Parts <<<"$Out"
+		for P in "${Parts[@]}"; do
+			P=$(Sanitize_Name "$P")
+			[ -n "$P" ] && Result="${Result:+$Result/}$P"
+		done
+		Out=$Result
+	fi
+
+	[ -n "$Out" ] && printf '%s' "$Out"
+}
+
+# ===========================================================================
 # COMPRESSION MODULE
 # ===========================================================================
 
@@ -4829,7 +5188,7 @@ T() {
 		zh)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' 缺失且其包名未知' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - 自包含的多线程文件整理器' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - 自包含的多线程文件整理器' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '用法: Sort.sh [选项] <文件|目录> ...' ;;
 				'Common starts:') printf '%s' '常用启动示例:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' '使用 --help 查看完整选项列表和动态值。' ;;
@@ -4965,7 +5324,7 @@ T() {
 		hi)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' अनुपस्थित है और उसका पैकेज नाम अज्ञात है' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'उपयोग: Sort.sh [विकल्प] <फ़ाइल|निर्देशिका> ...' ;;
 				'Common starts:') printf '%s' 'सामान्य शुरुआत:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'पूर्ण विकल्प सूची और डायनामिक मानों के लिए --help देखें।' ;;
@@ -5101,7 +5460,7 @@ T() {
 		es)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' falta y su nombre de paquete es desconocido' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - organizador con hilos, autónomo' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - organizador con hilos, autónomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opciones] <archivo|directorio> ...' ;;
 				'Common starts:') printf '%s' 'Inicios comunes:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para la lista completa de opciones y valores dinámicos.' ;;
@@ -5237,7 +5596,7 @@ T() {
 		fr)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps : '\''%s'\'' est absent et son nom de paquet est inconnu' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - organisateur multithread autonome' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - organisateur multithread autonome' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Utilisation : Sort.sh [options] <fichier|répertoire> ...' ;;
 				'Common starts:') printf '%s' 'Démarrages courants :' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Utilisez --help pour la liste complète des options et des valeurs dynamiques.' ;;
@@ -5373,7 +5732,7 @@ T() {
 		ar)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' مفقود واسم حزمته غير معروف' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'الاستخدام: Sort.sh [الخيارات] <ملف|دليل> ...' ;;
 				'Common starts:') printf '%s' 'بدايات شائعة:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'استخدم --help لقائمة الخيارات الكاملة والقيم الديناميكية.' ;;
@@ -5509,7 +5868,7 @@ T() {
 		bn)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' অনুপস্থিত এবং এর প্যাকেজ নাম অজানা' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'ব্যবহার: Sort.sh [বিকল্প] <ফাইল|ডিরেক্টরি> ...' ;;
 				'Common starts:') printf '%s' 'সাধারণ শুরু:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'সম্পূর্ণ বিকল্প তালিকা ও ডায়নামিক মানের জন্য --help দেখুন।' ;;
@@ -5645,7 +6004,7 @@ T() {
 		pt)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' está ausente e seu nome de pacote é desconhecido' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - organizador com threads, autônomo' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - organizador com threads, autônomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opções] <arquivo|diretório> ...' ;;
 				'Common starts:') printf '%s' 'Inícios comuns:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para a lista completa de opções e valores dinâmicos.' ;;
@@ -5781,7 +6140,7 @@ T() {
 		ru)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' отсутствует, и имя его пакета неизвестно' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - автономный многопоточный сортировщик' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - автономный многопоточный сортировщик' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Использование: Sort.sh [параметры] <файл|каталог> ...' ;;
 				'Common starts:') printf '%s' 'Типичные запуски:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Используйте --help для полного списка параметров и динамических значений.' ;;
@@ -5917,7 +6276,7 @@ T() {
 		ur)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غائب ہے اور اس کا پیکج نام نامعلوم ہے' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - خود انحصار ملٹی تھریڈ منتظم' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - خود انحصار ملٹی تھریڈ منتظم' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استعمال: Sort.sh [اختیارات] <فائل|ڈائریکٹری> ...' ;;
 				'Common starts:') printf '%s' 'عام آغاز:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'مکمل آپشن فہرست اور متحرک اقدار کے لیے --help استعمال کریں۔' ;;
@@ -6053,7 +6412,7 @@ T() {
 		id)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' hilang dan nama paketnya tidak diketahui' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - penyusun berkas multithread mandiri' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - penyusun berkas multithread mandiri' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Penggunaan: Sort.sh [opsi] <berkas|direktori> ...' ;;
 				'Common starts:') printf '%s' 'Awalan umum:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Gunakan --help untuk daftar opsi lengkap dan nilai dinamis.' ;;
@@ -6189,7 +6548,7 @@ T() {
 		de)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' fehlt und sein Paketname ist unbekannt' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - eigenständiger Sortierer mit Threads' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - eigenständiger Sortierer mit Threads' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Aufruf: Sort.sh [Optionen] <Datei|Verzeichnis> ...' ;;
 				'Common starts:') printf '%s' 'Häufige Aufrufe:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Verwenden Sie --help für die vollständige Optionsliste und dynamische Werte.' ;;
@@ -6325,7 +6684,7 @@ T() {
 		ja)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' が不足しており、そのパッケージ名は不明です' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - 自己完結型マルチスレッド整理ツール' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - 自己完結型マルチスレッド整理ツール' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '使い方: Sort.sh [オプション] <ファイル|ディレクトリ> ...' ;;
 				'Common starts:') printf '%s' 'よく使う起動例:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'オプション一覧と動的な値は --help をご利用ください。' ;;
@@ -6461,7 +6820,7 @@ T() {
 		tr)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' eksik ve paket adı bilinmiyor' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Kullanım: Sort.sh [seçenekler] <dosya|dizin> ...' ;;
 				'Common starts:') printf '%s' 'Sık kullanılan başlangıçlar:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Tam seçenek listesi ve dinamik değerler için --help kullanın.' ;;
@@ -6597,7 +6956,7 @@ T() {
 		ko)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\''이(가) 없으며 패키지 이름을 알 수 없습니다' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '사용법: Sort.sh [옵션] <파일|디렉터리> ...' ;;
 				'Common starts:') printf '%s' '자주 쓰는 시작 예:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' '전체 옵션 목록과 동적 값은 --help를 사용하세요.' ;;
@@ -6733,7 +7092,7 @@ T() {
 		vi)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' bị thiếu và tên gói của nó không rõ' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - công cụ sắp xếp đa luồng tự chứa' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - công cụ sắp xếp đa luồng tự chứa' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Cách dùng: Sort.sh [tùy chọn] <tệp|thư mục> ...' ;;
 				'Common starts:') printf '%s' 'Khởi động thường dùng:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Dùng --help để xem đầy đủ danh sách tùy chọn và giá trị động.' ;;
@@ -6869,7 +7228,7 @@ T() {
 		it)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' manca e il nome del suo pacchetto è sconosciuto' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - organizzatore multithread autonomo' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - organizzatore multithread autonomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opzioni] <file|directory> ...' ;;
 				'Common starts:') printf '%s' 'Avvii comuni:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Usa --help per l'\''elenco completo delle opzioni e i valori dinamici.' ;;
@@ -7005,7 +7364,7 @@ T() {
 		pl)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' jest brakujące, a nazwa pakietu jest nieznana' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - samodzielny wielowątkowy organizator plików' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - samodzielny wielowątkowy organizator plików' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Użycie: Sort.sh [opcje] <plik|katalog> ...' ;;
 				'Common starts:') printf '%s' 'Częste starty:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Użyj --help, aby zobaczyć pełną listę opcji i wartości dynamiczne.' ;;
@@ -7141,7 +7500,7 @@ T() {
 		nl)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' ontbreekt en de pakketnaam is onbekend' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - zelfstandige multithread bestandsorganisator' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - zelfstandige multithread bestandsorganisator' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Gebruik: Sort.sh [opties] <bestand|map> ...' ;;
 				'Common starts:') printf '%s' 'Veelgebruikte starts:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Gebruik --help voor de volledige optielijst en dynamische waarden.' ;;
@@ -7277,7 +7636,7 @@ T() {
 		fa)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غایب است و نام بسته آن نامعلوم است' ;;
-				'Sort 17.2 - self-contained threaded organizer') printf '%s' 'Sort 17.2 - سازمان‌دهنده چندنخستی خودکفا' ;;
+				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - سازمان‌دهنده چندنخستی خودکفا' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استفاده: Sort.sh [گزینه‌ها] <فایل|پوشه> ...' ;;
 				'Common starts:') printf '%s' 'شروع‌های رایج:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'برای فهرست کامل گزینه‌ها و مقادیر پویا از --help استفاده کنید.' ;;
@@ -7461,7 +7820,7 @@ Lang_List() {
 
 
 Usage() {
-	Print_Header "$(T 'Sort 17.2 - self-contained threaded organizer')"
+	Print_Header "$(T 'Sort 17.3 - self-contained threaded organizer')"
 	Print_Message 'Usage: Sort.sh [options] <file|directory> ...'
 	printf '\n'
 	Print_Message 'Common starts:'
@@ -7480,7 +7839,7 @@ Usage() {
 # ---------------------------------------------------------------------------
 
 Help() {
-	Print_Header "$(T 'Sort 17.2 - self-contained threaded organizer')"
+	Print_Header "$(T 'Sort 17.3 - self-contained threaded organizer')"
 	Print_Message 'Sorts files into a dynamic directory tree built from MIME, dates,'
 	Print_Message 'sizes, media dimensions, checksums and metadata titles.'
 	printf '\n'
@@ -7513,6 +7872,9 @@ Help() {
 	printf '\t%s\n' "$(T '--subdirs=LIST     Directory components beneath the primary')"
 	printf '\t%s\n' "$(T '--rename=VALUE     Generate the filename (without extension)')"
 	printf '\t%s\n' "$(T '--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)')"
+	printf '\t%s\n' "$(T '--extension=lower/upper  Case of the original extension')"
+	printf '\t%s\n' "$(T '--extension=mime-main    Extension from the MIME main type')"
+	printf '\t%s\n' "$(T '--extension=id3-genre    Extension from an audio tag (any id3-* keyword)')"
 	printf '\t%s\n' "$(T '--title            Filename from embedded metadata (PDF /Title,')"
 	printf '\t%s\n' "$(T '                   image EXIF date, audio/video tags)')"
 	printf '\t%s\n' "$(T '--replace          Overwrite existing targets, else unique ~(N) name')"
@@ -7573,11 +7935,18 @@ Help() {
 	printf '\t%s\n' 'exifdate    EXIF capture date as YYYY-MM-DD'
 	printf '\t%s\n' 'title       embedded title (PDF /Title, media tags, EXIF date)'
 	printf '\n'
+	Print_Message 'Audio tags - ID3v1/ID3v2 read in pure bash, exiftool fallback:'
+	printf '\t%s\n' 'id3 / audio   <Artist>/<Year - Album> composite directory'
+	printf '\t%s\n' 'id3-title id3-artist id3-album id3-year id3-genre id3-track'
+	printf '\t%s\n' 'also usable in --rename and --extension, e.g. --rename=id3-artist'
+	printf '\n'
 	Print_Header "$(T 'Examples')" '='
 	printf '\t%s\n' 'Sort.sh --dirs=mime-main --type=image ./Downloads/*'
 	printf '\t%s\n' 'Sort.sh --mode=move --dirs=year+month --title --type=video ~/V'
 	printf '\t%s\n' 'Sort.sh --mode=copy --dirs=year --rename=sha256sum --type=image *.jpg'
 	printf '\t%s\n' 'Sort.sh --mode=trash --recursive --type=audio --pause=1 ~/Music'
+	printf '\t%s\n' 'Sort.sh --mode=move --dirs=id3 --rename=id3-track --extension=lower ~/Music'
+	printf '\t%s\n' 'Sort.sh --mode=copy --subdirs=id3-artist,id3-album --type=audio ~/Music'
 	printf '\n'
 	printf '\n'
 	Print_Header "$(T 'Languages')" '='
@@ -7700,7 +8069,7 @@ Parse_Arguments() {
 			exit 0
 			;;
 		--version)
-			printf 'Sort 17.2\n'
+			printf 'Sort 17.3\n'
 			exit 0
 			;;
 		--lang=*)
@@ -7920,9 +8289,9 @@ Title_Name() {
 		[ -n "$T" ] && printf '%s' "$T" || Get_File_Name "$File"
 		;;
 	audio)
-		A=$(Get_Media_Artist "$File" 2>/dev/null)
-		Al=$(Get_Media_Album "$File" 2>/dev/null)
-		T=$(Get_Media_Title "$File" 2>/dev/null)
+		A=$(Get_Audio_Artist "$File" 2>/dev/null)
+		Al=$(Get_Audio_Album "$File" 2>/dev/null)
+		T=$(Get_Audio_Title "$File" 2>/dev/null)
 		T=$(printf '%s_%s_%s' "${A:-}" "${Al:-}" "${T:-}" | sed 's/_\+/_/g; s/^_//; s/_$//')
 		[ -n "$T" ] && printf '%s' "$T" || Get_File_Name "$File"
 		;;
@@ -8132,6 +8501,14 @@ Resolve_Segment() {
 		Title_Name "$File" "$Main"
 		;;
 
+	# Audio tags (ID3v1 / ID3v2, exiftool fallback)
+	id3 | audio)
+		Get_Audio_Tags_Dir "$File"
+		;;
+	id3-title | id3-artist | id3-album | id3-year | id3-genre | id3-track)
+		Sanitize_Name "$(Id3_Field "$File" "${Key#id3-}")"
+		;;
+
 	# Name helpers (for --rename)
 	long | base)
 		Get_File_Base "$File"
@@ -8267,6 +8644,17 @@ Build_Extension() {
 	mime-sub)
 		printf '.%s' "${Mime#*/}"
 		;;
+	mime-main)
+		printf '.%s' "${Mime%%/*}"
+		;;
+	lower)
+		Ext=$(Get_Compound_Ext "$File") || Ext=$(Get_File_Ext "$File")
+		[ -n "$Ext" ] && printf '.%s' "${Ext,,}"
+		;;
+	upper)
+		Ext=$(Get_Compound_Ext "$File") || Ext=$(Get_File_Ext "$File")
+		[ -n "$Ext" ] && printf '.%s' "${Ext^^}"
+		;;
 	*)
 		Ext=$(Resolve_Segment "$Append" "$File" "$Mime" "${Mime%%/*}")
 		Rc=$?
@@ -8289,12 +8677,12 @@ Build_Extension() {
 Prepare_Optional_Output() {
 	if [ -n "$LogFile" ]; then
 		mkdir -p -- "$(dirname -- "$LogFile")" 2>/dev/null
-		printf '# Sort 17.2 log started at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" >>"$LogFile"
+		printf '# Sort 17.3 log started at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" >>"$LogFile"
 	fi
 	if [ -n "$UndoFile" ]; then
 		{
 			printf '#!/usr/bin/env bash\n'
-			printf '# Undo script generated by Sort 17.2 at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+			printf '# Undo script generated by Sort 17.3 at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')"
 			printf '# Run this script to reverse the copy/move actions.\n'
 		} >"$UndoFile"
 	fi
