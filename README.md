@@ -13,7 +13,7 @@ NB/If you want more options, please give a sign!
 
 ---
 
-# Sort.sh — V17.0, the self-contained edition
+# Sort.sh — V17.1, the self-contained edition
 
 One single file, no external libraries: a comparison with **all 92 lineage
 versions** was made and **every functionality from V1.0–V15.1 is merged in**,
@@ -30,6 +30,7 @@ array through a bounded pool of background jobs (threading).
 - **Metadata**: `--title` (PDF `/Title`, EXIF date, audio/video tags), `--exif` (`<Camera>/<date>` levels), `--strip` (remove EXIF/GPS from targets)
 - **Safety net**: `--log=FILE`, `--undo[=FILE]` (writes a runnable undo script), `--pause=SEC`, `--replace` vs automatic `~(N)` collision names
 - **Threading**: `--jobs=N` (default: nproc)
+- **20 UI languages built in**: `--lang=XX` with `en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa` (default `en`) — the whole interface (help, usage, prompts, errors, summary) is translated in the script itself; bare `--lang` prints the list
 - **Archives**: `--decompress` (extract to a temp dir, sort the contents, then delete the archive — `--trash`/`--shred` apply that fate to it), `--rename=compressed` (name = main dir / single file inside the archive); compound extensions like `.tar.gz`/`.TAR.GZ` count as one extension
 - **Init-system**: missing tools (`identify`, `ffprobe`, `exiftool`, `trash-put`, `7z`, `unrar`, ...) are proposed for install on first use
 
@@ -129,18 +130,18 @@ cd Pictures/Sorted ;
 
 # The version archive
 
-This repository keeps the **complete history of the Sort script** — 95 versions:
+This repository keeps the **complete history of the Sort script** — 96 versions:
 92 reconstructed from content evolution and numbered `V1.0` → `V15.1` (the version labels
 found inside the old files were inconsistent, so they were discarded and re-derived),
-plus the three rewrite editions `V16.0`, `V16.1` and `V17.0`. The last version is always
-the main one: root `Sort.sh` = `V17.0`
+plus the four rewrite editions `V16.0`, `V16.1`, `V17.0` and `V17.1`. The last version is always
+the main one: root `Sort.sh` = `V17.1`
 (see [Sort-Versions.md](Sort-Versions.md) for the full map, sources and reasoning).
 
 ## Layout
 
 ```
-Sort.sh                 <- MAIN script (V17.0, self-contained, all lineage features)
-Sort.pas                <- MAIN FreePascal translation (V17.0 port)
+Sort.sh                 <- MAIN script (V17.1, self-contained, all lineage features, 20 UI languages)
+Sort.pas                <- MAIN FreePascal translation (V17.1 port)
 Sort-Versions.md        <- the full version map: every version, its source, its notes
 FUNCTIONS/              <- legacy helper library sourced by Sort.sh (V15.1)
   get_file.sh           <- get_file_*, built on functions/file + functions/hash
@@ -159,8 +160,12 @@ versions/
     README.md
   ...
   V17.0/
-    Sort-V17.0.sh        <- identical to the root Sort.sh
-    Sort-V17.0.pas       <- identical to the root Sort.pas
+    Sort-V17.0.sh
+    Sort-V17.0.pas
+    README.md
+  V17.1/
+    Sort-V17.1.sh        <- identical to the root Sort.sh
+    Sort-V17.1.pas       <- identical to the root Sort.pas
     README.md
 functions/              <- isolated function library (see functions/README.md)
   system/  ui/  file/  hash/  mime/  imagemagick/  ffmpeg/  exif/
@@ -204,12 +209,12 @@ functions/              <- isolated function library (see functions/README.md)
 | V14.x | 14.0–14.1 | Safe Transport Engine |
 | V15.x | 15.0–15.1 | Modular library era |
 | V16.x | 16.0–16.1 | Rewrite on the `functions/` toolkit (threaded) |
-| V17.x | 17.0 | Self-contained all-features edition (the current main) |
+| V17.x | 17.0–17.1 | Self-contained all-features edition (the current main) |
 
 ## FreePascal translations
 
-**Every version — all 95 plus the main script — is also available as a
-FreePascal program**: root `Sort.pas` (the V17.0 port) and
+**Every version — all 96 plus the main script — is also available as a
+FreePascal program**: root `Sort.pas` (the V17.1 port) and
 `versions/V#.#/Sort-V#.#.pas` for each version.
 
 - Written for **FreePascal 3.2.2**, `{$MODE OBJFPC}{$H+}` — stated in every

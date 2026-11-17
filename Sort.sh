@@ -3,7 +3,7 @@
 ###############################################################################
 #                                                                             #
 # Script  : Sort.sh                                                           #
-# Version : 17.0                                                              #
+# Version : 17.1                                                              #
 # Desc    : Self-contained threaded organizer - all lineage features merged    #
 # Author  : HEjder                                                            #
 #                                                                             #
@@ -133,29 +133,29 @@ Print_Header() {
 
 # Plain message on stdout.
 Print_Message() {
-	printf '%s%s%s\n' "$C_WHITE" "$*" "$C_RESET"
+	printf '%s%s%s\n' "$C_WHITE" "$(T "$*")" "$C_RESET"
 }
 
 # Informational message on stdout (cyan).
 Print_Info() {
-	printf '%s%s%s\n' "$C_CYAN" "$*" "$C_RESET"
+	printf '%s%s%s\n' "$C_CYAN" "$(T "$*")" "$C_RESET"
 }
 
 # Success message on stdout (green).
 Print_Ok() {
-	printf '%s%s%s\n' "$C_GREEN" "$*" "$C_RESET"
+	printf '%s%s%s\n' "$C_GREEN" "$(T "$*")" "$C_RESET"
 }
 
 # Error message on stderr (red, "Error: " prefix). Returns false so it can
 # be used directly as a failure statement.
 Print_Error() {
-	printf '%sError: %s%s\n' "$C_RED" "$*" "$C_RESET" >&2
+	printf '%s%s%s%s\n' "$C_RED" "$(T 'Error: ')" "$*" "$C_RESET" >&2
 	return 1
 }
 
 # Warning message on stderr (yellow, "Warning: " prefix).
 Print_Warning() {
-	printf '%sWarning: %s%s\n' "$C_YELLOW" "$*" "$C_RESET" >&2
+	printf '%s%s%s%s\n' "$C_YELLOW" "$(T 'Warning: ')" "$*" "$C_RESET" >&2
 	return 0
 }
 
@@ -200,18 +200,18 @@ Exit() {
 	# Prevent this EXIT handler from recursively invoking itself when exit runs.
 	trap - EXIT
 
-	printf 'Waiting for background jobs to finish...\n'
+	printf '%s\n' "$(T 'Waiting for background jobs to finish...')"
 	wait
 
 	# Restore the original shell field separator.
 	IFS=$OIFS
 
-	printf 'Finished.\n'
+	printf '%s\n' "$(T 'Finished.')"
 	exit "$Status"
 }
 
 Break() {
-	printf '\nTerminated by user!\n'
+	printf '\n%s\n' "$(T 'Terminated by user!')"
 	Exit 130
 }
 
@@ -348,12 +348,12 @@ Deps_Install() {
 	[ $# -gt 0 ] || return 1
 
 	Installer=$(Deps_Installer) || {
-		printf 'deps: no supported package manager found\n' >&2
+		printf '%s\n' "$(T 'deps: no supported package manager found')" >&2
 		return 1
 	}
 
 	Priv=$(Deps_Priv) || {
-		printf 'deps: no way to gain root (run as root or install sudo)\n' >&2
+		printf '%s\n' "$(T 'deps: no way to gain root (run as root or install sudo)')" >&2
 		return 1
 	}
 
@@ -388,24 +388,24 @@ _Deps_Propose_Install() {
 	[ $# -gt 0 ] || return 1
 
 	if [ "${DEPS_YES:-0}" != "1" ]; then
-		printf 'deps: proposed install: %s\n' "$*" >&2
+		printf '%s\n' "$(Tf 'deps: proposed install: %s' "$*")" >&2
 
 		# Ask for confirmation on a terminal; without one, only DEPS_YES=1 installs.
 		if [ -t 0 ]; then
-			printf 'deps: install now? [y/N] ' >&2
+			printf '%s' "$(T 'deps: install now? [y/N] ')" >&2
 			read -r Answer || Answer=""
 		elif [ -e /dev/tty ]; then
-			printf 'deps: install now? [y/N] ' >&2
+			printf '%s' "$(T 'deps: install now? [y/N] ')" >&2
 			read -r Answer 2>/dev/null </dev/tty || Answer=""
 		else
-			printf 'deps: not installed (set DEPS_YES=1 to install without asking)\n' >&2
+			printf '%s\n' "$(T 'deps: not installed (set DEPS_YES=1 to install without asking)')" >&2
 			return 1
 		fi
 
 		case "$Answer" in
 		y | Y | yes | YES | Yes) ;;
 		*)
-			printf 'deps: skipped\n' >&2
+			printf '%s\n' "$(T 'deps: skipped')" >&2
 			return 1
 			;;
 		esac
@@ -426,7 +426,7 @@ Deps_Ensure() {
 	Deps_Has "$Tool" && return 0
 
 	[ -n "$Package" ] || Package=$(Deps_Package "$Tool") || {
-		printf "deps: '%s' is missing and its package name is unknown\n" "$Tool" >&2
+		printf '%s\n' "$(Tf "deps: '%s' is missing and its package name is unknown" "$Tool")" >&2
 		return 1
 	}
 
@@ -469,7 +469,7 @@ Deps_Init() {
 
 	[ ${#Missing[@]} -gt 0 ] || return 0
 
-	printf 'deps: missing: %s\n' "${Missing[*]}" >&2
+	printf '%s\n' "$(Tf 'deps: missing: %s' "${Missing[*]}")" >&2
 
 	[ ${#Packages[@]} -gt 0 ] || return 1
 
@@ -4761,8 +4761,2653 @@ Targets=() # every single file to treat, collected up front
 # Usage - the short reminder printed when no arguments are given
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# i18n: --lang=XX - 20 built-in UI languages (default: en)
+# ---------------------------------------------------------------------------
+
+Lang='en'
+LANG_CODES='en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa'
+
+# T: translate a static English string according to $Lang.
+T() {
+	[ "$Lang" = "en" ] && { printf '%s' "$1"; return; }
+	case "$Lang" in
+		zh)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' 缺失且其包名未知' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - 自包含的多线程文件整理器' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '用法: Sort.sh [选项] <文件|目录> ...' ;;
+				'Common starts:') printf '%s' '常用启动示例:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' '使用 --help 查看完整选项列表和动态值。' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' '将文件按 MIME 类型、日期、' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' '大小、媒体尺寸、校验和与元数据标题整理到动态目录树中。' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' '重要: remove/delete/trash/shred 作用于计算出的目标(TARGET)' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' '路径,而非源文件。源 = 目标会被拒绝。使用破坏性模式前请' ;;
+				'preview output before using a destructive mode.') printf '%s' '先查看预览输出。' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' '--dirs、--subdirs、--rename 和' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' '--extension 的关键字不区分大小写。未知单词将作为字面名称。列表' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' '用 + 或 , 连接(例如 --dirs=year+month --subdirs=format,size)。' ;;
+				'Date and file times:') printf '%s' '日期和文件时间:' ;;
+				'File identity:') printf '%s' '文件标识:' ;;
+				'Size and media dimensions:') printf '%s' '大小和媒体尺寸:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' '分辨率层级按较大尺寸判定:' ;;
+				'Metadata (needs exiftool):') printf '%s' '元数据(需要 exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' '缺失的工具会在首次使用时提议安装(init-system)。' ;;
+				'Modes') printf '%s' '模式' ;;
+				'Filtering and processing') printf '%s' '过滤和处理' ;;
+				'Destination and naming') printf '%s' '目标和命名' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / 元数据' ;;
+				'Archives') printf '%s' '压缩包' ;;
+				'Output and safety') printf '%s' '输出和安全' ;;
+				'Dynamic values') printf '%s' '动态值' ;;
+				'Examples') printf '%s' '示例' ;;
+				'Summary') printf '%s' '摘要' ;;
+				'Unsupported mode: %s') printf '%s' '不支持的模式: %s' ;;
+				'Invalid --pause value: %s') printf '%s' '无效的 --pause 值: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred 需要 shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' '无法创建目标目录: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' '未知选项: %s (已忽略)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' '不支持的语言: %s (见 --lang)' ;;
+				'Not a file or directory: %s') printf '%s' '不是文件或目录: %s' ;;
+				'Files to treat: %s') printf '%s' '待处理文件: %s' ;;
+				'Decompression too deep: %s') printf '%s' '解压层级过深: %s' ;;
+				'Archive test failed: %s') printf '%s' '压缩包测试失败: %s' ;;
+				'Extract failed: %s') printf '%s' '解压失败: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> 删除压缩包' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' '回收站功能需要 trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' '已解压(%s) + 已移入回收站: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' '已解压(%s) + 已粉碎: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' '已解压(%s) + 已删除: %s' ;;
+				'Trash failed: %s') printf '%s' '移入回收站失败: %s' ;;
+				'Shred failed: %s') printf '%s' '粉碎失败: %s' ;;
+				'Delete failed: %s') printf '%s' '删除失败: %s' ;;
+				'Not a regular file: %s') printf '%s' '不是普通文件: %s' ;;
+				'No MIME type for: %s') printf '%s' '无 MIME 类型: %s' ;;
+				'Type skip (%s): %s') printf '%s' '类型跳过 (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' '无法为以下文件生成名称: %s' ;;
+				'Cannot create: %s') printf '%s' '无法创建: %s' ;;
+				'Same place: %s') printf '%s' '位置相同: %s' ;;
+				'Copy failed: %s') printf '%s' '复制失败: %s' ;;
+				'Move failed: %s') printf '%s' '移动失败: %s' ;;
+				'Remove: target not found: %s') printf '%s' '删除: 未找到目标: %s' ;;
+				'Removed: %s') printf '%s' '已删除: %s' ;;
+				'Remove failed: %s') printf '%s' '删除失败: %s' ;;
+				'Trash: target not found: %s') printf '%s' '回收站: 未找到目标: %s' ;;
+				'Trashed: %s') printf '%s' '已移入回收站: %s' ;;
+				'Shred: target not found: %s') printf '%s' '粉碎: 未找到目标: %s' ;;
+				'Shredded: %s') printf '%s' '已粉碎: %s' ;;
+				'Stripped metadata: %s') printf '%s' '已清除元数据: %s' ;;
+				'Could not strip metadata: %s') printf '%s' '无法清除元数据: %s' ;;
+				'Copied : %s') printf '%s' '已复制 : %s' ;;
+				'Moved  : %s') printf '%s' '已移动  : %s' ;;
+				'Removed: %s') printf '%s' '已删除: %s' ;;
+				'Extracted: %s') printf '%s' '已解压: %s' ;;
+				'Preview: %s') printf '%s' '预览: %s' ;;
+				'Skipped: %s') printf '%s' '已跳过: %s' ;;
+				'Failed : %s') printf '%s' '失败   : %s' ;;
+				'Nothing to treat.') printf '%s' '没有可处理的文件。' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' '正在整理 %s 个文件 - 模式: %s, 线程: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' '等待后台任务完成...' ;;
+				'Finished.') printf '%s' '完成。' ;;
+				'Terminated by user!') printf '%s' '被用户终止!' ;;
+				'deps: missing: %s') printf '%s' 'deps: 缺失: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: 建议安装: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: 现在安装吗? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: 未安装(设置 DEPS_YES=1 可免确认安装)' ;;
+				'deps: skipped') printf '%s' 'deps: 已跳过' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: 未找到受支持的软件包管理器' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: 无法获取 root 权限(请以 root 运行或安装 sudo)' ;;
+				'Error: ') printf '%s' '错误: ' ;;
+				'Warning: ') printf '%s' '警告: ' ;;
+				'unknown camera') printf '%s' '未知相机' ;;
+				'unknown date') printf '%s' '未知日期' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          界面语言 (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             显示语言列表' ;;
+				'Languages') printf '%s' '语言' ;;
+				'Available languages (--lang=XX):') printf '%s' '可用语言 (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(默认)            仅预览 - 打印源 <=> 目标' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             将每个文件复制到其排序后的位置' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             将每个文件移动到其排序后的位置' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           删除计算出的目标(TARGET)路径上的文件' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           --remove 的别名' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            将计算出的目标移入桌面回收站' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            对计算出的目标运行 shred -u -n 1' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       上述任意模式的长格式 (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       仅处理 MIME 类型包含 VALUE 的文件' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image、video、audio、pdf、application 等)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        递归遍历所给目录的全部深度' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           包含隐藏文件和目录' ;;
+				'--links            Include symbolic links') printf '%s' '--links            包含符号链接' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    每个文件处理后等待' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           线程池大小(默认: nproc,最小 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       排序树的基础目录(默认: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        一级目录组件(默认: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     一级目录之下的目录组件' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     生成文件名(不含扩展名)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  生成扩展名 (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            文件名来自内嵌元数据(PDF /Title、' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   图像 EXIF 日期、音频/视频标签)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          覆盖已存在的目标,否则使用唯一的 ~(N) 名称' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             为图像添加 <相机>/<YYYY-MM-DD> 层级' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            复制/移动后清除目标中的 EXIF/GPS 元数据' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       先解压压缩包到临时目录,再整理其中的内容' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (成功后压缩包本身会被删除;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred 会将该处置方式用于压缩包)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressed名称 = 压缩包内的主目录/单个文件' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          强制彩色输出(在 tty 上自动检测)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           --colored 的别名' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            关闭每个文件的详细信息;仅显示摘要' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          显示每个文件的详细信息(默认)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            打印摘要(默认)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         将每个操作追加一行记录到 FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      写入撤销脚本(默认: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            简短提示' ;;
+				'--help             This help') printf '%s' '--help             本帮助' ;;
+				'--version          Print the version') printf '%s' '--version          打印版本' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		hi)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' अनुपस्थित है और उसका पैकेज नाम अज्ञात है' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'उपयोग: Sort.sh [विकल्प] <फ़ाइल|निर्देशिका> ...' ;;
+				'Common starts:') printf '%s' 'सामान्य शुरुआत:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'पूर्ण विकल्प सूची और डायनामिक मानों के लिए --help देखें।' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'फ़ाइलों को MIME, तारीखों, आकारों, मीडिया विमाओं,' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'चेकसम और मेटाडेटा शीर्षकों से बने डायनामिक निर्देशिका वृक्ष में व्यवस्थित करता है।' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'महत्वपूर्ण: remove/delete/trash/shred गणना किए गए TARGET' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'पथ पर काम करते हैं, स्रोत पर नहीं। स्रोत = लक्ष्य अस्वीकृत है। किसी विनाशकारी' ;;
+				'preview output before using a destructive mode.') printf '%s' 'मोड का उपयोग करने से पहले पूर्वावलोकन आउटपुट जाँचें।' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' '--dirs, --subdirs, --rename और --extension के लिए' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'कीवर्ड केस-असंवेदनशील हैं। अज्ञात शब्द शाब्दिक नाम बन जाते हैं। सूचियाँ' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' '+ या , से जुड़ती हैं (जैसे --dirs=year+month --subdirs=format,size)।' ;;
+				'Date and file times:') printf '%s' 'तारीख और फ़ाइल समय:' ;;
+				'File identity:') printf '%s' 'फ़ाइल पहचान:' ;;
+				'Size and media dimensions:') printf '%s' 'आकार और मीडिया विमाएँ:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'रिज़ॉल्यूशन स्तर बड़े विम से तय होता है:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'मेटाडेटा (exiftool आवश्यक):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'अनुपस्थित टूल पहली बार उपयोग पर इंस्टॉल के लिए प्रस्तावित होते हैं (init-system)।' ;;
+				'Modes') printf '%s' 'मोड' ;;
+				'Filtering and processing') printf '%s' 'फ़िल्टरिंग और प्रोसेसिंग' ;;
+				'Destination and naming') printf '%s' 'गंतव्य और नामकरण' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / मेटाडेटा' ;;
+				'Archives') printf '%s' 'संग्रह' ;;
+				'Output and safety') printf '%s' 'आउटपुट और सुरक्षा' ;;
+				'Dynamic values') printf '%s' 'डायनामिक मान' ;;
+				'Examples') printf '%s' 'उदाहरण' ;;
+				'Summary') printf '%s' 'सारांश' ;;
+				'Unsupported mode: %s') printf '%s' 'असमर्थित मोड: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'अमान्य --pause मान: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred के लिए shred (coreutils) आवश्यक है' ;;
+				'Cannot create target directory: %s') printf '%s' 'लक्ष्य निर्देशिका नहीं बनाई जा सकी: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'अज्ञात विकल्प: %s (नज़रअंदाज़ किया)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'असमर्थित भाषा: %s (--lang देखें)' ;;
+				'Not a file or directory: %s') printf '%s' 'फ़ाइल या निर्देशिका नहीं: %s' ;;
+				'Files to treat: %s') printf '%s' 'संभाली जाने वाली फ़ाइलें: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'डीकंप्रेशन बहुत गहरा: %s' ;;
+				'Archive test failed: %s') printf '%s' 'संग्रह परीक्षण विफल: %s' ;;
+				'Extract failed: %s') printf '%s' 'निकासना विफल: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> संग्रह हटाएँ' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'ट्रैश के लिए trash-put (trash-cli) आवश्यक है' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'निकाला(%s) + ट्रैश किया: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'निकाला(%s) + श्रेड किया: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'निकाला(%s) + हटाया: %s' ;;
+				'Trash failed: %s') printf '%s' 'ट्रैश विफल: %s' ;;
+				'Shred failed: %s') printf '%s' 'श्रेड विफल: %s' ;;
+				'Delete failed: %s') printf '%s' 'हटाना विफल: %s' ;;
+				'Not a regular file: %s') printf '%s' 'सामान्य फ़ाइल नहीं: %s' ;;
+				'No MIME type for: %s') printf '%s' 'कोई MIME प्रकार नहीं: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'प्रकार छोड़ा (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'नाम नहीं बना सकते: %s' ;;
+				'Cannot create: %s') printf '%s' 'नहीं बना सकते: %s' ;;
+				'Same place: %s') printf '%s' 'वही स्थान: %s' ;;
+				'Copy failed: %s') printf '%s' 'कॉपी विफल: %s' ;;
+				'Move failed: %s') printf '%s' 'मूव विफल: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'हटाना: लक्ष्य नहीं मिला: %s' ;;
+				'Removed: %s') printf '%s' 'हटाया गया: %s' ;;
+				'Remove failed: %s') printf '%s' 'हटाना विफल: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'ट्रैश: लक्ष्य नहीं मिला: %s' ;;
+				'Trashed: %s') printf '%s' 'ट्रैश किया: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'श्रेड: लक्ष्य नहीं मिला: %s' ;;
+				'Shredded: %s') printf '%s' 'श्रेड किया: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'मेटाडेटा हटाया: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'मेटाडेटा नहीं हटा सके: %s' ;;
+				'Copied : %s') printf '%s' 'कॉपी : %s' ;;
+				'Moved  : %s') printf '%s' 'मूव  : %s' ;;
+				'Removed: %s') printf '%s' 'हटाए: %s' ;;
+				'Extracted: %s') printf '%s' 'निकाले: %s' ;;
+				'Preview: %s') printf '%s' 'पूर्वावलोकन: %s' ;;
+				'Skipped: %s') printf '%s' 'छोड़े: %s' ;;
+				'Failed : %s') printf '%s' 'विफल : %s' ;;
+				'Nothing to treat.') printf '%s' 'संभालने के लिए कुछ नहीं।' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' '%s फ़ाइल(ें) क्रमबद्ध हो रही हैं - मोड: %s, थ्रेड: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'पृष्ठभूमि कार्यों का इंतज़ार...' ;;
+				'Finished.') printf '%s' 'समाप्त।' ;;
+				'Terminated by user!') printf '%s' 'उपयोगकर्ता द्वारा रोका गया!' ;;
+				'deps: missing: %s') printf '%s' 'deps: अनुपस्थित: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: इंस्टॉल प्रस्ताव: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: अभी इंस्टॉल करें? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: इंस्टॉल नहीं हुआ (बिना पूछे इंस्टॉल के लिए DEPS_YES=1 सेट करें)' ;;
+				'deps: skipped') printf '%s' 'deps: छोड़ा गया' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: कोई समर्थित पैकेज मैनेजर नहीं मिला' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: root प्राप्त करने का कोई तरीका नहीं (root के रूप में चलाएँ या sudo इंस्टॉल करें)' ;;
+				'Error: ') printf '%s' 'त्रुटि: ' ;;
+				'Warning: ') printf '%s' 'चेतावनी: ' ;;
+				'unknown camera') printf '%s' 'अज्ञात कैमरा' ;;
+				'unknown date') printf '%s' 'अज्ञात तारीख' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          UI भाषा (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             भाषा सूची दिखाएँ' ;;
+				'Languages') printf '%s' 'भाषाएँ' ;;
+				'Available languages (--lang=XX):') printf '%s' 'उपलब्ध भाषाएँ (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(डिफ़ॉल्ट)         केवल पूर्वावलोकन - स्रोत <=> लक्ष्य प्रिंट करें' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             हर फ़ाइल को उसके क्रमबद्ध स्थान पर कॉपी करें' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             हर फ़ाइल को उसके क्रमबद्ध स्थान पर ले जाएँ' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           गणना किए गए TARGET पथ की फ़ाइल हटाएँ' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           --remove का उपनाम' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            गणना किए गए लक्ष्य को डेस्कटॉप ट्रैश में भेजें' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            गणना किए गए लक्ष्य पर shred -u -n 1 चलाएँ' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       ऊपर के किसी भी मोड का लंबा रूप (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       केवल वे फ़ाइलें जिनके MIME प्रकार में VALUE है' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        दी गई निर्देशिकाओं को पूरी गहराई तक चलें' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           छिपी फ़ाइलें और निर्देशिकाएँ शामिल करें' ;;
+				'--links            Include symbolic links') printf '%s' '--links            प्रतीकात्मक लिंक शामिल करें' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    हर फ़ाइल के बाद प्रतीक्षा करें' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           थ्रेड पूल आकार (डिफ़ॉल्ट: nproc, न्यूनतम 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       क्रमबद्ध वृक्ष की आधार निर्देशिका (डिफ़ॉल्ट: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        प्राथमिक निर्देशिका घटक (डिफ़ॉल्ट: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     प्राथमिक के नीचे के निर्देशिका घटक' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     फ़ाइलनाम बनाएँ (बिना एक्सटेंशन)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  एक्सटेंशन बनाएँ (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            फ़ाइलनाम अंतर्निहित मेटाडेटा से (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   छवि EXIF तारीख, ऑडियो/वीडियो टैग)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          मौजूदा लक्ष्यों पर लिखें, अन्यथा अद्वितीय ~(N) नाम' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             छवियों के लिए <कैमरा>/<YYYY-MM-DD> स्तर जोड़ें' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            कॉपी/मूव के बाद लक्ष्यों से EXIF/GPS मेटाडेटा हटाएँ' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       संग्रहों को अस्थायी निर्देशिका में निकालें और सामग्री क्रमबद्ध करें' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (सफलता पर संग्रह स्वयं हटा दिया जाता है;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred वही नियति संग्रह पर लागू करते हैं)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedनाम = संग्रह के अंदर मुख्य निर्देशिका / एकल फ़ाइल' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          रंगीन आउटपुट बाध्य करें (tty पर स्वतः पहचाना गया)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           --colored का उपनाम' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            प्रति-फ़ाइल विवरण बंद; केवल सारांश' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          प्रति-फ़ाइल विवरण चालू (डिफ़ॉल्ट)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            सारांश प्रिंट करें (डिफ़ॉल्ट)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         हर क्रिया की एक पंक्ति FILE में जोड़ें' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      पूर्ववत स्क्रिप्ट लिखें (डिफ़ॉल्ट: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            संक्षिप्त अनुस्मारक' ;;
+				'--help             This help') printf '%s' '--help             यह सहायता' ;;
+				'--version          Print the version') printf '%s' '--version          संस्करण प्रिंट करें' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		es)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' falta y su nombre de paquete es desconocido' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - organizador con hilos, autónomo' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opciones] <archivo|directorio> ...' ;;
+				'Common starts:') printf '%s' 'Inicios comunes:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para la lista completa de opciones y valores dinámicos.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Clasifica archivos en un árbol de directorios dinámico construido a partir' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'de MIME, fechas, tamaños, dimensiones de medios, sumas y títulos.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'IMPORTANTE: remove/delete/trash/shred actúan sobre la ruta TARGET' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'calculada, no sobre el origen. Origen = destino se rechaza. Revise' ;;
+				'preview output before using a destructive mode.') printf '%s' 'la vista previa antes de usar un modo destructivo.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'Palabras clave insensibles a mayúsculas para --dirs, --subdirs, --rename' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'y --extension. Las palabras desconocidas se vuelven nombres literales.' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'Las listas se unen con + o , (p. ej. --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Fechas y tiempos del archivo:' ;;
+				'File identity:') printf '%s' 'Identidad del archivo:' ;;
+				'Size and media dimensions:') printf '%s' 'Tamaño y dimensiones de medios:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'Los niveles de resolución usan la dimensión mayor:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Metadatos (requiere exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Las herramientas faltantes se proponen para instalar en el primer uso (init-system).' ;;
+				'Modes') printf '%s' 'Modos' ;;
+				'Filtering and processing') printf '%s' 'Filtrado y procesamiento' ;;
+				'Destination and naming') printf '%s' 'Destino y nombres' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / metadatos' ;;
+				'Archives') printf '%s' 'Archivos comprimidos' ;;
+				'Output and safety') printf '%s' 'Salida y seguridad' ;;
+				'Dynamic values') printf '%s' 'Valores dinámicos' ;;
+				'Examples') printf '%s' 'Ejemplos' ;;
+				'Summary') printf '%s' 'Resumen' ;;
+				'Unsupported mode: %s') printf '%s' 'Modo no admitido: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Valor de --pause no válido: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred requiere shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'No se puede crear el directorio destino: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Opción desconocida: %s (ignorada)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Idioma no admitido: %s (vea --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'No es archivo ni directorio: %s' ;;
+				'Files to treat: %s') printf '%s' 'Archivos a tratar: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Descompresión demasiado profunda: %s' ;;
+				'Archive test failed: %s') printf '%s' 'Prueba del archivo fallida: %s' ;;
+				'Extract failed: %s') printf '%s' 'Extracción fallida: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> borrar el archivo' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'La papelera necesita trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Extraído(%s) + a la papelera: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Extraído(%s) + destruido: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Extraído(%s) + borrado: %s' ;;
+				'Trash failed: %s') printf '%s' 'Papelera fallida: %s' ;;
+				'Shred failed: %s') printf '%s' 'Destrucción fallida: %s' ;;
+				'Delete failed: %s') printf '%s' 'Borrado fallido: %s' ;;
+				'Not a regular file: %s') printf '%s' 'No es un archivo regular: %s' ;;
+				'No MIME type for: %s') printf '%s' 'Sin tipo MIME para: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Tipo omitido (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'No se puede construir un nombre para: %s' ;;
+				'Cannot create: %s') printf '%s' 'No se puede crear: %s' ;;
+				'Same place: %s') printf '%s' 'Mismo lugar: %s' ;;
+				'Copy failed: %s') printf '%s' 'Copia fallida: %s' ;;
+				'Move failed: %s') printf '%s' 'Movimiento fallido: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: destino no encontrado: %s' ;;
+				'Removed: %s') printf '%s' 'Eliminado: %s' ;;
+				'Remove failed: %s') printf '%s' 'Eliminación fallida: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: destino no encontrado: %s' ;;
+				'Trashed: %s') printf '%s' 'A la papelera: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: destino no encontrado: %s' ;;
+				'Shredded: %s') printf '%s' 'Destruido: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Metadatos eliminados: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'No se pudieron eliminar los metadatos: %s' ;;
+				'Copied : %s') printf '%s' 'Copiados : %s' ;;
+				'Moved  : %s') printf '%s' 'Movidos  : %s' ;;
+				'Removed: %s') printf '%s' 'Eliminados: %s' ;;
+				'Extracted: %s') printf '%s' 'Extraídos: %s' ;;
+				'Preview: %s') printf '%s' 'Vista previa: %s' ;;
+				'Skipped: %s') printf '%s' 'Omitidos: %s' ;;
+				'Failed : %s') printf '%s' 'Fallidos : %s' ;;
+				'Nothing to treat.') printf '%s' 'Nada que tratar.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'Clasificando %s archivo(s) - modo: %s, hilos: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'Esperando a que terminen los trabajos en segundo plano...' ;;
+				'Finished.') printf '%s' 'Terminado.' ;;
+				'Terminated by user!') printf '%s' '¡Interrumpido por el usuario!' ;;
+				'deps: missing: %s') printf '%s' 'deps: faltan: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: instalación propuesta: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: ¿instalar ahora? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: no instalado (fije DEPS_YES=1 para instalar sin preguntar)' ;;
+				'deps: skipped') printf '%s' 'deps: omitido' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: no se encontró un gestor de paquetes admitido' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: sin forma de obtener root (ejecute como root o instale sudo)' ;;
+				'Error: ') printf '%s' 'Error: ' ;;
+				'Warning: ') printf '%s' 'Advertencia: ' ;;
+				'unknown camera') printf '%s' 'cámara desconocida' ;;
+				'unknown date') printf '%s' 'fecha desconocida' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Idioma de la interfaz (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             Muestra la lista de idiomas' ;;
+				'Languages') printf '%s' 'Idiomas' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Idiomas disponibles (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(predeterminado)   Solo vista previa - imprime origen <=> destino' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Copia cada archivo a su ubicación clasificada' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Mueve cada archivo a su ubicación clasificada' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Elimina el archivo en la ruta TARGET calculada' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           Alias de --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Envía el destino calculado a la papelera del escritorio' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Ejecuta shred -u -n 1 sobre el destino calculado' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Forma larga de cualquier modo de arriba (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Solo archivos cuyo tipo MIME contenga VALUE' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Recorre los directorios dados a profundidad completa' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Incluye archivos y directorios ocultos' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Incluye enlaces simbólicos' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Espera tras cada archivo' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           Tamaño del grupo de hilos (predeterminado: nproc, mín 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Directorio base del árbol clasificado (predeterminado: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Componentes de directorio primarios (predeterminado: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Componentes de directorio bajo el primario' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Genera el nombre de archivo (sin extensión)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Genera la extensión (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Nombre desde metadatos incrustados (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   fecha EXIF de imagen, etiquetas de audio/vídeo)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Sobrescribe destinos existentes, si no nombre único ~(N)' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Añade niveles <Cámara>/<YYYY-MM-DD> para imágenes' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            Elimina metadatos EXIF/GPS de los destinos tras copiar/mover' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Extrae archivos comprimidos a un dir temporal y clasifica el contenido' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (el propio archivo se borra tras el éxito;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred aplican ese destino al comprimido)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedNombre = dir principal / archivo único dentro del comprimido' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Fuerza salida con color (autodetectado en una tty)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           Alias de --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Detalles por archivo desactivados; solo resumen' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Detalles por archivo activados (predeterminado)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            Imprime el resumen (predeterminado)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Añade una línea por acción a FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Escribe un script de deshacer (predeterminado: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Recordatorio breve' ;;
+				'--help             This help') printf '%s' '--help             Esta ayuda' ;;
+				'--version          Print the version') printf '%s' '--version          Imprime la versión' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		fr)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps : '\''%s'\'' est absent et son nom de paquet est inconnu' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - organisateur multithread autonome' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Utilisation : Sort.sh [options] <fichier|répertoire> ...' ;;
+				'Common starts:') printf '%s' 'Démarrages courants :' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Utilisez --help pour la liste complète des options et des valeurs dynamiques.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Classe les fichiers dans une arborescence dynamique construite à partir' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'du MIME, des dates, tailles, dimensions média, sommes et titres.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'IMPORTANT : remove/delete/trash/shred agissent sur le chemin TARGET' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'calculé, pas sur la source. Source = cible est refusé. Vérifiez' ;;
+				'preview output before using a destructive mode.') printf '%s' 'la prévisualisation avant d’utiliser un mode destructif.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'Mots-clés insensibles à la casse pour --dirs, --subdirs, --rename et' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' '--extension. Les mots inconnus deviennent des noms littéraux. Les listes' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'sont jointes par + ou , (ex. --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Dates et temps du fichier :' ;;
+				'File identity:') printf '%s' 'Identité du fichier :' ;;
+				'Size and media dimensions:') printf '%s' 'Taille et dimensions média :' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'Les paliers de résolution utilisent la plus grande dimension :' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Métadonnées (nécessite exiftool) :' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Les outils manquants sont proposés à l’installation au premier usage (init-system).' ;;
+				'Modes') printf '%s' 'Modes' ;;
+				'Filtering and processing') printf '%s' 'Filtrage et traitement' ;;
+				'Destination and naming') printf '%s' 'Destination et nommage' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / métadonnées' ;;
+				'Archives') printf '%s' 'Archives' ;;
+				'Output and safety') printf '%s' 'Sortie et sécurité' ;;
+				'Dynamic values') printf '%s' 'Valeurs dynamiques' ;;
+				'Examples') printf '%s' 'Exemples' ;;
+				'Summary') printf '%s' 'Résumé' ;;
+				'Unsupported mode: %s') printf '%s' 'Mode non pris en charge : %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Valeur --pause invalide : %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred requiert shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'Impossible de créer le répertoire cible : %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Option inconnue : %s (ignorée)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Langue non prise en charge : %s (voir --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'Ni fichier ni répertoire : %s' ;;
+				'Files to treat: %s') printf '%s' 'Fichiers à traiter : %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Décompression trop profonde : %s' ;;
+				'Archive test failed: %s') printf '%s' 'Test de l’archive échoué : %s' ;;
+				'Extract failed: %s') printf '%s' 'Extraction échouée : %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s) : %s <=> supprimer l’archive' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'La corbeille requiert trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Extrait(%s) + mis à la corbeille : %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Extrait(%s) + broyé : %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Extrait(%s) + supprimé : %s' ;;
+				'Trash failed: %s') printf '%s' 'Échec de la corbeille : %s' ;;
+				'Shred failed: %s') printf '%s' 'Échec du broyage : %s' ;;
+				'Delete failed: %s') printf '%s' 'Échec de la suppression : %s' ;;
+				'Not a regular file: %s') printf '%s' 'Pas un fichier régulier : %s' ;;
+				'No MIME type for: %s') printf '%s' 'Aucun type MIME pour : %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Type ignoré (%s) : %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF : %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'Impossible de construire un nom pour : %s' ;;
+				'Cannot create: %s') printf '%s' 'Impossible de créer : %s' ;;
+				'Same place: %s') printf '%s' 'Même emplacement : %s' ;;
+				'Copy failed: %s') printf '%s' 'Échec de la copie : %s' ;;
+				'Move failed: %s') printf '%s' 'Échec du déplacement : %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove : cible introuvable : %s' ;;
+				'Removed: %s') printf '%s' 'Supprimé : %s' ;;
+				'Remove failed: %s') printf '%s' 'Échec de la suppression : %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash : cible introuvable : %s' ;;
+				'Trashed: %s') printf '%s' 'Mis à la corbeille : %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred : cible introuvable : %s' ;;
+				'Shredded: %s') printf '%s' 'Broyé : %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Métadonnées supprimées : %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'Impossible de supprimer les métadonnées : %s' ;;
+				'Copied : %s') printf '%s' 'Copiés : %s' ;;
+				'Moved  : %s') printf '%s' 'Déplacés : %s' ;;
+				'Removed: %s') printf '%s' 'Supprimés : %s' ;;
+				'Extracted: %s') printf '%s' 'Extraits : %s' ;;
+				'Preview: %s') printf '%s' 'Aperçus : %s' ;;
+				'Skipped: %s') printf '%s' 'Ignorés : %s' ;;
+				'Failed : %s') printf '%s' 'Échoués : %s' ;;
+				'Nothing to treat.') printf '%s' 'Rien à traiter.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'Classement de %s fichier(s) - mode : %s, threads : %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'En attente de la fin des tâches de fond...' ;;
+				'Finished.') printf '%s' 'Terminé.' ;;
+				'Terminated by user!') printf '%s' 'Interrompu par l’utilisateur !' ;;
+				'deps: missing: %s') printf '%s' 'deps : manquants : %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps : installation proposée : %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps : installer maintenant ? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps : non installé (fixez DEPS_YES=1 pour installer sans demander)' ;;
+				'deps: skipped') printf '%s' 'deps : ignoré' ;;
+				'deps: no supported package manager found') printf '%s' 'deps : aucun gestionnaire de paquets pris en charge' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps : aucun moyen d’obtenir root (lancez en root ou installez sudo)' ;;
+				'Error: ') printf '%s' 'Erreur : ' ;;
+				'Warning: ') printf '%s' 'Avertissement : ' ;;
+				'unknown camera') printf '%s' 'appareil inconnu' ;;
+				'unknown date') printf '%s' 'date inconnue' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Langue de l’interface (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             Affiche la liste des langues' ;;
+				'Languages') printf '%s' 'Langues' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Langues disponibles (--lang=XX) :' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(défaut)           Aperçu seul - affiche source <=> cible' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Copie chaque fichier vers son emplacement classé' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Déplace chaque fichier vers son emplacement classé' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Supprime le fichier au chemin TARGET calculé' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           Alias de --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Envoie la cible calculée à la corbeille du bureau' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Exécute shred -u -n 1 sur la cible calculée' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Forme longue de tout mode ci-dessus (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Seulement les fichiers dont le type MIME contient VALUE' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Parcourt les répertoires fournis sur toute la profondeur' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Inclut les fichiers et répertoires cachés' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Inclut les liens symboliques' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Attend après chaque fichier' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           Taille du pool de threads (défaut : nproc, min 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Répertoire de base de l’arbre classé (défaut : .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Composants de répertoire primaires (défaut : mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Composants de répertoire sous le primaire' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Génère le nom de fichier (sans extension)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Génère l’extension (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Nom depuis les métadonnées incrustées (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   date EXIF d’image, tags audio/vidéo)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Écrase les cibles existantes, sinon nom unique ~(N)' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Ajoute des niveaux <Appareil>/<AAAA-MM-JJ> pour les images' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            Supprime les métadonnées EXIF/GPS des cibles après copie/déplacement' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Extrait les archives vers un répertoire temporaire et classe le contenu' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (l’archive elle-même est supprimée après succès;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred appliquent ce sort à l’archive)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedNom = répertoire principal / fichier unique dans l’archive' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Force la sortie colorée (autodétectée sur un tty)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           Alias de --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Détails par fichier désactivés ; résumé seul' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Détails par fichier activés (défaut)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            Affiche le résumé (défaut)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Ajoute une ligne par action à FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Écrit un script d’annulation (défaut : sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Rappel court' ;;
+				'--help             This help') printf '%s' '--help             Cette aide' ;;
+				'--version          Print the version') printf '%s' '--version          Affiche la version' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		ar)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' مفقود واسم حزمته غير معروف' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'الاستخدام: Sort.sh [الخيارات] <ملف|دليل> ...' ;;
+				'Common starts:') printf '%s' 'بدايات شائعة:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'استخدم --help لقائمة الخيارات الكاملة والقيم الديناميكية.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'يرتِّب الملفات في شجرة أدلة ديناميكية مبنية من MIME والتواريخ' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'والأحجام وأبعاد الوسائط والمجاميع الاختبارية وعناوين البيانات الوصفية.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'مهم: remove/delete/trash/shred تعمل على مسار الهدف TARGET' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'المحسوب، وليس على المصدر. المصدر = الهدف مرفوض. راجع مخرجات' ;;
+				'preview output before using a destructive mode.') printf '%s' 'المعاينة قبل استخدام وضع مدمر.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'الكلمات المفتاحية لـ --dirs و--subdirs و--rename و' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' '--extension غير حساسة لحالة الأحرف. الكلمات المجهولة تصبح أسماء حرفية.' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'تُربط القوائم بـ + أو ، (مثال: --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'التواريخ وأوقات الملف:' ;;
+				'File identity:') printf '%s' 'هوية الملف:' ;;
+				'Size and media dimensions:') printf '%s' 'الحجم وأبعاد الوسائط:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'تُحدَّد فئات الدقة بالبعد الأكبر:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'البيانات الوصفية (تحتاج exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'تُقترح الأدوات الناقصة للتثبيت عند أول استخدام (init-system).' ;;
+				'Modes') printf '%s' 'الأوضاع' ;;
+				'Filtering and processing') printf '%s' 'التصفية والمعالجة' ;;
+				'Destination and naming') printf '%s' 'الوجهة والتسمية' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / البيانات الوصفية' ;;
+				'Archives') printf '%s' 'الأرشيفات' ;;
+				'Output and safety') printf '%s' 'المخرجات والسلامة' ;;
+				'Dynamic values') printf '%s' 'القيم الديناميكية' ;;
+				'Examples') printf '%s' 'أمثلة' ;;
+				'Summary') printf '%s' 'الملخص' ;;
+				'Unsupported mode: %s') printf '%s' 'وضع غير مدعوم: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'قيمة --pause غير صالحة: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred يتطلب shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'تعذّر إنشاء دليل الوجهة: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'خيار مجهول: %s (تم تجاهله)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'لغة غير مدعومة: %s (انظر --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'ليس ملفًا ولا دليلًا: %s' ;;
+				'Files to treat: %s') printf '%s' 'الملفات المطلوب معالجتها: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'فك الضغط عميق جدًا: %s' ;;
+				'Archive test failed: %s') printf '%s' 'فشل اختبار الأرشيف: %s' ;;
+				'Extract failed: %s') printf '%s' 'فشل الاستخراج: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> حذف الأرشيف' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'السلة تحتاج trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'استُخرج(%s) + أُلقي في السلة: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'استُخرج(%s) + مُزِّق: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'استُخرج(%s) + حُذف: %s' ;;
+				'Trash failed: %s') printf '%s' 'فشل الإلقاء في السلة: %s' ;;
+				'Shred failed: %s') printf '%s' 'فشل التمزيق: %s' ;;
+				'Delete failed: %s') printf '%s' 'فشل الحذف: %s' ;;
+				'Not a regular file: %s') printf '%s' 'ليس ملفًا عاديًا: %s' ;;
+				'No MIME type for: %s') printf '%s' 'لا يوجد نوع MIME لـ: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'تخطي النوع (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'تعذّر بناء اسم لـ: %s' ;;
+				'Cannot create: %s') printf '%s' 'تعذّر الإنشاء: %s' ;;
+				'Same place: %s') printf '%s' 'نفس المكان: %s' ;;
+				'Copy failed: %s') printf '%s' 'فشل النسخ: %s' ;;
+				'Move failed: %s') printf '%s' 'فشل النقل: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'حذف: الهدف غير موجود: %s' ;;
+				'Removed: %s') printf '%s' 'حُذف: %s' ;;
+				'Remove failed: %s') printf '%s' 'فشل الحذف: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'سلة: الهدف غير موجود: %s' ;;
+				'Trashed: %s') printf '%s' 'أُلقي في السلة: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'تمزيق: الهدف غير موجود: %s' ;;
+				'Shredded: %s') printf '%s' 'مُزِّق: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'أُزيلت البيانات الوصفية: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'تعذّرت إزالة البيانات الوصفية: %s' ;;
+				'Copied : %s') printf '%s' 'منسوخ : %s' ;;
+				'Moved  : %s') printf '%s' 'منقول  : %s' ;;
+				'Removed: %s') printf '%s' 'محذوف: %s' ;;
+				'Extracted: %s') printf '%s' 'مستخرج: %s' ;;
+				'Preview: %s') printf '%s' 'معاينة: %s' ;;
+				'Skipped: %s') printf '%s' 'متخطى: %s' ;;
+				'Failed : %s') printf '%s' 'فاشل : %s' ;;
+				'Nothing to treat.') printf '%s' 'لا شيء للمعالجة.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'ترتيب %s ملف - الوضع: %s، الخيوط: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'في انتظار انتهاء المهام الخلفية...' ;;
+				'Finished.') printf '%s' 'انتهى.' ;;
+				'Terminated by user!') printf '%s' 'أوقفه المستخدم!' ;;
+				'deps: missing: %s') printf '%s' 'deps: ناقص: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: تثبيت مقترح: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: التثبيت الآن؟ [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: لم يُثبَّت (اضبط DEPS_YES=1 للتثبيت دون سؤال)' ;;
+				'deps: skipped') printf '%s' 'deps: تم التخطي' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: لم يُعثر على مدير حزم مدعوم' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: لا طريقة للحصول على root (شغِّل كـ root أو ثبِّت sudo)' ;;
+				'Error: ') printf '%s' 'خطأ: ' ;;
+				'Warning: ') printf '%s' 'تحذير: ' ;;
+				'unknown camera') printf '%s' 'كاميرا مجهولة' ;;
+				'unknown date') printf '%s' 'تاريخ مجهول' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          لغة الواجهة (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             اطبع قائمة اللغات' ;;
+				'Languages') printf '%s' 'اللغات' ;;
+				'Available languages (--lang=XX):') printf '%s' 'اللغات المتاحة (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(افتراضي)          معاينة فقط - يطبع المصدر <=> الهدف' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             ينسخ كل ملف إلى موقعه المرتَّب' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             ينقل كل ملف إلى موقعه المرتَّب' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           يحذف الملف في مسار الهدف TARGET المحسوب' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           بديل لـ --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            يرسل الهدف المحسوب إلى سلة سطح المكتب' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            يشغّل shred -u -n 1 على الهدف المحسوب' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       الصيغة الطويلة لأي وضع أعلاه (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       فقط الملفات التي يحتوي نوع MIME فيها على VALUE' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image، video، audio، pdf، application، ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        يجول الأدلة المعطاة بعمق كامل' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           يشمل الملفات والأدلة المخفية' ;;
+				'--links            Include symbolic links') printf '%s' '--links            يشمل الروابط الرمزية' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    ينتظر بعد كل ملف' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           حجم مجموعة الخيوط (افتراضي: nproc، أدنى 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       الدليل الأساسي لشجرة الترتيب (افتراضي: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        مكوّنات الدليل الأولية (افتراضي: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     مكوّنات الدليل تحت الأولية' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     يولّد اسم الملف (بدون امتداد)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  يولّد الامتداد (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            الاسم من البيانات الوصفية المدمجة (PDF /Title،' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   تاريخ EXIF للصورة، وسوم الصوت/الفيديو)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          يستبدل الأهداف الموجودة، وإلا اسم فريد ~(N)' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             يضيف مستويات <الكاميرا>/<YYYY-MM-DD> للصور' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            يزيل بيانات EXIF/GPS الوصفية من الأهداف بعد النسخ/النقل' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       يستخرج الأرشيفات إلى دليل مؤقت ويرتِّب المحتويات' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (يُحذف الأرشيف نفسه بعد النجاح؛' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred تطبقان ذلك المصير على الأرشيف)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedالاسم = الدليل الرئيس / الملف الوحيد داخل الأرشيف' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          يجبر المخرجات الملونة (تُكتشف تلقائيًا على tty)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           بديل لـ --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            إيقاف تفاصيل كل ملف؛ الملخص فقط' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          تشغيل تفاصيل كل ملف (افتراضي)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            يطبع الملخص (افتراضي)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         يضيف سطرًا لكل عملية إلى FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      يكتب سكربت تراجع (افتراضي: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            تذكير قصير' ;;
+				'--help             This help') printf '%s' '--help             هذه المساعدة' ;;
+				'--version          Print the version') printf '%s' '--version          يطبع الإصدار' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		bn)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' অনুপস্থিত এবং এর প্যাকেজ নাম অজানা' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'ব্যবহার: Sort.sh [বিকল্প] <ফাইল|ডিরেক্টরি> ...' ;;
+				'Common starts:') printf '%s' 'সাধারণ শুরু:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'সম্পূর্ণ বিকল্প তালিকা ও ডায়নামিক মানের জন্য --help দেখুন।' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'MIME, তারিখ, আকার, মিডিয়া মাত্রা, চেকসাম ও মেটাডেটা শিরোনাম থেকে' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'গঠিত ডায়নামিক ডিরেক্টরি বৃক্ষে ফাইলগুলো সাজায়।' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'গুরুত্বপূর্ণ: remove/delete/trash/shred গণনাকৃত TARGET' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'পথে কাজ করে, উৎসে নয়। উৎস = লক্ষ্য প্রত্যাখ্যাত। ধ্বংসাত্মক মোড' ;;
+				'preview output before using a destructive mode.') printf '%s' 'ব্যবহারের আগে প্রিভিউ আউটপুট দেখে নিন।' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' '--dirs, --subdirs, --rename ও --extension-এর জন্য' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'কীওয়ার্ড কেস-উপেক্ষক। অজানা শব্দ আক্ষরিক নাম হয়ে যায়। তালিকা' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' '+ বা , দিয়ে যুক্ত হয় (যেমন --dirs=year+month --subdirs=format,size)।' ;;
+				'Date and file times:') printf '%s' 'তারিখ ও ফাইলের সময়:' ;;
+				'File identity:') printf '%s' 'ফাইল পরিচয়:' ;;
+				'Size and media dimensions:') printf '%s' 'আকার ও মিডিয়া মাত্রা:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'রেজোলিউশন স্তর বড় মাত্রা দিয়ে নির্ধারিত হয়:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'মেটাডেটা (exiftool প্রয়োজন):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'অনুপস্থিত টুল প্রথম ব্যবহারে ইনস্টলের প্রস্তাব পায় (init-system)।' ;;
+				'Modes') printf '%s' 'মোড' ;;
+				'Filtering and processing') printf '%s' 'ফিল্টার ও প্রসেসিং' ;;
+				'Destination and naming') printf '%s' 'গন্তব্য ও নামকরণ' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / মেটাডেটা' ;;
+				'Archives') printf '%s' 'আর্কাইভ' ;;
+				'Output and safety') printf '%s' 'আউটপুট ও নিরাপত্তা' ;;
+				'Dynamic values') printf '%s' 'ডায়নামিক মান' ;;
+				'Examples') printf '%s' 'উদাহরণ' ;;
+				'Summary') printf '%s' 'সারসংক্ষেপ' ;;
+				'Unsupported mode: %s') printf '%s' 'অসমর্থিত মোড: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'অবৈধ --pause মান: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred-এর জন্য shred (coreutils) প্রয়োজন' ;;
+				'Cannot create target directory: %s') printf '%s' 'লক্ষ্য ডিরেক্টরি তৈরি করা যায়নি: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'অজানা বিকল্প: %s (উপেক্ষিত)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'অসমর্থিত ভাষা: %s (--lang দেখুন)' ;;
+				'Not a file or directory: %s') printf '%s' 'ফাইল বা ডিরেক্টরি নয়: %s' ;;
+				'Files to treat: %s') printf '%s' 'প্রক্রিয়াকরণের ফাইল: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'ডিকম্প্রেশন অতিরিক্ত গভীর: %s' ;;
+				'Archive test failed: %s') printf '%s' 'আর্কাইভ পরীক্ষা ব্যর্থ: %s' ;;
+				'Extract failed: %s') printf '%s' 'নিষ্কাশন ব্যর্থ: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> আর্কাইভ মুছুন' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'ট্র্যাশের জন্য trash-put (trash-cli) প্রয়োজন' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'নিষ্কাশিত(%s) + ট্র্যাশ: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'নিষ্কাশিত(%s) + শ্রেড: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'নিষ্কাশিত(%s) + মুছে ফেলা: %s' ;;
+				'Trash failed: %s') printf '%s' 'ট্র্যাশ ব্যর্থ: %s' ;;
+				'Shred failed: %s') printf '%s' 'শ্রেড ব্যর্থ: %s' ;;
+				'Delete failed: %s') printf '%s' 'মুছে ফেলা ব্যর্থ: %s' ;;
+				'Not a regular file: %s') printf '%s' 'সাধারণ ফাইল নয়: %s' ;;
+				'No MIME type for: %s') printf '%s' 'MIME ধরন নেই: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'ধরন এড়ানো (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'নাম তৈরি করা যায়নি: %s' ;;
+				'Cannot create: %s') printf '%s' 'তৈরি করা যায়নি: %s' ;;
+				'Same place: %s') printf '%s' 'একই জায়গা: %s' ;;
+				'Copy failed: %s') printf '%s' 'কপি ব্যর্থ: %s' ;;
+				'Move failed: %s') printf '%s' 'সরানো ব্যর্থ: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'মুছুন: লক্ষ্য পাওয়া যায়নি: %s' ;;
+				'Removed: %s') printf '%s' 'মুছে ফেলা হয়েছে: %s' ;;
+				'Remove failed: %s') printf '%s' 'মুছে ফেলা ব্যর্থ: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'ট্র্যাশ: লক্ষ্য পাওয়া যায়নি: %s' ;;
+				'Trashed: %s') printf '%s' 'ট্র্যাশ করা হয়েছে: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'শ্রেড: লক্ষ্য পাওয়া যায়নি: %s' ;;
+				'Shredded: %s') printf '%s' 'শ্রেড করা হয়েছে: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'মেটাডেটা সরানো হয়েছে: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'মেটাডেটা সরানো যায়নি: %s' ;;
+				'Copied : %s') printf '%s' 'কপি : %s' ;;
+				'Moved  : %s') printf '%s' 'সরানো : %s' ;;
+				'Removed: %s') printf '%s' 'মুছে ফেলা: %s' ;;
+				'Extracted: %s') printf '%s' 'নিষ্কাশিত: %s' ;;
+				'Preview: %s') printf '%s' 'প্রিভিউ: %s' ;;
+				'Skipped: %s') printf '%s' 'এড়ানো: %s' ;;
+				'Failed : %s') printf '%s' 'ব্যর্থ : %s' ;;
+				'Nothing to treat.') printf '%s' 'প্রক্রিয়াকরণের কিছু নেই।' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' '%s ফাইল সাজানো হচ্ছে - মোড: %s, থ্রেড: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'পটভূমির কাজ শেষ হওয়ার অপেক্ষায়...' ;;
+				'Finished.') printf '%s' 'সম্পন্ন।' ;;
+				'Terminated by user!') printf '%s' 'ব্যবহারকারী দ্বারা বন্ধ!' ;;
+				'deps: missing: %s') printf '%s' 'deps: অনুপস্থিত: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: ইনস্টল প্রস্তাব: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: এখনই ইনস্টল? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: ইনস্টল হয়নি (জিজ্ঞাসা ছাড়া ইনস্টলের জন্য DEPS_YES=1 দিন)' ;;
+				'deps: skipped') printf '%s' 'deps: এড়ানো হয়েছে' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: কোনো সমর্থিত প্যাকেজ ম্যানেজার পাওয়া যায়নি' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: root পাওয়ার উপায় নেই (root হিসেবে চালান বা sudo ইনস্টল করুন)' ;;
+				'Error: ') printf '%s' 'ত্রুটি: ' ;;
+				'Warning: ') printf '%s' 'সতর্কতা: ' ;;
+				'unknown camera') printf '%s' 'অজানা ক্যামেরা' ;;
+				'unknown date') printf '%s' 'অজানা তারিখ' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          UI ভাষা (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             ভাষার তালিকা দেখান' ;;
+				'Languages') printf '%s' 'ভাষা' ;;
+				'Available languages (--lang=XX):') printf '%s' 'উপলব্ধ ভাষা (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(ডিফল্ট)           শুধু প্রিভিউ - উৎস <=> লক্ষ্য প্রিন্ট করে' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             প্রতিটি ফাইল তার সাজানো স্থানে কপি করে' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             প্রতিটি ফাইল তার সাজানো স্থানে সরায়' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           গণনাকৃত TARGET পথের ফাইল মুছে ফেলে' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           --remove-এর বিকল্প নাম' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            গণনাকৃত লক্ষ্য ডেস্কটপ ট্র্যাশে পাঠায়' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            গণনাকৃত লক্ষ্যে shred -u -n 1 চালায়' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       উপরের যেকোনো মোডের দীর্ঘ রূপ (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       শুধু যেসব ফাইলের MIME ধরনে VALUE আছে' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        দেওয়া ডিরেক্টরিগুলো পূর্ণ গভীরতায় ঘোরে' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           লুকানো ফাইল ও ডিরেক্টরি অন্তর্ভুক্ত করে' ;;
+				'--links            Include symbolic links') printf '%s' '--links            সিম্বলিক লিঙ্ক অন্তর্ভুক্ত করে' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    প্রতিটি ফাইলের পরে অপেক্ষা করে' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           থ্রেড পুলের আকার (ডিফল্ট: nproc, সর্বনিম্ন 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       সাজানো বৃক্ষের ভিত্তি ডিরেক্টরি (ডিফল্ট: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        প্রাথমিক ডিরেক্টরি উপাদান (ডিফল্ট: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     প্রাথমিকের নিচের ডিরেক্টরি উপাদান' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     ফাইলের নাম তৈরি করে (এক্সটেনশন ছাড়া)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  এক্সটেনশন তৈরি করে (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            অন্তর্নিহিত মেটাডেটা থেকে নাম (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   ছবির EXIF তারিখ, অডিও/ভিডিও ট্যাগ)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          বিদ্যমান লক্ষ্য মুছে লেখে, নইলে অনন্য ~(N) নাম' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             ছবির জন্য <ক্যামেরা>/<YYYY-MM-DD> স্তর যোগ করে' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            কপি/সরানোর পরে লক্ষ্য থেকে EXIF/GPS মেটাডেটা সরায়' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       আর্কাইভ সাময়িক ডিরেক্টরিতে নিষ্কাশন করে বিষয়বস্তু সাজায়' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (সফল হলে আর্কাইভ নিজেই মুছে যায়;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred সেই নিয়তি আর্কাইভে প্রয়োগ করে)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedনাম = আর্কাইভের ভেতরের মূল ডিরেক্টরি / একক ফাইল' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          রঙিন আউটপুট বাধ্য করে (tty-তে স্বয়ংক্রিয় শনাক্ত)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           --colored-এর বিকল্প নাম' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            প্রতি-ফাইল বিবরণ বন্ধ; শুধু সারসংক্ষেপ' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          প্রতি-ফাইল বিবরণ চালু (ডিফল্ট)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            সারসংক্ষেপ প্রিন্ট করে (ডিফল্ট)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         প্রতিটি কাজের এক লাইন FILE-এ যোগ করে' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      আনডু স্ক্রিপ্ট লেখে (ডিফল্ট: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            সংক্ষিপ্ত স্মারক' ;;
+				'--help             This help') printf '%s' '--help             এই সাহায্য' ;;
+				'--version          Print the version') printf '%s' '--version          সংস্করণ প্রিন্ট করে' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		pt)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' está ausente e seu nome de pacote é desconhecido' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - organizador com threads, autônomo' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opções] <arquivo|diretório> ...' ;;
+				'Common starts:') printf '%s' 'Inícios comuns:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para a lista completa de opções e valores dinâmicos.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Classifica arquivos numa árvore de diretórios dinâmica construída a partir' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'de MIME, datas, tamanhos, dimensões de mídia, somas de verificação e títulos.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'IMPORTANTE: remove/delete/trash/shred atuam no caminho TARGET' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'calculado, não na origem. Origem = destino é recusado. Revise a' ;;
+				'preview output before using a destructive mode.') printf '%s' 'pré-visualização antes de usar um modo destrutivo.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'Palavras-chave sem distinção de maiúsculas para --dirs, --subdirs,' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' '--rename e --extension. Palavras desconhecidas viram nomes literais.' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'Listas são unidas com + ou , (ex.: --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Datas e tempos do arquivo:' ;;
+				'File identity:') printf '%s' 'Identidade do arquivo:' ;;
+				'Size and media dimensions:') printf '%s' 'Tamanho e dimensões de mídia:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'Faixas de resolução usam a dimensão maior:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Metadados (requer exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Ferramentas ausentes são propostas para instalação no primeiro uso (init-system).' ;;
+				'Modes') printf '%s' 'Modos' ;;
+				'Filtering and processing') printf '%s' 'Filtragem e processamento' ;;
+				'Destination and naming') printf '%s' 'Destino e nomenclatura' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / metadados' ;;
+				'Archives') printf '%s' 'Arquivos compactados' ;;
+				'Output and safety') printf '%s' 'Saída e segurança' ;;
+				'Dynamic values') printf '%s' 'Valores dinâmicos' ;;
+				'Examples') printf '%s' 'Exemplos' ;;
+				'Summary') printf '%s' 'Resumo' ;;
+				'Unsupported mode: %s') printf '%s' 'Modo não suportado: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Valor de --pause inválido: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred requer shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'Não foi possível criar o diretório de destino: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Opção desconhecida: %s (ignorada)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Idioma não suportado: %s (veja --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'Não é arquivo nem diretório: %s' ;;
+				'Files to treat: %s') printf '%s' 'Arquivos a tratar: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Descompactação muito profunda: %s' ;;
+				'Archive test failed: %s') printf '%s' 'Teste do arquivo falhou: %s' ;;
+				'Extract failed: %s') printf '%s' 'Extração falhou: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> apagar o arquivo' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'A lixeira precisa de trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Extraído(%s) + para a lixeira: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Extraído(%s) + destruído: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Extraído(%s) + apagado: %s' ;;
+				'Trash failed: %s') printf '%s' 'Lixeira falhou: %s' ;;
+				'Shred failed: %s') printf '%s' 'Destruição falhou: %s' ;;
+				'Delete failed: %s') printf '%s' 'Exclusão falhou: %s' ;;
+				'Not a regular file: %s') printf '%s' 'Não é um arquivo regular: %s' ;;
+				'No MIME type for: %s') printf '%s' 'Sem tipo MIME para: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Tipo ignorado (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'Não foi possível criar um nome para: %s' ;;
+				'Cannot create: %s') printf '%s' 'Não foi possível criar: %s' ;;
+				'Same place: %s') printf '%s' 'Mesmo lugar: %s' ;;
+				'Copy failed: %s') printf '%s' 'Cópia falhou: %s' ;;
+				'Move failed: %s') printf '%s' 'Movimentação falhou: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: destino não encontrado: %s' ;;
+				'Removed: %s') printf '%s' 'Removido: %s' ;;
+				'Remove failed: %s') printf '%s' 'Remoção falhou: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: destino não encontrado: %s' ;;
+				'Trashed: %s') printf '%s' 'Para a lixeira: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: destino não encontrado: %s' ;;
+				'Shredded: %s') printf '%s' 'Destruído: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Metadados removidos: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'Não foi possível remover os metadados: %s' ;;
+				'Copied : %s') printf '%s' 'Copiados : %s' ;;
+				'Moved  : %s') printf '%s' 'Movidos  : %s' ;;
+				'Removed: %s') printf '%s' 'Removidos: %s' ;;
+				'Extracted: %s') printf '%s' 'Extraídos: %s' ;;
+				'Preview: %s') printf '%s' 'Prévia: %s' ;;
+				'Skipped: %s') printf '%s' 'Ignorados: %s' ;;
+				'Failed : %s') printf '%s' 'Falhas  : %s' ;;
+				'Nothing to treat.') printf '%s' 'Nada a tratar.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'Classificando %s arquivo(s) - modo: %s, threads: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'Aguardando o término das tarefas em segundo plano...' ;;
+				'Finished.') printf '%s' 'Concluído.' ;;
+				'Terminated by user!') printf '%s' 'Interrompido pelo usuário!' ;;
+				'deps: missing: %s') printf '%s' 'deps: ausentes: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: instalação proposta: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: instalar agora? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: não instalado (defina DEPS_YES=1 para instalar sem perguntar)' ;;
+				'deps: skipped') printf '%s' 'deps: ignorado' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: nenhum gerenciador de pacotes suportado encontrado' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: sem como obter root (execute como root ou instale o sudo)' ;;
+				'Error: ') printf '%s' 'Erro: ' ;;
+				'Warning: ') printf '%s' 'Aviso: ' ;;
+				'unknown camera') printf '%s' 'câmera desconhecida' ;;
+				'unknown date') printf '%s' 'data desconhecida' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Idioma da interface (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             Mostra a lista de idiomas' ;;
+				'Languages') printf '%s' 'Idiomas' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Idiomas disponíveis (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(padrão)           Apenas pré-visualização - imprime origem <=> destino' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Copia cada arquivo para seu local classificado' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Move cada arquivo para seu local classificado' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Remove o arquivo no caminho TARGET calculado' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           Apelido de --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Envia o destino calculado para a lixeira do desktop' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Executa shred -u -n 1 no destino calculado' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Forma longa de qualquer modo acima (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Apenas arquivos cujo tipo MIME contém VALUE' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Percorre os diretórios fornecidos em profundidade total' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Inclui arquivos e diretórios ocultos' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Inclui links simbólicos' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Espera após cada arquivo' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           Tamanho do pool de threads (padrão: nproc, mín 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Diretório base da árvore classificada (padrão: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Componentes de diretório primários (padrão: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Componentes de diretório abaixo do primário' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Gera o nome do arquivo (sem extensão)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Gera a extensão (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Nome a partir de metadados embutidos (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   data EXIF de imagem, tags de áudio/vídeo)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Sobrescreve destinos existentes, senão nome único ~(N)' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Adiciona níveis <Câmera>/<AAAA-MM-DD> para imagens' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            Remove metadados EXIF/GPS dos destinos após copiar/mover' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Extrai compactados para um dir temporário e classifica o conteúdo' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (o próprio compactado é apagado após o sucesso;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred aplicam esse destino ao compactado)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedNome = dir principal / arquivo único dentro do compactado' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Força saída colorida (autodetectada num tty)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           Apelido de --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Detalhes por arquivo desligados; só resumo' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Detalhes por arquivo ligados (padrão)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            Imprime o resumo (padrão)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Acrescenta uma linha por ação a FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Escreve um script de desfazer (padrão: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Lembrete curto' ;;
+				'--help             This help') printf '%s' '--help             Esta ajuda' ;;
+				'--version          Print the version') printf '%s' '--version          Imprime a versão' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		ru)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' отсутствует, и имя его пакета неизвестно' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - автономный многопоточный сортировщик' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Использование: Sort.sh [параметры] <файл|каталог> ...' ;;
+				'Common starts:') printf '%s' 'Типичные запуски:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Используйте --help для полного списка параметров и динамических значений.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Раскладывает файлы по динамическому дереву каталогов, построенному' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'из MIME, дат, размеров, медиаразмеров, контрольных сумм и заголовков.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'ВАЖНО: remove/delete/trash/shred действуют по вычисленному пути' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'TARGET, а не по источнику. Источник = цель отклоняется. Проверьте' ;;
+				'preview output before using a destructive mode.') printf '%s' 'вывод предпросмотра перед деструктивным режимом.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'Ключевые слова для --dirs, --subdirs, --rename и --extension' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'без учёта регистра. Неизвестные слова становятся буквальными именами.' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'Списки соединяются + или , (напр. --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Даты и времена файла:' ;;
+				'File identity:') printf '%s' 'Идентификация файла:' ;;
+				'Size and media dimensions:') printf '%s' 'Размер и медиаразмеры:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'Уровни разрешения определяются большей стороной:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Метаданные (нужен exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Отсутствующие инструменты предлагается установить при первом использовании (init-system).' ;;
+				'Modes') printf '%s' 'Режимы' ;;
+				'Filtering and processing') printf '%s' 'Фильтрация и обработка' ;;
+				'Destination and naming') printf '%s' 'Назначение и именование' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / метаданные' ;;
+				'Archives') printf '%s' 'Архивы' ;;
+				'Output and safety') printf '%s' 'Вывод и безопасность' ;;
+				'Dynamic values') printf '%s' 'Динамические значения' ;;
+				'Examples') printf '%s' 'Примеры' ;;
+				'Summary') printf '%s' 'Итоги' ;;
+				'Unsupported mode: %s') printf '%s' 'Неподдерживаемый режим: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Недопустимое значение --pause: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred требует shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'Не удалось создать целевой каталог: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Неизвестный параметр: %s (проигнорирован)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Неподдерживаемый язык: %s (см. --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'Не файл и не каталог: %s' ;;
+				'Files to treat: %s') printf '%s' 'Файлов к обработке: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Слишком глубокая распаковка: %s' ;;
+				'Archive test failed: %s') printf '%s' 'Проверка архива не пройдена: %s' ;;
+				'Extract failed: %s') printf '%s' 'Распаковка не удалась: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> удалить архив' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'Корзине нужен trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Извлечено(%s) + в корзину: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Извлечено(%s) + уничтожено: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Извлечено(%s) + удалено: %s' ;;
+				'Trash failed: %s') printf '%s' 'Сбой корзины: %s' ;;
+				'Shred failed: %s') printf '%s' 'Сбой уничтожения: %s' ;;
+				'Delete failed: %s') printf '%s' 'Сбой удаления: %s' ;;
+				'Not a regular file: %s') printf '%s' 'Не обычный файл: %s' ;;
+				'No MIME type for: %s') printf '%s' 'Нет MIME-типа для: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Пропуск типа (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'Не удалось построить имя для: %s' ;;
+				'Cannot create: %s') printf '%s' 'Не удалось создать: %s' ;;
+				'Same place: %s') printf '%s' 'То же место: %s' ;;
+				'Copy failed: %s') printf '%s' 'Сбой копирования: %s' ;;
+				'Move failed: %s') printf '%s' 'Сбой перемещения: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Удаление: цель не найдена: %s' ;;
+				'Removed: %s') printf '%s' 'Удалено: %s' ;;
+				'Remove failed: %s') printf '%s' 'Сбой удаления: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Корзина: цель не найдена: %s' ;;
+				'Trashed: %s') printf '%s' 'В корзине: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Уничтожение: цель не найдена: %s' ;;
+				'Shredded: %s') printf '%s' 'Уничтожено: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Метаданные удалены: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'Не удалось удалить метаданные: %s' ;;
+				'Copied : %s') printf '%s' 'Скопировано : %s' ;;
+				'Moved  : %s') printf '%s' 'Перемещено : %s' ;;
+				'Removed: %s') printf '%s' 'Удалено: %s' ;;
+				'Extracted: %s') printf '%s' 'Извлечено: %s' ;;
+				'Preview: %s') printf '%s' 'Предпросмотр: %s' ;;
+				'Skipped: %s') printf '%s' 'Пропущено: %s' ;;
+				'Failed : %s') printf '%s' 'Сбоев : %s' ;;
+				'Nothing to treat.') printf '%s' 'Нечего обрабатывать.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'Сортировка %s файл(ов) - режим: %s, потоков: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'Ожидание завершения фоновых задач...' ;;
+				'Finished.') printf '%s' 'Готово.' ;;
+				'Terminated by user!') printf '%s' 'Прервано пользователем!' ;;
+				'deps: missing: %s') printf '%s' 'deps: отсутствуют: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: предложение установить: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: установить сейчас? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: не установлено (задайте DEPS_YES=1 для установки без запроса)' ;;
+				'deps: skipped') printf '%s' 'deps: пропущено' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: поддерживаемый менеджер пакетов не найден' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: нет способа получить root (запустите от root или установите sudo)' ;;
+				'Error: ') printf '%s' 'Ошибка: ' ;;
+				'Warning: ') printf '%s' 'Предупреждение: ' ;;
+				'unknown camera') printf '%s' 'неизвестная камера' ;;
+				'unknown date') printf '%s' 'неизвестная дата' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Язык интерфейса (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             Показать список языков' ;;
+				'Languages') printf '%s' 'Языки' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Доступные языки (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(по умолчанию)     Только предпросмотр - печатает источник <=> цель' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Копирует каждый файл в его отсортированное расположение' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Перемещает каждый файл в его отсортированное расположение' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Удаляет файл по вычисленному пути TARGET' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           Псевдоним --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Отправляет вычисленную цель в корзину рабочего стола' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Запускает shred -u -n 1 на вычисленной цели' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Длинная форма любого режима выше (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Только файлы, чей MIME-тип содержит VALUE' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Обходит указанные каталоги на всю глубину' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Включает скрытые файлы и каталоги' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Включает символические ссылки' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Пауза после каждого файла' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           Размер пула потоков (по умолчанию: nproc, мин. 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Базовый каталог дерева сортировки (по умолчанию: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Первичные компоненты каталогов (по умолчанию: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Компоненты каталогов под первичными' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Формирует имя файла (без расширения)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Формирует расширение (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Имя из встроенных метаданных (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   EXIF-дата изображения, теги аудио/видео)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Перезаписывает существующие цели, иначе уникальное имя ~(N)' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Добавляет уровни <Камера>/<ГГГГ-ММ-ДД> для изображений' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            Удаляет EXIF/GPS-метаданные целей после копирования/перемещения' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Распаковывает архивы во временный каталог и сортирует содержимое' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (сам архив после успеха удаляется;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred применяют эту участь к архиву)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedИмя = главный каталог / единственный файл внутри архива' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Принудительно цветной вывод (автоопределение на tty)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           Псевдоним --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Сведения по файлам выключены; только итоги' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Сведения по файлам включены (по умолчанию)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            Печатает итоги (по умолчанию)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Дописывает строку за каждое действие в FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Пишет скрипт отмены (по умолчанию: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Краткая памятка' ;;
+				'--help             This help') printf '%s' '--help             Эта справка' ;;
+				'--version          Print the version') printf '%s' '--version          Печатает версию' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		ur)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غائب ہے اور اس کا پیکج نام نامعلوم ہے' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - خود انحصار ملٹی تھریڈ منتظم' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استعمال: Sort.sh [اختیارات] <فائل|ڈائریکٹری> ...' ;;
+				'Common starts:') printf '%s' 'عام آغاز:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'مکمل آپشن فہرست اور متحرک اقدار کے لیے --help استعمال کریں۔' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'فائلوں کو MIME، تاریخوں، سائز، میڈیا ابعاد، چیک سم اور' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'میٹا ڈیٹا عنوانات سے بنے متحرک ڈائریکٹری درخت میں مرتب کرتا ہے۔' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'اہم: remove/delete/trash/shred حساب شدہ ہدف (TARGET) پر' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'عمل کرتے ہیں، ماخذ پر نہیں۔ ماخذ = ہدف مسترد ہے۔ تباہ کن موڈ' ;;
+				'preview output before using a destructive mode.') printf '%s' 'استعمال کرنے سے پہلے پیش نظارہ دیکھ لیں۔' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' '--dirs، --subdirs، --rename اور --extension کے کلیدی' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'الفاظ کے لیے حروف بزرگ/چھوٹے یکساں ہیں۔ نامعلوم الفاظ لفظی نام بنتے ہیں۔ فہرستیں' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' '+ یا , سے جوڑی جاتی ہیں (مثلاً --dirs=year+month --subdirs=format,size)۔' ;;
+				'Date and file times:') printf '%s' 'تاریخ اور فائل کے اوقات:' ;;
+				'File identity:') printf '%s' 'فائل کی شناخت:' ;;
+				'Size and media dimensions:') printf '%s' 'سائز اور میڈیا ابعاد:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'ریزولوشن درجات بڑے طول و عرض سے طے ہوتے ہیں:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'میٹا ڈیٹا (exiftool درکار):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'غائب اوزار پہلے استعمال پر انسٹالیشن کے لیے تجویز ہوتے ہیں (init-system)۔' ;;
+				'Modes') printf '%s' 'موڈ' ;;
+				'Filtering and processing') printf '%s' 'فلٹرنگ اور پروسیسنگ' ;;
+				'Destination and naming') printf '%s' 'ہدف اور نامگذاری' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / میٹا ڈیٹا' ;;
+				'Archives') printf '%s' 'آرکائیوز' ;;
+				'Output and safety') printf '%s' 'آؤٹ پٹ اور حفاظت' ;;
+				'Dynamic values') printf '%s' 'متحرک اقدار' ;;
+				'Examples') printf '%s' 'مثالیں' ;;
+				'Summary') printf '%s' 'خلاصہ' ;;
+				'Unsupported mode: %s') printf '%s' 'غیر معاون موڈ: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'غلط --pause قدر: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred کو shred (coreutils) درکار ہے' ;;
+				'Cannot create target directory: %s') printf '%s' 'ہدف ڈائریکٹری نہیں بن سکی: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'نامعلوم آپشن: %s (نظر انداز کیا گیا)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'غیر معاون زبان: %s (دیکھیں --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'فائل یا ڈائریکٹری نہیں: %s' ;;
+				'Files to treat: %s') printf '%s' 'مشمولہ فائلیں: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'ان زیپ بہت گہرا: %s' ;;
+				'Archive test failed: %s') printf '%s' 'آرکائیو ٹیسٹ ناکام: %s' ;;
+				'Extract failed: %s') printf '%s' 'ان زیپ ناکام: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> آرکائیو حذف کریں' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'ٹراش کو trash-put (trash-cli) درکار ہے' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'ان زیپ شدہ(%s) + ٹراش: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'ان زیپ شدہ(%s) + شریڈ: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'ان زیپ شدہ(%s) + حذف: %s' ;;
+				'Trash failed: %s') printf '%s' 'ٹراش ناکام: %s' ;;
+				'Shred failed: %s') printf '%s' 'شریڈ ناکام: %s' ;;
+				'Delete failed: %s') printf '%s' 'حذف ناکام: %s' ;;
+				'Not a regular file: %s') printf '%s' 'باقاعدہ فائل نہیں: %s' ;;
+				'No MIME type for: %s') printf '%s' 'کوئی MIME قسم نہیں: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'قسم چھوڑی گئی (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'نام نہیں بن سکا: %s' ;;
+				'Cannot create: %s') printf '%s' 'نہیں بن سکتا: %s' ;;
+				'Same place: %s') printf '%s' 'ایک ہی جگہ: %s' ;;
+				'Copy failed: %s') printf '%s' 'کاپی ناکام: %s' ;;
+				'Move failed: %s') printf '%s' 'منتقلی ناکام: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: ہدف نہیں ملا: %s' ;;
+				'Removed: %s') printf '%s' 'ہٹایا گیا: %s' ;;
+				'Remove failed: %s') printf '%s' 'ہٹانا ناکام: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: ہدف نہیں ملا: %s' ;;
+				'Trashed: %s') printf '%s' 'ٹراش: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: ہدف نہیں ملا: %s' ;;
+				'Shredded: %s') printf '%s' 'شریڈ: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'میٹا ڈیٹا ہٹایا گیا: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'میٹا ڈیٹا نہیں ہٹا سکا: %s' ;;
+				'Copied : %s') printf '%s' 'کاپی  : %s' ;;
+				'Moved  : %s') printf '%s' 'منتقل : %s' ;;
+				'Removed: %s') printf '%s' 'ہٹایا : %s' ;;
+				'Extracted: %s') printf '%s' 'ان زیپ: %s' ;;
+				'Preview: %s') printf '%s' 'پیش نظارہ: %s' ;;
+				'Skipped: %s') printf '%s' 'چھوڑا : %s' ;;
+				'Failed : %s') printf '%s' 'ناکام : %s' ;;
+				'Nothing to treat.') printf '%s' 'کچھ کرنے کو نہیں۔' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' '%s فائل(یں) مرتب ہو رہی ہیں - موڈ: %s، تھریڈز: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'پس منظر کے جوبس ختم ہونے کا انتظار...' ;;
+				'Finished.') printf '%s' 'مکمل۔' ;;
+				'Terminated by user!') printf '%s' 'صارف نے روک دیا!' ;;
+				'deps: missing: %s') printf '%s' 'deps: غائب: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: تجویز کردہ انسٹال: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: ابھی انسٹال کریں؟ [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: انسٹال نہیں ہوا (بغیر پوچھے انسٹال کے لیے DEPS_YES=1 رکھیں)' ;;
+				'deps: skipped') printf '%s' 'deps: چھوڑا گیا' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: کوئی معاون پیکج مینیجر نہیں ملا' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: روٹ تک رسائی کا راستہ نہیں (root کے طور پر چلائیں یا sudo انسٹال کریں)' ;;
+				'Error: ') printf '%s' 'خرابی: ' ;;
+				'Warning: ') printf '%s' 'انتباہ: ' ;;
+				'unknown camera') printf '%s' 'نامعلوم کیمرہ' ;;
+				'unknown date') printf '%s' 'نامعلوم تاریخ' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          انٹرفیس کی زبان (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             زبانوں کی فہرست دکھائیں' ;;
+				'Languages') printf '%s' 'زبانیں' ;;
+				'Available languages (--lang=XX):') printf '%s' 'دستیاب زبانیں (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(پہلے سے طے)      صرف پیش نظارہ - ماخذ <=> ہدف پرنٹ کریں' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             ہر فائل کو اس کی مرتب شدہ جگہ کاپی کرتا ہے' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             ہر فائل کو اس کی مرتب شدہ جگہ منتقل کرتا ہے' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           حساب شدہ ہدف (TARGET) راستے پر فائل ہٹاتا ہے' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           --remove کا متبادل' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            حساب شدہ ہدف کو ڈیسک ٹاپ ٹراش میں بھیجتا ہے' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            حساب شدہ ہدف پر shred -u -n 1 چلاتا ہے' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       اوپر کے کسی موڈ کی طویل شکل (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       صرف وہ فائلیں جن کی MIME قسم میں VALUE ہو' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        دی گئی ڈائریکٹریوں کو مکمل گہرائی تک سیر کرتا ہے' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           چھپی ہوئی فائلیں اور ڈائریکٹریاں شامل کرتا ہے' ;;
+				'--links            Include symbolic links') printf '%s' '--links            علامتی لنکس شامل کرتا ہے' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    ہر فائل کے بعد انتظار' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           تھریڈ پول کا سائز (پہلے سے طے: nproc، کم از کم 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       مرتب شدہ درخت کی بنیادی ڈائریکٹری (پہلے سے طے: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        بنیادی ڈائریکٹری اجزا (پہلے سے طے: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     بنیادی سطح کے نیچے ڈائریکٹری اجزا' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     فائل کا نام بناتا ہے (توسیع کے بغیر)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  توسیع بناتا ہے (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            فائل کا نام شامل میٹا ڈیٹا سے (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   تصویر کی EXIF تاریخ، آڈیو/ویڈیو ٹیگز)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          موجودہ اہداف پر لکھ دیتا ہے، ورنہ منفرد ~(N) نام' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             تصاویر کے لیے <کیمرہ>/<YYYY-MM-DD> سطحوں کا اضافہ' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            copy/move کے بعد اہداف سے EXIF/GPS میٹا ڈیٹا ہٹاتا ہے' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       آرکائیوز کو عارضی ڈائریکٹری میں کھول کر مواد مرتب کرتا ہے' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (کامیابی کے بعد آرکائیو خود حذف ہو جاتا ہے؛' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred یہ تقدیر اس کے بدلے استعمال کرتے ہیں)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedنام = آرکائیو کے اندر مرکزی ڈائریکٹری / واحد فائل' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          رنگین آؤٹ پٹ زبردستی (tty پر خودکار طور پر پہچانا جاتا ہے)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           --colored کا متبادل' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            فی فائل تفصیلات بند؛ صرف خلاصہ' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          فی فائل تفصیلات آن (پہلے سے طے)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            خلاصہ پرنٹ کرتا ہے (پہلے سے طے)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         ہر عمل کی ایک سطر FILE میں شامل کرتا ہے' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      انڈو اسکرپٹ لکھتا ہے (پہلے سے طے: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            مختصر یاد دہانی' ;;
+				'--help             This help') printf '%s' '--help             یہ مدد' ;;
+				'--version          Print the version') printf '%s' '--version          ورژن پرنٹ کرتا ہے' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		id)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' hilang dan nama paketnya tidak diketahui' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - penyusun berkas multithread mandiri' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Penggunaan: Sort.sh [opsi] <berkas|direktori> ...' ;;
+				'Common starts:') printf '%s' 'Awalan umum:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Gunakan --help untuk daftar opsi lengkap dan nilai dinamis.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Menyusun berkas ke dalam pohon direktori dinamis yang dibangun dari MIME, tanggal,' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'ukuran, dimensi media, checksum, dan judul metadata.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'PENTING: remove/delete/trash/shred berlaku pada TARGET yang' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'dihitung, bukan pada sumber. Sumber = target ditolak. Tinjau keluaran' ;;
+				'preview output before using a destructive mode.') printf '%s' 'pratinjau sebelum memakai mode destruktif.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'Kata kunci untuk --dirs, --subdirs, --rename dan --extension' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'tidak peka huruf besar/kecil. Kata tak dikenal menjadi nama literal. Daftar' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'digabung dengan + atau , (mis. --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Tanggal dan waktu berkas:' ;;
+				'File identity:') printf '%s' 'Identitas berkas:' ;;
+				'Size and media dimensions:') printf '%s' 'Ukuran dan dimensi media:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'Tingkat resolusi memakai dimensi terbesar:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Metadata (butuh exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Alat yang hilang diajukan untuk dipasang pada pemakaian pertama (init-system).' ;;
+				'Modes') printf '%s' 'Mode' ;;
+				'Filtering and processing') printf '%s' 'Penyaringan dan pemrosesan' ;;
+				'Destination and naming') printf '%s' 'Tujuan dan penamaan' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / metadata' ;;
+				'Archives') printf '%s' 'Arsip' ;;
+				'Output and safety') printf '%s' 'Keluaran dan keamanan' ;;
+				'Dynamic values') printf '%s' 'Nilai dinamis' ;;
+				'Examples') printf '%s' 'Contoh' ;;
+				'Summary') printf '%s' 'Ringkasan' ;;
+				'Unsupported mode: %s') printf '%s' 'Mode tidak didukung: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Nilai --pause tidak valid: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred membutuhkan shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'Tidak dapat membuat direktori tujuan: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Opsi tidak dikenal: %s (diabaikan)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Bahasa tidak didukung: %s (lihat --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'Bukan berkas atau direktori: %s' ;;
+				'Files to treat: %s') printf '%s' 'Berkas untuk diproses: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Penguraian arsip terlalu dalam: %s' ;;
+				'Archive test failed: %s') printf '%s' 'Uji arsip gagal: %s' ;;
+				'Extract failed: %s') printf '%s' 'Ekstrak gagal: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> hapus arsip' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'Trash membutuhkan trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Diekstrak(%s) + ke tempat sampah: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Diekstrak(%s) + dihancurkan: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Diekstrak(%s) + dihapus: %s' ;;
+				'Trash failed: %s') printf '%s' 'Trash gagal: %s' ;;
+				'Shred failed: %s') printf '%s' 'Shred gagal: %s' ;;
+				'Delete failed: %s') printf '%s' 'Hapus gagal: %s' ;;
+				'Not a regular file: %s') printf '%s' 'Bukan berkas reguler: %s' ;;
+				'No MIME type for: %s') printf '%s' 'Tidak ada tipe MIME untuk: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Lewati tipe (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'Tidak dapat membentuk nama untuk: %s' ;;
+				'Cannot create: %s') printf '%s' 'Tidak dapat membuat: %s' ;;
+				'Same place: %s') printf '%s' 'Tempat yang sama: %s' ;;
+				'Copy failed: %s') printf '%s' 'Salin gagal: %s' ;;
+				'Move failed: %s') printf '%s' 'Pindah gagal: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: target tidak ditemukan: %s' ;;
+				'Removed: %s') printf '%s' 'Dihapus: %s' ;;
+				'Remove failed: %s') printf '%s' 'Penghapusan gagal: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: target tidak ditemukan: %s' ;;
+				'Trashed: %s') printf '%s' 'Ke tempat sampah: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: target tidak ditemukan: %s' ;;
+				'Shredded: %s') printf '%s' 'Dihancurkan: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Metadata dilepas: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'Metadata tidak dapat dilepas: %s' ;;
+				'Copied : %s') printf '%s' 'Disalin  : %s' ;;
+				'Moved  : %s') printf '%s' 'Dipindah : %s' ;;
+				'Removed: %s') printf '%s' 'Dihapus : %s' ;;
+				'Extracted: %s') printf '%s' 'Diekstrak: %s' ;;
+				'Preview: %s') printf '%s' 'Pratinjau: %s' ;;
+				'Skipped: %s') printf '%s' 'Dilewati: %s' ;;
+				'Failed : %s') printf '%s' 'Gagal    : %s' ;;
+				'Nothing to treat.') printf '%s' 'Tidak ada yang perlu diproses.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'Menyusun %s berkas - mode: %s, thread: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'Menunggu pekerjaan latar belakang selesai...' ;;
+				'Finished.') printf '%s' 'Selesai.' ;;
+				'Terminated by user!') printf '%s' 'Dihentikan oleh pengguna!' ;;
+				'deps: missing: %s') printf '%s' 'deps: hilang: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: usulan pemasangan: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: pasang sekarang? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: tidak dipasang (set DEPS_YES=1 untuk memasang tanpa bertanya)' ;;
+				'deps: skipped') printf '%s' 'deps: dilewati' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: tidak ada manajer paket yang didukung' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: tidak ada cara memperoleh akses root (jalankan sebagai root atau pasang sudo)' ;;
+				'Error: ') printf '%s' 'Kesalahan: ' ;;
+				'Warning: ') printf '%s' 'Peringatan: ' ;;
+				'unknown camera') printf '%s' 'kamera tidak dikenal' ;;
+				'unknown date') printf '%s' 'tanggal tidak dikenal' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Bahasa antarmuka (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             Cetak daftar bahasa' ;;
+				'Languages') printf '%s' 'Bahasa' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Bahasa yang tersedia (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(bawaan)           Hanya pratinjau - cetak sumber <=> target' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Menyalin setiap berkas ke lokasi tersusunnya' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Memindahkan setiap berkas ke lokasi tersusunnya' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Menghapus berkas pada jalur TARGET yang dihitung' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           Alias untuk --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Mengirim target yang dihitung ke tempat sampah desktop' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Menjalankan shred -u -n 1 pada target yang dihitung' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Bentuk panjang salah satu mode di atas (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Hanya berkas dengan tipe MIME yang memuat VALUE' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Menelusuri direktori yang diberikan sampai kedalaman penuh' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Menyertakan berkas dan direktori tersembunyi' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Menyertakan tautan simbolik' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Menunggu setelah setiap berkas' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           Ukuran pool thread (bawaan: nproc, min 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Direktori dasar pohon tersusun (bawaan: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Komponen direktori utama (bawaan: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Komponen direktori di bawah tingkat utama' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Membentuk nama berkas (tanpa ekstensi)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Membentuk ekstensi (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Nama berkas dari metadata tersemat (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   tanggal EXIF gambar, tag audio/video)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Menimpa target yang ada, jika tidak nama ~(N) unik' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Menambah tingkat <Kamera>/<YYYY-MM-DD> untuk gambar' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            Melepas metadata EXIF/GPS dari target setelah copy/move' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Mengekstrak arsip ke dir sementara dan menyusun isinya' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (arsipnya sendiri dihapus setelah sukses;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred menerapkan nasib itu sebagai gantinya)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedNama = direktori utama / berkas tunggal di dalam arsip' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Memaksa keluaran berwarna (terdeteksi otomatis pada tty)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           Alias untuk --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Detail per berkas mati; ringkasan saja' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Detail per berkas nyala (bawaan)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            Mencetak ringkasan (bawaan)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Menambah satu baris per aksi ke FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Menulis skrip undo (bawaan: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Pengingat singkat' ;;
+				'--help             This help') printf '%s' '--help             Bantuan ini' ;;
+				'--version          Print the version') printf '%s' '--version          Mencetak versi' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		de)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' fehlt und sein Paketname ist unbekannt' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - eigenständiger Sortierer mit Threads' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Aufruf: Sort.sh [Optionen] <Datei|Verzeichnis> ...' ;;
+				'Common starts:') printf '%s' 'Häufige Aufrufe:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Verwenden Sie --help für die vollständige Optionsliste und dynamische Werte.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Sortiert Dateien in einen dynamischen Verzeichnisbaum aus MIME, Daten,' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'Größen, Medienabmessungen, Prüfsummen und Metadaten-Titeln.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'WICHTIG: remove/delete/trash/shred wirken auf den berechneten Zielpfad,' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'nicht auf die Quelle. Quelle = Ziel wird abgelehnt. Prüfen Sie die' ;;
+				'preview output before using a destructive mode.') printf '%s' 'Vorschau-Ausgabe, bevor Sie einen destruktiven Modus verwenden.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'Groß-/Kleinschreibung ist egal bei Schlüsselwörtern für --dirs, --subdirs,' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' '--rename und --extension. Unbekannte Wörter werden wörtliche Namen. Listen' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'werden mit + oder , verbunden (z.B. --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Datum und Dateizeiten:' ;;
+				'File identity:') printf '%s' 'Datei-Identität:' ;;
+				'Size and media dimensions:') printf '%s' 'Größe und Medienabmessungen:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'Auflösungsstufen verwenden die größere Abmessung:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Metadaten (benötigt exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Fehlende Werkzeuge werden beim ersten Gebrauch zur Installation vorgeschlagen (init-system).' ;;
+				'Modes') printf '%s' 'Modi' ;;
+				'Filtering and processing') printf '%s' 'Filterung und Verarbeitung' ;;
+				'Destination and naming') printf '%s' 'Ziel und Benennung' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / Metadaten' ;;
+				'Archives') printf '%s' 'Archive' ;;
+				'Output and safety') printf '%s' 'Ausgabe und Sicherheit' ;;
+				'Dynamic values') printf '%s' 'Dynamische Werte' ;;
+				'Examples') printf '%s' 'Beispiele' ;;
+				'Summary') printf '%s' 'Zusammenfassung' ;;
+				'Unsupported mode: %s') printf '%s' 'Nicht unterstützter Modus: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Ungültiger --pause-Wert: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred benötigt shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'Zielverzeichnis kann nicht erstellt werden: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Unbekannte Option: %s (ignoriert)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Nicht unterstützte Sprache: %s (siehe --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'Keine Datei oder kein Verzeichnis: %s' ;;
+				'Files to treat: %s') printf '%s' 'Zu behandelnde Dateien: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Entpacken zu tief verschachtelt: %s' ;;
+				'Archive test failed: %s') printf '%s' 'Archivtest fehlgeschlagen: %s' ;;
+				'Extract failed: %s') printf '%s' 'Entpacken fehlgeschlagen: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> Archiv löschen' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'Papierkorb benötigt trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Entpackt(%s) + in den Papierkorb: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Entpackt(%s) + geschreddert: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Entpackt(%s) + gelöscht: %s' ;;
+				'Trash failed: %s') printf '%s' 'Papierkorb fehlgeschlagen: %s' ;;
+				'Shred failed: %s') printf '%s' 'Shred fehlgeschlagen: %s' ;;
+				'Delete failed: %s') printf '%s' 'Löschen fehlgeschlagen: %s' ;;
+				'Not a regular file: %s') printf '%s' 'Keine reguläre Datei: %s' ;;
+				'No MIME type for: %s') printf '%s' 'Kein MIME-Typ für: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Typ übersprungen (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'Kann keinen Namen bilden für: %s' ;;
+				'Cannot create: %s') printf '%s' 'Kann nicht erstellt werden: %s' ;;
+				'Same place: %s') printf '%s' 'Gleicher Ort: %s' ;;
+				'Copy failed: %s') printf '%s' 'Kopieren fehlgeschlagen: %s' ;;
+				'Move failed: %s') printf '%s' 'Verschieben fehlgeschlagen: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: Ziel nicht gefunden: %s' ;;
+				'Removed: %s') printf '%s' 'Entfernt: %s' ;;
+				'Remove failed: %s') printf '%s' 'Entfernen fehlgeschlagen: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: Ziel nicht gefunden: %s' ;;
+				'Trashed: %s') printf '%s' 'In den Papierkorb gelegt: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: Ziel nicht gefunden: %s' ;;
+				'Shredded: %s') printf '%s' 'Geschreddert: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Metadaten entfernt: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'Metadaten konnten nicht entfernt werden: %s' ;;
+				'Copied : %s') printf '%s' 'Kopiert    : %s' ;;
+				'Moved  : %s') printf '%s' 'Verschoben : %s' ;;
+				'Removed: %s') printf '%s' 'Entfernt   : %s' ;;
+				'Extracted: %s') printf '%s' 'Entpackt: %s' ;;
+				'Preview: %s') printf '%s' 'Vorschau: %s' ;;
+				'Skipped: %s') printf '%s' 'Übersprungen: %s' ;;
+				'Failed : %s') printf '%s' 'Fehlgeschlagen: %s' ;;
+				'Nothing to treat.') printf '%s' 'Nichts zu behandeln.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'Sortiere %s Datei(en) - Modus: %s, Threads: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'Warte auf den Abschluss der Hintergrund-Jobs...' ;;
+				'Finished.') printf '%s' 'Fertig.' ;;
+				'Terminated by user!') printf '%s' 'Vom Benutzer abgebrochen!' ;;
+				'deps: missing: %s') printf '%s' 'deps: fehlt: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: Installationsvorschlag: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: jetzt installieren? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: nicht installiert (DEPS_YES=1 setzt Installation ohne Nachfrage)' ;;
+				'deps: skipped') printf '%s' 'deps: übersprungen' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: kein unterstützter Paketmanager gefunden' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: kein Weg zu Root-Rechten (als Root ausführen oder sudo installieren)' ;;
+				'Error: ') printf '%s' 'Fehler: ' ;;
+				'Warning: ') printf '%s' 'Warnung: ' ;;
+				'unknown camera') printf '%s' 'unbekannte Kamera' ;;
+				'unknown date') printf '%s' 'unbekanntes Datum' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Oberflächensprache (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             Sprachliste anzeigen' ;;
+				'Languages') printf '%s' 'Sprachen' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Verfügbare Sprachen (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(Standard)         Nur Vorschau - gibt Quelle <=> Ziel aus' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Kopiert jede Datei an ihren sortierten Ort' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Verschiebt jede Datei an ihren sortierten Ort' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Entfernt die Datei am berechneten Zielpfad (TARGET)' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           Alias für --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Legt das berechnete Ziel in den Desktop-Papierkorb' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Führt shred -u -n 1 auf dem berechneten Ziel aus' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Langform eines der Modi oben (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Nur Dateien, deren MIME-Typ VALUE enthält' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Durchläuft angegebene Verzeichnisse bis in volle Tiefe' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Schließt versteckte Dateien und Verzeichnisse ein' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Schließt symbolische Links ein' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Wartet nach jeder Datei' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           Thread-Pool-Größe (Standard: nproc, min. 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Basisverzeichnis des sortierten Baums (Standard: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Primäre Verzeichnisbestandteile (Standard: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Verzeichnisbestandteile unter der primären Ebene' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Erzeugt den Dateinamen (ohne Erweiterung)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Erzeugt die Erweiterung (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Dateiname aus eingebetteten Metadaten (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   EXIF-Datum von Bildern, Audio-/Video-Tags)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Überschreibt vorhandene Ziele, sonst eindeutiger ~(N)-Name' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Ergänzt <Kamera>/<YYYY-MM-DD>-Ebenen für Bilder' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            Entfernt EXIF/GPS-Metadaten aus Zielen nach copy/move' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Entpackt Archive in ein Temp-Verzeichnis und sortiert die Inhalte' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (das Archiv selbst wird nach Erfolg gelöscht;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred wenden dieses Schicksal stattdessen an)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedName = Hauptverzeichnis / einzelne Datei im Archiv' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Erzwingt farbige Ausgabe (auf einem tty automatisch erkannt)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           Alias für --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Details pro Datei aus; nur Zusammenfassung' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Details pro Datei an (Standard)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            Gibt die Zusammenfassung aus (Standard)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Hängt eine Zeile pro Aktion an FILE an' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Schreibt ein Undo-Skript (Standard: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Kurze Erinnerung' ;;
+				'--help             This help') printf '%s' '--help             Diese Hilfe' ;;
+				'--version          Print the version') printf '%s' '--version          Gibt die Version aus' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		ja)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' が不足しており、そのパッケージ名は不明です' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - 自己完結型マルチスレッド整理ツール' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '使い方: Sort.sh [オプション] <ファイル|ディレクトリ> ...' ;;
+				'Common starts:') printf '%s' 'よく使う起動例:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'オプション一覧と動的な値は --help をご利用ください。' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'MIME・日付・サイズ・メディア寸法・チェックサム・' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'メタデータのタイトルから動的なディレクトリツリーを作り、ファイルを整理します。' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' '重要: remove/delete/trash/shred は計算されたターゲット(TARGET)' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'パスに作用し、元ファイルには作用しません。元=ターゲットは拒否されます。' ;;
+				'preview output before using a destructive mode.') printf '%s' '破壊的なモードを使う前にプレビュー出力を確認してください。' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' '--dirs、--subdirs、--rename、--extension のキーワードは' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' '大文字小文字を区別しません。未知の語はそのまま名前になります。リストは' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' '+ または , で連結します(例: --dirs=year+month --subdirs=format,size)。' ;;
+				'Date and file times:') printf '%s' '日付とファイル時刻:' ;;
+				'File identity:') printf '%s' 'ファイル識別:' ;;
+				'Size and media dimensions:') printf '%s' 'サイズとメディア寸法:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' '解像度の段階は長い辺で判定します:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'メタデータ(exiftool が必要):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' '不足ツールは初回使用時にインストールを提案します(init-system)。' ;;
+				'Modes') printf '%s' 'モード' ;;
+				'Filtering and processing') printf '%s' 'フィルタと処理' ;;
+				'Destination and naming') printf '%s' '出力先と命名' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / メタデータ' ;;
+				'Archives') printf '%s' 'アーカイブ' ;;
+				'Output and safety') printf '%s' '出力と安全' ;;
+				'Dynamic values') printf '%s' '動的な値' ;;
+				'Examples') printf '%s' '例' ;;
+				'Summary') printf '%s' '概要' ;;
+				'Unsupported mode: %s') printf '%s' '未対応のモード: %s' ;;
+				'Invalid --pause value: %s') printf '%s' '無効な --pause の値: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred には shred (coreutils) が必要です' ;;
+				'Cannot create target directory: %s') printf '%s' 'ターゲットディレクトリを作成できません: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' '不明なオプション: %s (無視されました)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' '未対応の言語: %s (--lang を参照)' ;;
+				'Not a file or directory: %s') printf '%s' 'ファイルでもディレクトリでもありません: %s' ;;
+				'Files to treat: %s') printf '%s' '処理対象ファイル: %s' ;;
+				'Decompression too deep: %s') printf '%s' '展開が深すぎます: %s' ;;
+				'Archive test failed: %s') printf '%s' 'アーカイブのテストに失敗: %s' ;;
+				'Extract failed: %s') printf '%s' '展開に失敗: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> アーカイブを削除' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'ゴミ箱には trash-put (trash-cli) が必要です' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' '展開済み(%s) + ゴミ箱へ: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' '展開済み(%s) + 完全消去: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' '展開済み(%s) + 削除: %s' ;;
+				'Trash failed: %s') printf '%s' 'ゴミ箱へ移動できません: %s' ;;
+				'Shred failed: %s') printf '%s' '完全消去に失敗: %s' ;;
+				'Delete failed: %s') printf '%s' '削除に失敗: %s' ;;
+				'Not a regular file: %s') printf '%s' '通常のファイルではありません: %s' ;;
+				'No MIME type for: %s') printf '%s' 'MIME タイプが取得できません: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'タイプ除外 (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' '名前を生成できません: %s' ;;
+				'Cannot create: %s') printf '%s' '作成できません: %s' ;;
+				'Same place: %s') printf '%s' '同じ場所です: %s' ;;
+				'Copy failed: %s') printf '%s' 'コピーに失敗: %s' ;;
+				'Move failed: %s') printf '%s' '移動に失敗: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: 対象が見つかりません: %s' ;;
+				'Removed: %s') printf '%s' '削除しました: %s' ;;
+				'Remove failed: %s') printf '%s' '削除に失敗: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: 対象が見つかりません: %s' ;;
+				'Trashed: %s') printf '%s' 'ゴミ箱へ: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: 対象が見つかりません: %s' ;;
+				'Shredded: %s') printf '%s' '完全消去: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'メタデータを除去: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'メタデータを除去できません: %s' ;;
+				'Copied : %s') printf '%s' 'コピー : %s' ;;
+				'Moved  : %s') printf '%s' '移動   : %s' ;;
+				'Removed: %s') printf '%s' '削除   : %s' ;;
+				'Extracted: %s') printf '%s' '展開   : %s' ;;
+				'Preview: %s') printf '%s' 'プレビュー: %s' ;;
+				'Skipped: %s') printf '%s' '除外   : %s' ;;
+				'Failed : %s') printf '%s' '失敗   : %s' ;;
+				'Nothing to treat.') printf '%s' '処理するものがありません。' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' '%s 個のファイルを整理中 - モード: %s、スレッド: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'バックグラウンドジョブの完了を待っています...' ;;
+				'Finished.') printf '%s' '完了。' ;;
+				'Terminated by user!') printf '%s' 'ユーザーによって中断されました!' ;;
+				'deps: missing: %s') printf '%s' 'deps: 不足: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: インストール提案: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: 今インストールしますか? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: インストールされませんでした (確認なしで入れるには DEPS_YES=1)' ;;
+				'deps: skipped') printf '%s' 'deps: スキップ' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: 対応するパッケージマネージャが見つかりません' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: root 権限を得る方法がありません (root で実行するか sudo を導入)' ;;
+				'Error: ') printf '%s' 'エラー: ' ;;
+				'Warning: ') printf '%s' '警告: ' ;;
+				'unknown camera') printf '%s' '不明なカメラ' ;;
+				'unknown date') printf '%s' '不明な日付' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          表示言語 (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             言語一覧を表示' ;;
+				'Languages') printf '%s' '言語' ;;
+				'Available languages (--lang=XX):') printf '%s' '利用可能な言語 (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(既定)             プレビューのみ - 元 <=> 先を表示' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             各ファイルを整理先へコピーします' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             各ファイルを整理先へ移動します' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           計算されたターゲット(TARGET)パスのファイルを削除します' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           --remove の別名' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            計算されたターゲットをデスクトップのゴミ箱へ送ります' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            計算されたターゲットに shred -u -n 1 を実行します' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       上のモードのいずれかの長い形式 (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       MIME タイプに VALUE を含むファイルのみ' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        指定ディレクトリを最深部までたどります' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           隠しファイルと隠しディレクトリを含めます' ;;
+				'--links            Include symbolic links') printf '%s' '--links            シンボリックリンクを含めます' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    各ファイルの後に待機します' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           スレッドプールのサイズ (既定: nproc、最小 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       整理ツリーの基準ディレクトリ (既定: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        第一階層のディレクトリ構成要素 (既定: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     第一階層の下のディレクトリ構成要素' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     ファイル名(拡張子なし)を生成します' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  拡張子を生成します (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            埋め込みメタデータからファイル名を生成 (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   画像の EXIF 日付、音声/動画のタグ)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          既存のターゲットを上書き、なければ一意な ~(N) 名' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             画像に <カメラ>/<YYYY-MM-DD> 階層を追加します' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            copy/move 後にターゲットから EXIF/GPS メタデータを除去します' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       アーカイブを一時ディレクトリへ展開し中身を整理します' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (成功後、アーカイブ自体は削除されます;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred は代わりにその運命を適用します)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressed名前 = アーカイブ内の主ディレクトリ / 単一ファイル' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          カラー出力を強制します (tty では自動判定)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           --colored の別名' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            ファイルごとの詳細をオフ; 概要のみ' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          ファイルごとの詳細をオン (既定)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            概要を表示します (既定)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         操作ごとに 1 行を FILE に追記します' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      取り消しスクリプトを書き出します (既定: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            簡単な思い出し' ;;
+				'--help             This help') printf '%s' '--help             このヘルプ' ;;
+				'--version          Print the version') printf '%s' '--version          バージョンを表示します' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		tr)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' eksik ve paket adı bilinmiyor' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Kullanım: Sort.sh [seçenekler] <dosya|dizin> ...' ;;
+				'Common starts:') printf '%s' 'Sık kullanılan başlangıçlar:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Tam seçenek listesi ve dinamik değerler için --help kullanın.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Dosyaları MIME, tarihler, boyutlar, medya ölçüleri, sağlama' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'toplamları ve meta veri başlıklarından kurulan dinamik dizin ağacına düzenler.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'ÖNEMLİ: remove/delete/trash/shred hesaplanan HEDEF (TARGET)' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'yoluna etki eder, kaynağa değil. Kaynak = hedef reddedilir. Yıkıcı bir' ;;
+				'preview output before using a destructive mode.') printf '%s' 'mod kullanmadan önce önizleme çıktısını gözden geçirin.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' '--dirs, --subdirs, --rename ve --extension anahtar kelimelerinde' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'büyük/küçük harf önemsizdir. Bilinmeyen kelimeler gerçek ad olur. Listeler' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' '+ veya , ile birleştirilir (örn. --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Tarih ve dosya zamanları:' ;;
+				'File identity:') printf '%s' 'Dosya kimliği:' ;;
+				'Size and media dimensions:') printf '%s' 'Boyut ve medya ölçüleri:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'Çözünürlük katmanları büyük ölçüye göre belirlenir:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Meta veri (exiftool gerekir):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Eksik araçlar ilk kullanımda kurulmak üzere önerilir (init-system).' ;;
+				'Modes') printf '%s' 'Modlar' ;;
+				'Filtering and processing') printf '%s' 'Filtreleme ve işleme' ;;
+				'Destination and naming') printf '%s' 'Hedef ve adlandırma' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / meta veri' ;;
+				'Archives') printf '%s' 'Arşivler' ;;
+				'Output and safety') printf '%s' 'Çıktı ve güvenlik' ;;
+				'Dynamic values') printf '%s' 'Dinamik değerler' ;;
+				'Examples') printf '%s' 'Örnekler' ;;
+				'Summary') printf '%s' 'Özet' ;;
+				'Unsupported mode: %s') printf '%s' 'Desteklenmeyen mod: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Geçersiz --pause değeri: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred için shred (coreutils) gerekir' ;;
+				'Cannot create target directory: %s') printf '%s' 'Hedef dizin oluşturulamıyor: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Bilinmeyen seçenek: %s (yoksayıldı)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Desteklenmeyen dil: %s (--lang bakın)' ;;
+				'Not a file or directory: %s') printf '%s' 'Dosya veya dizin değil: %s' ;;
+				'Files to treat: %s') printf '%s' 'İşlenecek dosyalar: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Açılamayı çok derin: %s' ;;
+				'Archive test failed: %s') printf '%s' 'Arşiv testi başarısız: %s' ;;
+				'Extract failed: %s') printf '%s' 'Çıkarma başarısız: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> arşivi sil' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'Geri dönüşüm için trash-put (trash-cli) gerekir' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Açıldı(%s) + geri dönüşüme: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Açıldı(%s) + parçalandı: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Açıldı(%s) + silindi: %s' ;;
+				'Trash failed: %s') printf '%s' 'Geri dönüşüm başarısız: %s' ;;
+				'Shred failed: %s') printf '%s' 'Parçalama başarısız: %s' ;;
+				'Delete failed: %s') printf '%s' 'Silme başarısız: %s' ;;
+				'Not a regular file: %s') printf '%s' 'Normal bir dosya değil: %s' ;;
+				'No MIME type for: %s') printf '%s' 'MIME türü yok: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Tür atlandı (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'Ad oluşturulamıyor: %s' ;;
+				'Cannot create: %s') printf '%s' 'Oluşturulamıyor: %s' ;;
+				'Same place: %s') printf '%s' 'Aynı yer: %s' ;;
+				'Copy failed: %s') printf '%s' 'Kopyalama başarısız: %s' ;;
+				'Move failed: %s') printf '%s' 'Taşıma başarısız: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: hedef bulunamadı: %s' ;;
+				'Removed: %s') printf '%s' 'Kaldırıldı: %s' ;;
+				'Remove failed: %s') printf '%s' 'Kaldırma başarısız: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: hedef bulunamadı: %s' ;;
+				'Trashed: %s') printf '%s' 'Geri dönüşüme: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: hedef bulunamadı: %s' ;;
+				'Shredded: %s') printf '%s' 'Parçalandı: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Meta veri sıyırdı: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'Meta veri sıyıramadı: %s' ;;
+				'Copied : %s') printf '%s' 'Kopyalandı : %s' ;;
+				'Moved  : %s') printf '%s' 'Taşındı   : %s' ;;
+				'Removed: %s') printf '%s' 'Kaldırıldı: %s' ;;
+				'Extracted: %s') printf '%s' 'Açıldı: %s' ;;
+				'Preview: %s') printf '%s' 'Önizleme: %s' ;;
+				'Skipped: %s') printf '%s' 'Atlandı: %s' ;;
+				'Failed : %s') printf '%s' 'Başarısız : %s' ;;
+				'Nothing to treat.') printf '%s' 'İşlenecek bir şey yok.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' '%s dosya düzenleniyor - mod: %s, iş parçacığı: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'Arka plan işlerinin bitmesi bekleniyor...' ;;
+				'Finished.') printf '%s' 'Bitti.' ;;
+				'Terminated by user!') printf '%s' 'Kullanıcı tarafından durduruldu!' ;;
+				'deps: missing: %s') printf '%s' 'deps: eksik: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: önerilen kurulum: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: şimdi kurulsun mu? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: kurulmadı (sormadan kurmak için DEPS_YES=1 ayarlayın)' ;;
+				'deps: skipped') printf '%s' 'deps: atlandı' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: desteklenen paket yöneticisi bulunamadı' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: root yetkisi yolu yok (root olarak çalıştırın veya sudo kurun)' ;;
+				'Error: ') printf '%s' 'Hata: ' ;;
+				'Warning: ') printf '%s' 'Uyarı: ' ;;
+				'unknown camera') printf '%s' 'bilinmeyen kamera' ;;
+				'unknown date') printf '%s' 'bilinmeyen tarih' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Arayüz dili (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             Dil listesini yazdır' ;;
+				'Languages') printf '%s' 'Diller' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Kullanılabilir diller (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(varsayılan)       Sadece önizleme - kaynak <=> hedef yazdırır' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Her dosyayı sıralı yerine kopyalar' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Her dosyayı sıralı yerine taşır' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Hesaplanan HEDEF (TARGET) yolundaki dosyayı kaldırır' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           --remove için takma ad' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Hesaplanan hedefi masaüstü geri dönüşümüne gönderir' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Hesaplanan hedefte shred -u -n 1 çalıştırır' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Yukarıdaki modlardan birinin uzun biçimi (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Yalnızca MIME türü VALUE içeren dosyalar' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Verilen dizinleri en derine kadar gezer' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Gizli dosya ve dizinleri kapsar' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Simgesel bağlantıları kapsar' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Her dosyadan sonra bekler' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           İş parçacığı havuzu boyutu (varsayılan: nproc, en az 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Sıralı ağacın taban dizini (varsayılan: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Birincil dizin bileşenleri (varsayılan: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Birincil düzeyin altındaki dizin bileşenleri' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Dosya adını üretir (uzantısız)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Uzantıyı üretir (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Gömülü meta veriden dosya adı (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   görüntü EXIF tarihi, ses/video etiketleri)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Var olan hedeflerin üzerine yazar, yoksa özgün ~(N) ad' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Görüntüler için <Kamera>/<YYYY-MM-DD> düzeyleri ekler' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            copy/move sonrası hedeflerden EXIF/GPS meta verisini sıyırır' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Arşivleri geçici dizine açar ve içeriğini düzenler' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (başarıdan sonra arşivin kendisi silinir;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred bu akıbeti onun yerine uygular)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedAd = arşiv içindeki ana dizin / tek dosya' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Renkli çıktıyı zorlar (tty üzerinde otomatik algılanır)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           --colored için takma ad' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Dosya başına ayrıntı kapalı; yalnızca özet' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Dosya başına ayrıntı açık (varsayılan)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            Özeti yazdırır (varsayılan)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Her işlem için bir satırı FILE sonuna ekler' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Geri alma betiği yazar (varsayılan: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Kısa hatırlatma' ;;
+				'--help             This help') printf '%s' '--help             Bu yardım' ;;
+				'--version          Print the version') printf '%s' '--version          Sürümü yazdırır' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		ko)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\''이(가) 없으며 패키지 이름을 알 수 없습니다' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '사용법: Sort.sh [옵션] <파일|디렉터리> ...' ;;
+				'Common starts:') printf '%s' '자주 쓰는 시작 예:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' '전체 옵션 목록과 동적 값은 --help를 사용하세요.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'MIME, 날짜, 크기, 미디어 크기, 체크섬, 메타데이터 제목으로' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' '구성된 동적 디렉터리 트리에 파일을 정리합니다.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' '중요: remove/delete/trash/shred은 계산된 대상(TARGET)' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' '경로에 작용하며 원본에는 작용하지 않습니다. 원본 = 대상은 거부됩니다.' ;;
+				'preview output before using a destructive mode.') printf '%s' '파괴적인 모드를 쓰기 전에 미리보기 출력을 확인하세요.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' '--dirs, --subdirs, --rename, --extension 키워드는' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' '대소문자를 구별하지 않습니다. 모르는 단어는 그대로 이름이 됩니다. 목록은' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' '+ 또는 ,로 연결합니다(예: --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' '날짜와 파일 시간:' ;;
+				'File identity:') printf '%s' '파일 식별:' ;;
+				'Size and media dimensions:') printf '%s' '크기와 미디어 크기:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' '해상도 등급은 긴 변을 기준으로 합니다:' ;;
+				'Metadata (needs exiftool):') printf '%s' '메타데이터(exiftool 필요):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' '없는 도구는 처음 사용할 때 설치를 제안합니다(init-system).' ;;
+				'Modes') printf '%s' '모드' ;;
+				'Filtering and processing') printf '%s' '필터와 처리' ;;
+				'Destination and naming') printf '%s' '대상과 이름짓기' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / 메타데이터' ;;
+				'Archives') printf '%s' '아카이브' ;;
+				'Output and safety') printf '%s' '출력과 안전' ;;
+				'Dynamic values') printf '%s' '동적 값' ;;
+				'Examples') printf '%s' '예시' ;;
+				'Summary') printf '%s' '요약' ;;
+				'Unsupported mode: %s') printf '%s' '지원하지 않는 모드: %s' ;;
+				'Invalid --pause value: %s') printf '%s' '잘못된 --pause 값: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred에는 shred (coreutils)가 필요합니다' ;;
+				'Cannot create target directory: %s') printf '%s' '대상 디렉터리를 만들 수 없습니다: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' '알 수 없는 옵션: %s (무시함)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' '지원하지 않는 언어: %s (--lang 참조)' ;;
+				'Not a file or directory: %s') printf '%s' '파일이나 디렉터리가 아닙니다: %s' ;;
+				'Files to treat: %s') printf '%s' '처리할 파일: %s' ;;
+				'Decompression too deep: %s') printf '%s' '압축 해제가 너무 깊습니다: %s' ;;
+				'Archive test failed: %s') printf '%s' '아카이브 검사 실패: %s' ;;
+				'Extract failed: %s') printf '%s' '압축 해제 실패: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> 아카이브 삭제' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' '휴지통에는 trash-put (trash-cli)가 필요합니다' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' '해제됨(%s) + 휴지통: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' '해제됨(%s) + 완전삭제: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' '해제됨(%s) + 삭제: %s' ;;
+				'Trash failed: %s') printf '%s' '휴지통 실패: %s' ;;
+				'Shred failed: %s') printf '%s' '완전삭제 실패: %s' ;;
+				'Delete failed: %s') printf '%s' '삭제 실패: %s' ;;
+				'Not a regular file: %s') printf '%s' '일반 파일이 아닙니다: %s' ;;
+				'No MIME type for: %s') printf '%s' 'MIME 타입 없음: %s' ;;
+				'Type skip (%s): %s') printf '%s' '타입 제외 (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' '이름을 만들 수 없습니다: %s' ;;
+				'Cannot create: %s') printf '%s' '만들 수 없습니다: %s' ;;
+				'Same place: %s') printf '%s' '같은 위치: %s' ;;
+				'Copy failed: %s') printf '%s' '복사 실패: %s' ;;
+				'Move failed: %s') printf '%s' '이동 실패: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: 대상을 찾을 수 없습니다: %s' ;;
+				'Removed: %s') printf '%s' '제거됨: %s' ;;
+				'Remove failed: %s') printf '%s' '제거 실패: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: 대상을 찾을 수 없습니다: %s' ;;
+				'Trashed: %s') printf '%s' '휴지통: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: 대상을 찾을 수 없습니다: %s' ;;
+				'Shredded: %s') printf '%s' '완전삭제: %s' ;;
+				'Stripped metadata: %s') printf '%s' '메타데이터 제거됨: %s' ;;
+				'Could not strip metadata: %s') printf '%s' '메타데이터를 제거하지 못했습니다: %s' ;;
+				'Copied : %s') printf '%s' '복사됨 : %s' ;;
+				'Moved  : %s') printf '%s' '이동됨 : %s' ;;
+				'Removed: %s') printf '%s' '제거됨 : %s' ;;
+				'Extracted: %s') printf '%s' '해제됨 : %s' ;;
+				'Preview: %s') printf '%s' '미리보기: %s' ;;
+				'Skipped: %s') printf '%s' '건너뜀 : %s' ;;
+				'Failed : %s') printf '%s' '실패   : %s' ;;
+				'Nothing to treat.') printf '%s' '처리할 것이 없습니다.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' '파일 %s개 정리 중 - 모드: %s, 스레드: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' '백그라운드 작업이 끝나기를 기다리는 중...' ;;
+				'Finished.') printf '%s' '완료.' ;;
+				'Terminated by user!') printf '%s' '사용자가 중단했습니다!' ;;
+				'deps: missing: %s') printf '%s' 'deps: 없음: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: 설치 제안: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: 지금 설치할까요? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: 설치되지 않았습니다 (물어보지 않고 설치하려면 DEPS_YES=1)' ;;
+				'deps: skipped') printf '%s' 'deps: 건너뜀' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: 지원하는 패키지 관리자가 없습니다' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: root 권한을 얻을 방법이 없습니다 (root로 실행하거나 sudo 설치)' ;;
+				'Error: ') printf '%s' '오류: ' ;;
+				'Warning: ') printf '%s' '경고: ' ;;
+				'unknown camera') printf '%s' '알 수 없는 카메라' ;;
+				'unknown date') printf '%s' '알 수 없는 날짜' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          인터페이스 언어 (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             언어 목록 출력' ;;
+				'Languages') printf '%s' '언어' ;;
+				'Available languages (--lang=XX):') printf '%s' '사용 가능한 언어 (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(기본값)           미리보기만 - 원본 <=> 대상 출력' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             각 파일을 정리된 위치로 복사합니다' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             각 파일을 정리된 위치로 이동합니다' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           계산된 대상(TARGET) 경로의 파일을 제거합니다' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           --remove의 별칭' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            계산된 대상을 데스크톱 휴지통으로 보냅니다' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            계산된 대상에 shred -u -n 1을 실행합니다' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       위 모드의 긴 형식 (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       MIME 타입에 VALUE가 포함된 파일만' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        지정한 디렉터리를 끝까지 탐색합니다' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           숨김 파일과 숨김 디렉터리를 포함합니다' ;;
+				'--links            Include symbolic links') printf '%s' '--links            심볼릭 링크를 포함합니다' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    각 파일 후에 대기합니다' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           스레드 풀 크기 (기본값: nproc, 최소 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       정리 트리의 기준 디렉터리 (기본값: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        1차 디렉터리 구성 요소 (기본값: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     1차 아래의 디렉터리 구성 요소' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     파일 이름(확장자 제외)을 생성합니다' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  확장자를 생성합니다 (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            내장 메타데이터에서 파일 이름 생성 (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   이미지 EXIF 날짜, 오디오/비디오 태그)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          기존 대상을 덮어쓰고, 없으면 고유한 ~(N) 이름' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             이미지에 <카메라>/<YYYY-MM-DD> 단계를 추가합니다' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            copy/move 후 대상에서 EXIF/GPS 메타데이터를 제거합니다' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       아카이브를 임시 디렉터리에 풀고 내용을 정리합니다' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (성공 후 아카이브 자체는 삭제됩니다;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred은 그 대신 그 운명을 적용합니다)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressed이름 = 아카이브 안의 기본 디렉터리 / 단일 파일' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          색상 출력을 강제합니다 (tty에서 자동 감지)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           --colored의 별칭' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            파일별 상세 끔; 요약만' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          파일별 상세 켬 (기본값)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            요약을 출력합니다 (기본값)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         작업마다 한 줄씩 FILE에 추가합니다' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      되돌리기 스크립트를 작성합니다 (기본값: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            간단한 요약' ;;
+				'--help             This help') printf '%s' '--help             이 도움말' ;;
+				'--version          Print the version') printf '%s' '--version          버전을 출력합니다' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		vi)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' bị thiếu và tên gói của nó không rõ' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - công cụ sắp xếp đa luồng tự chứa' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Cách dùng: Sort.sh [tùy chọn] <tệp|thư mục> ...' ;;
+				'Common starts:') printf '%s' 'Khởi động thường dùng:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Dùng --help để xem đầy đủ danh sách tùy chọn và giá trị động.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Sắp xếp tệp vào cây thư mục động được dựng từ MIME, ngày tháng,' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'kích thước, kích thước media, checksum và tiêu đề metadata.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'QUAN TRỌNG: remove/delete/trash/shred tác động lên ĐÍCH (TARGET)' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'đã tính, không phải nguồn. Nguồn = đích bị từ chối. Hãy xem đầu ra' ;;
+				'preview output before using a destructive mode.') printf '%s' 'xem trước trước khi dùng chế độ phá hủy.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'Từ khóa cho --dirs, --subdirs, --rename và --extension' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'không phân biệt hoa/thường. Từ lạ thành tên nguyên văn. Danh sách nối' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'bằng + hoặc , (vd. --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Ngày và thời gian của tệp:' ;;
+				'File identity:') printf '%s' 'Nhận dạng tệp:' ;;
+				'Size and media dimensions:') printf '%s' 'Kích thước và kích thước media:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'Bậc phân giải dùng chiều lớn hơn:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Metadata (cần exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Công cụ thiếu sẽ được đề nghị cài khi dùng lần đầu (init-system).' ;;
+				'Modes') printf '%s' 'Chế độ' ;;
+				'Filtering and processing') printf '%s' 'Lọc và xử lý' ;;
+				'Destination and naming') printf '%s' 'Đích và đặt tên' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / metadata' ;;
+				'Archives') printf '%s' 'Kho lưu trữ' ;;
+				'Output and safety') printf '%s' 'Đầu ra và an toàn' ;;
+				'Dynamic values') printf '%s' 'Giá trị động' ;;
+				'Examples') printf '%s' 'Ví dụ' ;;
+				'Summary') printf '%s' 'Tóm tắt' ;;
+				'Unsupported mode: %s') printf '%s' 'Chế độ không được hỗ trợ: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Giá trị --pause không hợp lệ: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred cần shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'Không tạo được thư mục đích: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Tùy chọn không rõ: %s (bỏ qua)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Ngôn ngữ không được hỗ trợ: %s (xem --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'Không phải tệp hay thư mục: %s' ;;
+				'Files to treat: %s') printf '%s' 'Tệp cần xử lý: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Giải nén quá sâu: %s' ;;
+				'Archive test failed: %s') printf '%s' 'Kiểm tra kho thất bại: %s' ;;
+				'Extract failed: %s') printf '%s' 'Giải nén thất bại: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> xóa kho' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'Thùng rác cần trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Đã giải nén(%s) + thùng rác: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Đã giải nén(%s) + xóa sạch: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Đã giải nén(%s) + đã xóa: %s' ;;
+				'Trash failed: %s') printf '%s' 'Thùng rác thất bại: %s' ;;
+				'Shred failed: %s') printf '%s' 'Xóa sạch thất bại: %s' ;;
+				'Delete failed: %s') printf '%s' 'Xóa thất bại: %s' ;;
+				'Not a regular file: %s') printf '%s' 'Không phải tệp thường: %s' ;;
+				'No MIME type for: %s') printf '%s' 'Không có kiểu MIME cho: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Bỏ qua kiểu (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'Không tạo được tên cho: %s' ;;
+				'Cannot create: %s') printf '%s' 'Không tạo được: %s' ;;
+				'Same place: %s') printf '%s' 'Cùng chỗ: %s' ;;
+				'Copy failed: %s') printf '%s' 'Sao chép thất bại: %s' ;;
+				'Move failed: %s') printf '%s' 'Di chuyển thất bại: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: không thấy đích: %s' ;;
+				'Removed: %s') printf '%s' 'Đã gỡ bỏ: %s' ;;
+				'Remove failed: %s') printf '%s' 'Gỡ bỏ thất bại: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: không thấy đích: %s' ;;
+				'Trashed: %s') printf '%s' 'Vào thùng rác: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: không thấy đích: %s' ;;
+				'Shredded: %s') printf '%s' 'Đã xóa sạch: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Đã gỡ metadata: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'Không gỡ được metadata: %s' ;;
+				'Copied : %s') printf '%s' 'Đã sao chép : %s' ;;
+				'Moved  : %s') printf '%s' 'Đã chuyển   : %s' ;;
+				'Removed: %s') printf '%s' 'Đã gỡ bỏ    : %s' ;;
+				'Extracted: %s') printf '%s' 'Đã giải nén: %s' ;;
+				'Preview: %s') printf '%s' 'Xem trước: %s' ;;
+				'Skipped: %s') printf '%s' 'Đã bỏ qua: %s' ;;
+				'Failed : %s') printf '%s' 'Thất bại : %s' ;;
+				'Nothing to treat.') printf '%s' 'Không có gì để xử lý.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'Đang sắp xếp %s tệp - chế độ: %s, luồng: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'Đang chờ các công việc nền kết thúc...' ;;
+				'Finished.') printf '%s' 'Xong.' ;;
+				'Terminated by user!') printf '%s' 'Bị người dùng dừng!' ;;
+				'deps: missing: %s') printf '%s' 'deps: thiếu: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: đề nghị cài: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: cài ngay? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: chưa cài (đặt DEPS_YES=1 để cài không cần hỏi)' ;;
+				'deps: skipped') printf '%s' 'deps: bỏ qua' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: không tìm thấy trình quản lý gói được hỗ trợ' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: không có cách lấy quyền root (chạy với root hoặc cài sudo)' ;;
+				'Error: ') printf '%s' 'Lỗi: ' ;;
+				'Warning: ') printf '%s' 'Cảnh báo: ' ;;
+				'unknown camera') printf '%s' 'máy ảnh không rõ' ;;
+				'unknown date') printf '%s' 'ngày không rõ' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Ngôn ngữ giao diện (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             In danh sách ngôn ngữ' ;;
+				'Languages') printf '%s' 'Ngôn ngữ' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Các ngôn ngữ có sẵn (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(mặc định)         Chỉ xem trước - in nguồn <=> đích' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Sao chép mỗi tệp đến vị trí đã sắp của nó' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Chuyển mỗi tệp đến vị trí đã sắp của nó' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Gỡ tệp tại đường dẫn ĐÍCH (TARGET) đã tính' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           Bí danh của --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Gửi đích đã tính vào thùng rác màn hình' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Chạy shred -u -n 1 trên đích đã tính' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Dạng dài của một chế độ ở trên (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Chỉ tệp có kiểu MIME chứa VALUE' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Duyệt các thư mục cho trước đến tận cùng' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Bao gồm tệp và thư mục ẩn' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Bao gồm liên kết tượng trưng' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Chờ sau mỗi tệp' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           Kích thước nhóm luồng (mặc định: nproc, tối thiểu 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Thư mục gốc của cây sắp xếp (mặc định: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Thành phần thư mục chính (mặc định: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Thành phần thư mục dưới tầng chính' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Sinh tên tệp (không có phần mở rộng)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Sinh phần mở rộng (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Tên tệp từ metadata nhúng (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   ngày EXIF của ảnh, thẻ âm thanh/video)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Ghi đè đích đã có, nếu không tên ~(N) duy nhất' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Thêm tầng <Máy ảnh>/<YYYY-MM-DD> cho ảnh' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            Gỡ metadata EXIF/GPS khỏi đích sau copy/move' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Giải nén kho vào thư mục tạm rồi sắp xếp nội dung' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (bản thân kho bị xóa sau khi thành công;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred áp số phận đó thay thế)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedTên = thư mục chính / tệp đơn trong kho' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Ép đầu ra có màu (tự dò trên tty)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           Bí danh của --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Tắt chi tiết từng tệp; chỉ tóm tắt' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Bật chi tiết từng tệp (mặc định)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            In tóm tắt (mặc định)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Nối một dòng mỗi thao tác vào FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Viết script hoàn tác (mặc định: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Nhắc ngắn' ;;
+				'--help             This help') printf '%s' '--help             Trợ giúp này' ;;
+				'--version          Print the version') printf '%s' '--version          In phiên bản' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		it)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' manca e il nome del suo pacchetto è sconosciuto' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - organizzatore multithread autonomo' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opzioni] <file|directory> ...' ;;
+				'Common starts:') printf '%s' 'Avvii comuni:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Usa --help per l'\''elenco completo delle opzioni e i valori dinamici.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Ordina i file in un albero di directory dinamico costruito da MIME, date,' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'dimensioni, dimensioni dei media, checksum e titoli dei metadati.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'IMPORTANTE: remove/delete/trash/shred agiscono sul PERCORSO DI' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'DESTINAZIONE calcolato, non sulla sorgente. Sorgente = destinazione è rifiutato.' ;;
+				'preview output before using a destructive mode.') printf '%s' 'Esamina l'\''output di anteprima prima di usare una modalità distruttiva.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'Le parole chiave per --dirs, --subdirs, --rename e --extension' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'non distinguono maiuscole/minuscole. Parole sconosciute diventano nomi letterali.' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'Gli elenchi si uniscono con + o , (es. --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Data e orari del file:' ;;
+				'File identity:') printf '%s' 'Identità del file:' ;;
+				'Size and media dimensions:') printf '%s' 'Dimensione e dimensioni dei media:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'I livelli di risoluzione usano la dimensione maggiore:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Metadati (richiede exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Gli strumenti mancanti vengono proposti per l'\''installazione al primo uso (init-system).' ;;
+				'Modes') printf '%s' 'Modalità' ;;
+				'Filtering and processing') printf '%s' 'Filtraggio ed elaborazione' ;;
+				'Destination and naming') printf '%s' 'Destinazione e denominazione' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / metadati' ;;
+				'Archives') printf '%s' 'Archivi' ;;
+				'Output and safety') printf '%s' 'Output e sicurezza' ;;
+				'Dynamic values') printf '%s' 'Valori dinamici' ;;
+				'Examples') printf '%s' 'Esempi' ;;
+				'Summary') printf '%s' 'Riepilogo' ;;
+				'Unsupported mode: %s') printf '%s' 'Modalità non supportata: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Valore --pause non valido: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred richiede shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'Impossibile creare la directory di destinazione: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Opzione sconosciuta: %s (ignorata)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Lingua non supportata: %s (vedi --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'Non è un file né una directory: %s' ;;
+				'Files to treat: %s') printf '%s' 'File da trattare: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Estrazione troppo profonda: %s' ;;
+				'Archive test failed: %s') printf '%s' 'Test dell'\''archivio fallito: %s' ;;
+				'Extract failed: %s') printf '%s' 'Estrazione fallita: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> elimina l'\''archivio' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'Il cestino richiede trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Estratto(%s) + nel cestino: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Estratto(%s) + distrutto: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Estratto(%s) + eliminato: %s' ;;
+				'Trash failed: %s') printf '%s' 'Cestino fallito: %s' ;;
+				'Shred failed: %s') printf '%s' 'Distruzione fallita: %s' ;;
+				'Delete failed: %s') printf '%s' 'Eliminazione fallita: %s' ;;
+				'Not a regular file: %s') printf '%s' 'Non è un file regolare: %s' ;;
+				'No MIME type for: %s') printf '%s' 'Nessun tipo MIME per: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Tipo saltato (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'Impossibile formare un nome per: %s' ;;
+				'Cannot create: %s') printf '%s' 'Impossibile creare: %s' ;;
+				'Same place: %s') printf '%s' 'Stesso posto: %s' ;;
+				'Copy failed: %s') printf '%s' 'Copia fallita: %s' ;;
+				'Move failed: %s') printf '%s' 'Spostamento fallito: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: destinazione non trovata: %s' ;;
+				'Removed: %s') printf '%s' 'Rimosso: %s' ;;
+				'Remove failed: %s') printf '%s' 'Rimozione fallita: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: destinazione non trovata: %s' ;;
+				'Trashed: %s') printf '%s' 'Nel cestino: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: destinazione non trovata: %s' ;;
+				'Shredded: %s') printf '%s' 'Distrutto: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Metadati rimossi: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'Impossibile rimuovere i metadati: %s' ;;
+				'Copied : %s') printf '%s' 'Copiati  : %s' ;;
+				'Moved  : %s') printf '%s' 'Spostati : %s' ;;
+				'Removed: %s') printf '%s' 'Rimossi  : %s' ;;
+				'Extracted: %s') printf '%s' 'Estratti : %s' ;;
+				'Preview: %s') printf '%s' 'Anteprima: %s' ;;
+				'Skipped: %s') printf '%s' 'Saltati  : %s' ;;
+				'Failed : %s') printf '%s' 'Falliti  : %s' ;;
+				'Nothing to treat.') printf '%s' 'Niente da trattare.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'Ordinamento di %s file - modalità: %s, thread: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'In attesa del termine dei lavori in background...' ;;
+				'Finished.') printf '%s' 'Finito.' ;;
+				'Terminated by user!') printf '%s' 'Interrotto dall'\''utente!' ;;
+				'deps: missing: %s') printf '%s' 'deps: mancanti: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: installazione proposta: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: installare ora? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: non installato (imposta DEPS_YES=1 per installare senza chiedere)' ;;
+				'deps: skipped') printf '%s' 'deps: saltato' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: nessun gestore di pacchetti supportato trovato' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: nessun modo per ottenere root (esegui come root o installa sudo)' ;;
+				'Error: ') printf '%s' 'Errore: ' ;;
+				'Warning: ') printf '%s' 'Attenzione: ' ;;
+				'unknown camera') printf '%s' 'fotocamera sconosciuta' ;;
+				'unknown date') printf '%s' 'data sconosciuta' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Lingua dell'\''interfaccia (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             Stampa l'\''elenco delle lingue' ;;
+				'Languages') printf '%s' 'Lingue' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Lingue disponibili (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(predefinito)       Solo anteprima - stampa sorgente <=> destinazione' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Copia ogni file nella sua posizione ordinata' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Sposta ogni file nella sua posizione ordinata' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Rimuove il file nel percorso DI DESTINAZIONE calcolato' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           Alias per --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Manda la destinazione calcolata nel cestino del desktop' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Esegue shred -u -n 1 sulla destinazione calcolata' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Forma lunga di una delle modalità sopra (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Solo file il cui tipo MIME contiene VALUE' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Attraversa le directory fornite fino in profondità' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Include file e directory nascosti' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Include collegamenti simbolici' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Attende dopo ogni file' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           Dimensione del pool di thread (predefinito: nproc, min 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Directory base dell'\''albero ordinato (predefinito: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Componenti directory primari (predefinito: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Componenti directory sotto il livello primario' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Genera il nome del file (senza estensione)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Genera l'\''estensione (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Nome del file dai metadati incorporati (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   data EXIF dell'\''immagine, tag audio/video)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Sovrascrive le destinazioni esistenti, altrimenti nome ~(N) unico' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Aggiunge livelli <Fotocamera>/<YYYY-MM-DD> per le immagini' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            Rimuove i metadati EXIF/GPS dalle destinazioni dopo copy/move' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Estrae gli archivi in una dir temporanea e ordina il contenuto' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (l'\''archivio stesso viene eliminato dopo il successo;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred applicano tale sorte al suo posto)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedNome = directory principale / file singolo dentro l'\''archivio' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Forza l'\''output colorato (rilevato automaticamente su un tty)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           Alias per --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Dettagli per file disattivati; solo riepilogo' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Dettagli per file attivati (predefinito)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            Stampa il riepilogo (predefinito)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Aggiunge una riga per azione a FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Scrive uno script di annullamento (predefinito: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Promemoria breve' ;;
+				'--help             This help') printf '%s' '--help             Questo aiuto' ;;
+				'--version          Print the version') printf '%s' '--version          Stampa la versione' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		pl)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' jest brakujące, a nazwa pakietu jest nieznana' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - samodzielny wielowątkowy organizator plików' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Użycie: Sort.sh [opcje] <plik|katalog> ...' ;;
+				'Common starts:') printf '%s' 'Częste starty:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Użyj --help, aby zobaczyć pełną listę opcji i wartości dynamiczne.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Porządkuje pliki w dynamiczne drzewo katalogów zbudowane z MIME, dat,' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'rozmiarów, wymiarów mediów, sum kontrolnych i tytułów metadanych.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'WAŻNE: remove/delete/trash/shred działają na obliczonej ŚCIEŻCE' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'DOCELOWEJ, nie na źródle. Źródło = cel jest odrzucane. Przejrzyj' ;;
+				'preview output before using a destructive mode.') printf '%s' 'podgląd przed użyciem trybu destrukcyjnego.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'Słowa kluczowe dla --dirs, --subdirs, --rename i --extension' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'nie rozróżniają wielkości liter. Nieznane słowa stają się nazwami dosłownymi.' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'Listy łączy się znakiem + lub , (np. --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Data i czasy pliku:' ;;
+				'File identity:') printf '%s' 'Tożsamość pliku:' ;;
+				'Size and media dimensions:') printf '%s' 'Rozmiar i wymiary mediów:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'Poziomy rozdzielczości używają większego wymiaru:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Metadane (wymaga exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Brakujące narzędzia są proponowane do instalacji przy pierwszym użyciu (init-system).' ;;
+				'Modes') printf '%s' 'Tryby' ;;
+				'Filtering and processing') printf '%s' 'Filtrowanie i przetwarzanie' ;;
+				'Destination and naming') printf '%s' 'Cel i nazywanie' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / metadane' ;;
+				'Archives') printf '%s' 'Archiwa' ;;
+				'Output and safety') printf '%s' 'Wyjście i bezpieczeństwo' ;;
+				'Dynamic values') printf '%s' 'Wartości dynamiczne' ;;
+				'Examples') printf '%s' 'Przykłady' ;;
+				'Summary') printf '%s' 'Podsumowanie' ;;
+				'Unsupported mode: %s') printf '%s' 'Nieobsługiwany tryb: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Nieprawidłowa wartość --pause: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred wymaga shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'Nie można utworzyć katalogu docelowego: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Nieznana opcja: %s (zignorowano)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Nieobsługiwany język: %s (zobacz --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'To nie plik ani katalog: %s' ;;
+				'Files to treat: %s') printf '%s' 'Pliki do potraktowania: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Rozpakowywanie zbyt głębokie: %s' ;;
+				'Archive test failed: %s') printf '%s' 'Test archiwum nie powiódł się: %s' ;;
+				'Extract failed: %s') printf '%s' 'Rozpakowanie nie powiodło się: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> usuń archiwum' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'Kosz wymaga trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Rozpakowano(%s) + do kosza: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Rozpakowano(%s) + zniszczono: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Rozpakowano(%s) + usunięto: %s' ;;
+				'Trash failed: %s') printf '%s' 'Kosz nie powiódł się: %s' ;;
+				'Shred failed: %s') printf '%s' 'Niszczenie nie powiodło się: %s' ;;
+				'Delete failed: %s') printf '%s' 'Usuwanie nie powiodło się: %s' ;;
+				'Not a regular file: %s') printf '%s' 'To nie jest zwykły plik: %s' ;;
+				'No MIME type for: %s') printf '%s' 'Brak typu MIME dla: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Pominięto typ (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'Nie można utworzyć nazwy dla: %s' ;;
+				'Cannot create: %s') printf '%s' 'Nie można utworzyć: %s' ;;
+				'Same place: %s') printf '%s' 'To samo miejsce: %s' ;;
+				'Copy failed: %s') printf '%s' 'Kopiowanie nie powiodło się: %s' ;;
+				'Move failed: %s') printf '%s' 'Przenoszenie nie powiodło się: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: nie znaleziono celu: %s' ;;
+				'Removed: %s') printf '%s' 'Usunięto: %s' ;;
+				'Remove failed: %s') printf '%s' 'Usuwanie nie powiodło się: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: nie znaleziono celu: %s' ;;
+				'Trashed: %s') printf '%s' 'Do kosza: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: nie znaleziono celu: %s' ;;
+				'Shredded: %s') printf '%s' 'Zniszczono: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Metadane usunięto: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'Nie można usunąć metadanych: %s' ;;
+				'Copied : %s') printf '%s' 'Skopiowano  : %s' ;;
+				'Moved  : %s') printf '%s' 'Przeniesiono: %s' ;;
+				'Removed: %s') printf '%s' 'Usunięto    : %s' ;;
+				'Extracted: %s') printf '%s' 'Rozpakowano: %s' ;;
+				'Preview: %s') printf '%s' 'Podgląd: %s' ;;
+				'Skipped: %s') printf '%s' 'Pominięto: %s' ;;
+				'Failed : %s') printf '%s' 'Nieudane    : %s' ;;
+				'Nothing to treat.') printf '%s' 'Nic do potraktowania.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'Porządkowanie %s plik(ów) - tryb: %s, wątki: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'Oczekiwanie na zakończenie zadań w tle...' ;;
+				'Finished.') printf '%s' 'Gotowe.' ;;
+				'Terminated by user!') printf '%s' 'Przerwane przez użytkownika!' ;;
+				'deps: missing: %s') printf '%s' 'deps: brakuje: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: proponowana instalacja: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: zainstalować teraz? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: nie zainstalowano (ustaw DEPS_YES=1, aby instalować bez pytania)' ;;
+				'deps: skipped') printf '%s' 'deps: pominięto' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: nie znaleziono obsługiwanego menedżera pakietów' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: brak sposobu na uprawnienia root (uruchom jako root lub zainstaluj sudo)' ;;
+				'Error: ') printf '%s' 'Błąd: ' ;;
+				'Warning: ') printf '%s' 'Ostrzeżenie: ' ;;
+				'unknown camera') printf '%s' 'nieznany aparat' ;;
+				'unknown date') printf '%s' 'nieznana data' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Język interfejsu (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             Wyświetl listę języków' ;;
+				'Languages') printf '%s' 'Języki' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Dostępne języki (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(domyślnie)        Tylko podgląd - wypisuje źródło <=> cel' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Kopiuje każdy plik do jego uporządkowanej lokalizacji' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Przenosi każdy plik do jego uporządkowanej lokalizacji' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Usuwa plik na obliczonej ŚCIEŻCE DOCELOWEJ (TARGET)' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           Alias dla --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Wysyła obliczony cel do kosza pulpitu' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Uruchamia shred -u -n 1 na obliczonym celu' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Długa postać jednego z trybów powyżej (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Tylko pliki, których typ MIME zawiera VALUE' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Przechodzi przez podane katalogi do pełnej głębokości' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Uwzględnia ukryte pliki i katalogi' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Uwzględnia dowiązania symboliczne' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Czeka po każdym pliku' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           Rozmiar puli wątków (domyślnie: nproc, min. 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Katalog bazowy drzewa (domyślnie: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Główne składniki katalogów (domyślnie: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Składniki katalogów pod poziomem głównym' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Tworzy nazwę pliku (bez rozszerzenia)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Tworzy rozszerzenie (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Nazwa pliku z wbudowanych metadanych (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   data EXIF obrazu, tagi audio/wideo)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Nadpisuje istniejące cele, w przeciwnym razie unikalna nazwa ~(N)' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Dodaje poziomy <Aparat>/<YYYY-MM-DD> dla obrazów' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            Usuwa metadane EXIF/GPS z celów po copy/move' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Rozpakowuje archiwa do katalogu tymczasowego i porządkuje zawartość' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (samo archiwum jest usuwane po sukcesie;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred stosują ten los zamiast tego)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedNazwa = główny katalog / pojedynczy plik wewnątrz archiwum' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Wymusza kolorowe wyjście (automatycznie wykrywane na tty)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           Alias dla --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Szczegóły per plik wyłączone; tylko podsumowanie' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Szczegóły per plik włączone (domyślnie)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            Wypisuje podsumowanie (domyślnie)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Dopisuje jedną linię na akcję do FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Pisze skrypt cofania (domyślnie: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Krótkie przypomnienie' ;;
+				'--help             This help') printf '%s' '--help             Ta pomoc' ;;
+				'--version          Print the version') printf '%s' '--version          Wypisuje wersję' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		nl)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' ontbreekt en de pakketnaam is onbekend' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - zelfstandige multithread bestandsorganisator' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Gebruik: Sort.sh [opties] <bestand|map> ...' ;;
+				'Common starts:') printf '%s' 'Veelgebruikte starts:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'Gebruik --help voor de volledige optielijst en dynamische waarden.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'Sorteert bestanden in een dynamische mappenboom opgebouwd uit MIME, datums,' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'groottes, media-afmetingen, checksums en metadata-titels.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'BELANGRIJK: remove/delete/trash/shred werken op het berekende DOEL-pad,' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'niet op de bron. Bron = doel wordt geweigerd. Bekijk de voorbeelduitvoer' ;;
+				'preview output before using a destructive mode.') printf '%s' 'voordat u een destructieve modus gebruikt.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'Sleutelwoorden voor --dirs, --subdirs, --rename en --extension zijn' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'hoofdletterongevoelig. Onbekende woorden worden letterlijke namen. Lijsten' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'worden samengevoegd met + of , (bijv. --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'Datum en bestandstijden:' ;;
+				'File identity:') printf '%s' 'Bestandsidentiteit:' ;;
+				'Size and media dimensions:') printf '%s' 'Grootte en media-afmetingen:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'Resolutieniveaus gebruiken de grootste afmeting:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'Metadata (vereist exiftool):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'Ontbrekende hulpmiddelen worden bij eerste gebruik voorgesteld voor installatie (init-system).' ;;
+				'Modes') printf '%s' 'Modi' ;;
+				'Filtering and processing') printf '%s' 'Filteren en verwerken' ;;
+				'Destination and naming') printf '%s' 'Doel en naamgeving' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / metadata' ;;
+				'Archives') printf '%s' 'Archieven' ;;
+				'Output and safety') printf '%s' 'Uitvoer en veiligheid' ;;
+				'Dynamic values') printf '%s' 'Dynamische waarden' ;;
+				'Examples') printf '%s' 'Voorbeelden' ;;
+				'Summary') printf '%s' 'Samenvatting' ;;
+				'Unsupported mode: %s') printf '%s' 'Niet-ondersteunde modus: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'Ongeldige --pause-waarde: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred vereist shred (coreutils)' ;;
+				'Cannot create target directory: %s') printf '%s' 'Kan doelmap niet aanmaken: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'Onbekende optie: %s (genegeerd)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'Niet-ondersteunde taal: %s (zie --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'Geen bestand of map: %s' ;;
+				'Files to treat: %s') printf '%s' 'Te behandelen bestanden: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'Uitpakken te diep: %s' ;;
+				'Archive test failed: %s') printf '%s' 'Archieftest mislukt: %s' ;;
+				'Extract failed: %s') printf '%s' 'Uitpakken mislukt: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> archief verwijderen' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'Prullenbak vereist trash-put (trash-cli)' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'Uitgepakt(%s) + prullenbak: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'Uitgepakt(%s) + versnipperd: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'Uitgepakt(%s) + verwijderd: %s' ;;
+				'Trash failed: %s') printf '%s' 'Prullenbak mislukt: %s' ;;
+				'Shred failed: %s') printf '%s' 'Versnipperen mislukt: %s' ;;
+				'Delete failed: %s') printf '%s' 'Verwijderen mislukt: %s' ;;
+				'Not a regular file: %s') printf '%s' 'Geen gewoon bestand: %s' ;;
+				'No MIME type for: %s') printf '%s' 'Geen MIME-type voor: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'Type overgeslagen (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'Kan geen naam vormen voor: %s' ;;
+				'Cannot create: %s') printf '%s' 'Kan niet aanmaken: %s' ;;
+				'Same place: %s') printf '%s' 'Zelfde plek: %s' ;;
+				'Copy failed: %s') printf '%s' 'Kopiëren mislukt: %s' ;;
+				'Move failed: %s') printf '%s' 'Verplaatsen mislukt: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: doel niet gevonden: %s' ;;
+				'Removed: %s') printf '%s' 'Verwijderd: %s' ;;
+				'Remove failed: %s') printf '%s' 'Verwijderen mislukt: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: doel niet gevonden: %s' ;;
+				'Trashed: %s') printf '%s' 'In de prullenbak: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: doel niet gevonden: %s' ;;
+				'Shredded: %s') printf '%s' 'Versnipperd: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'Metadata verwijderd: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'Kon metadata niet verwijderen: %s' ;;
+				'Copied : %s') printf '%s' 'Gekopieerd : %s' ;;
+				'Moved  : %s') printf '%s' 'Verplaatst : %s' ;;
+				'Removed: %s') printf '%s' 'Verwijderd : %s' ;;
+				'Extracted: %s') printf '%s' 'Uitgepakt: %s' ;;
+				'Preview: %s') printf '%s' 'Voorbeeld: %s' ;;
+				'Skipped: %s') printf '%s' 'Overgeslagen: %s' ;;
+				'Failed : %s') printf '%s' 'Mislukt  : %s' ;;
+				'Nothing to treat.') printf '%s' 'Niets te behandelen.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'Sorteren van %s bestand(en) - modus: %s, threads: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'Wachten tot achtergrondtaken klaar zijn...' ;;
+				'Finished.') printf '%s' 'Klaar.' ;;
+				'Terminated by user!') printf '%s' 'Door gebruiker afgebroken!' ;;
+				'deps: missing: %s') printf '%s' 'deps: ontbreekt: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: voorgestelde installatie: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: nu installeren? [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: niet geïnstalleerd (zet DEPS_YES=1 om zonder vragen te installeren)' ;;
+				'deps: skipped') printf '%s' 'deps: overgeslagen' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: geen ondersteunde pakketbeheerder gevonden' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: geen manier om root te worden (draai als root of installeer sudo)' ;;
+				'Error: ') printf '%s' 'Fout: ' ;;
+				'Warning: ') printf '%s' 'Waarschuwing: ' ;;
+				'unknown camera') printf '%s' 'onbekende camera' ;;
+				'unknown date') printf '%s' 'onbekende datum' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          Interfacetaal (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             Toon de taallijst' ;;
+				'Languages') printf '%s' 'Talen' ;;
+				'Available languages (--lang=XX):') printf '%s' 'Beschikbare talen (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(standaard)        Alleen voorbeeld - print bron <=> doel' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             Kopieert elk bestand naar zijn gesorteerde locatie' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             Verplaatst elk bestand naar zijn gesorteerde locatie' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           Verwijdert het bestand op het berekende DOEL-pad' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           Alias voor --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            Stuurt het berekende doel naar de prullenbak' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            Voert shred -u -n 1 uit op het berekende doel' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       Lange vorm van een van de modi hierboven (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       Alleen bestanden waarvan het MIME-type VALUE bevat' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        Doorloopt opgegeven mappen tot volledige diepte' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           Omvat verborgen bestanden en mappen' ;;
+				'--links            Include symbolic links') printf '%s' '--links            Omvat symbolische koppelingen' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    Wacht na elk bestand' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           Thread-poolgrootte (standaard: nproc, min. 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       Basismap van de gesorteerde boom (standaard: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        Primaire mapcomponenten (standaard: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     Mapcomponenten onder het primaire niveau' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     Genereert de bestandsnaam (zonder extensie)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  Genereert de extensie (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            Bestandsnaam uit ingebedde metadata (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   EXIF-datum van afbeelding, audio/video-tags)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          Overschrijft bestaande doelen, anders unieke ~(N)-naam' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             Voegt <Camera>/<YYYY-MM-DD>-niveaus toe voor afbeeldingen' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            Verwijdert EXIF/GPS-metadata van doelen na copy/move' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       Pakt archieven uit in een tijdelijke map en sorteert de inhoud' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (het archief zelf wordt na succes verwijderd;' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred passen dat lot in plaats daarvan toe)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedNaam = hoofdmap / enkel bestand in het archief' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          Forceert gekleurde uitvoer (automatisch gedetecteerd op een tty)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           Alias voor --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            Details per bestand uit; alleen samenvatting' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          Details per bestand aan (standaard)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            Print de samenvatting (standaard)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         Voegt één regel per actie toe aan FILE' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      Schrijft een undo-script (standaard: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            Korte herinnering' ;;
+				'--help             This help') printf '%s' '--help             Deze hulp' ;;
+				'--version          Print the version') printf '%s' '--version          Print de versie' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		fa)
+			case "$1" in
+				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غایب است و نام بسته آن نامعلوم است' ;;
+				'Sort 17.1 - self-contained threaded organizer') printf '%s' 'Sort 17.1 - سازمان‌دهنده چندنخستی خودکفا' ;;
+				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استفاده: Sort.sh [گزینه‌ها] <فایل|پوشه> ...' ;;
+				'Common starts:') printf '%s' 'شروع‌های رایج:' ;;
+				'Use --help for the full option list and dynamic values.') printf '%s' 'برای فهرست کامل گزینه‌ها و مقادیر پویا از --help استفاده کنید.' ;;
+				'Sorts files into a dynamic directory tree built from MIME, dates,') printf '%s' 'فایل‌ها را در درخت پوشه‌ای پویا ساخته‌شده از MIME، تاریخ‌ها،' ;;
+				'sizes, media dimensions, checksums and metadata titles.') printf '%s' 'اندازه‌ها، ابعاد رسانه، چک‌سام‌ها و عنوان‌های فراداده مرتب می‌کند.' ;;
+				'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET') printf '%s' 'مهم: remove/delete/trash/shred روی مسیر هدف (TARGET)' ;;
+				'path, not on the source. Source = target is refused. Review the') printf '%s' 'محاسبه‌شده اثر می‌کنند، نه روی مبدأ. مبدأ = هدف رد می‌شود. پیش از' ;;
+				'preview output before using a destructive mode.') printf '%s' 'استفاده از حالت مخرب، خروجی پیش‌نمایش را بررسی کنید.' ;;
+				'Case-insensitive keywords for --dirs, --subdirs, --rename and') printf '%s' 'کلیدواژه‌های --dirs، --subdirs، --rename و --extension' ;;
+				'--extension. Unknown words become literal names. Lists are joined') printf '%s' 'به بزرگی/کوچکی حروف حساس نیستند. واژه‌های ناشناخته نام تحت‌اللفظی می‌شوند. فهرست‌ها' ;;
+				'with + or , (e.g. --dirs=year+month --subdirs=format,size).') printf '%s' 'با + یا , به هم می‌پیوندند (مثلاً --dirs=year+month --subdirs=format,size).' ;;
+				'Date and file times:') printf '%s' 'تاریخ و زمان‌های فایل:' ;;
+				'File identity:') printf '%s' 'هویت فایل:' ;;
+				'Size and media dimensions:') printf '%s' 'اندازه و ابعاد رسانه:' ;;
+				'Resolution tiers use the larger dimension:') printf '%s' 'سطوح وضوح از بُعد بزرگ‌تر استفاده می‌کنند:' ;;
+				'Metadata (needs exiftool):') printf '%s' 'فراداده (exiftool لازم است):' ;;
+				'Missing tools are proposed for install on first use (init-system).') printf '%s' 'ابزارهای غایب در نخستین استفاده برای نصب پیشنهاد می‌شوند (init-system).' ;;
+				'Modes') printf '%s' 'حالت‌ها' ;;
+				'Filtering and processing') printf '%s' 'پالایش و پردازش' ;;
+				'Destination and naming') printf '%s' 'مقصد و نام‌گذاری' ;;
+				'EXIF / metadata') printf '%s' 'EXIF / فراداده' ;;
+				'Archives') printf '%s' 'آرشیوها' ;;
+				'Output and safety') printf '%s' 'خروجی و ایمنی' ;;
+				'Dynamic values') printf '%s' 'مقادیر پویا' ;;
+				'Examples') printf '%s' 'نمونه‌ها' ;;
+				'Summary') printf '%s' 'خلاصه' ;;
+				'Unsupported mode: %s') printf '%s' 'حالت پشتیبانی‌نشده: %s' ;;
+				'Invalid --pause value: %s') printf '%s' 'مقدار نامعتبر --pause: %s' ;;
+				'--mode=shred requires shred (coreutils)') printf '%s' '--mode=shred به shred (coreutils) نیاز دارد' ;;
+				'Cannot create target directory: %s') printf '%s' 'ساخت پوشه هدف ممکن نیست: %s' ;;
+				'Unknown option: %s (ignored)') printf '%s' 'گزینه ناشناخته: %s (نادیده گرفته شد)' ;;
+				'Unsupported language: %s (see --lang)') printf '%s' 'زبان پشتیبانی‌نشده: %s (ببینید --lang)' ;;
+				'Not a file or directory: %s') printf '%s' 'فایل یا پوشه نیست: %s' ;;
+				'Files to treat: %s') printf '%s' 'فایل‌های قابل پردازش: %s' ;;
+				'Decompression too deep: %s') printf '%s' 'بازکردن آرشیو بیش از حد عمیق: %s' ;;
+				'Archive test failed: %s') printf '%s' 'آزمون آرشیو ناموفق: %s' ;;
+				'Extract failed: %s') printf '%s' 'بازکردن ناموفق: %s' ;;
+				'EXTRACT(%s): %s <=> delete archive') printf '%s' 'EXTRACT(%s): %s <=> حذف آرشیو' ;;
+				'Trash needs trash-put (trash-cli)') printf '%s' 'زباله‌دان به trash-put (trash-cli) نیاز دارد' ;;
+				'Extracted(%s) + trashed: %s') printf '%s' 'باز شد(%s) + زباله‌دان: %s' ;;
+				'Extracted(%s) + shredded: %s') printf '%s' 'باز شد(%s) + نابود شد: %s' ;;
+				'Extracted(%s) + deleted: %s') printf '%s' 'باز شد(%s) + حذف شد: %s' ;;
+				'Trash failed: %s') printf '%s' 'زباله‌دان ناموفق: %s' ;;
+				'Shred failed: %s') printf '%s' 'نابودی ناموفق: %s' ;;
+				'Delete failed: %s') printf '%s' 'حذف ناموفق: %s' ;;
+				'Not a regular file: %s') printf '%s' 'فایل عادی نیست: %s' ;;
+				'No MIME type for: %s') printf '%s' 'هیچ نوع MIME برای: %s' ;;
+				'Type skip (%s): %s') printf '%s' 'نوع رد شد (%s): %s' ;;
+				'EXIF: %s %s') printf '%s' 'EXIF: %s %s' ;;
+				'Cannot build a name for: %s') printf '%s' 'ساخت نام ممکن نیست برای: %s' ;;
+				'Cannot create: %s') printf '%s' 'ساخت ممکن نیست: %s' ;;
+				'Same place: %s') printf '%s' 'همان جا: %s' ;;
+				'Copy failed: %s') printf '%s' 'رونوشت ناموفق: %s' ;;
+				'Move failed: %s') printf '%s' 'جابه‌جایی ناموفق: %s' ;;
+				'Remove: target not found: %s') printf '%s' 'Remove: هدف یافت نشد: %s' ;;
+				'Removed: %s') printf '%s' 'حذف شد: %s' ;;
+				'Remove failed: %s') printf '%s' 'حذف ناموفق: %s' ;;
+				'Trash: target not found: %s') printf '%s' 'Trash: هدف یافت نشد: %s' ;;
+				'Trashed: %s') printf '%s' 'زباله‌دان: %s' ;;
+				'Shred: target not found: %s') printf '%s' 'Shred: هدف یافت نشد: %s' ;;
+				'Shredded: %s') printf '%s' 'نابود شد: %s' ;;
+				'Stripped metadata: %s') printf '%s' 'فراداده حذف شد: %s' ;;
+				'Could not strip metadata: %s') printf '%s' 'حذف فراداده ممکن نشد: %s' ;;
+				'Copied : %s') printf '%s' 'رونوشت : %s' ;;
+				'Moved  : %s') printf '%s' 'جابه‌جا : %s' ;;
+				'Removed: %s') printf '%s' 'حذف شد : %s' ;;
+				'Extracted: %s') printf '%s' 'باز شد: %s' ;;
+				'Preview: %s') printf '%s' 'پیش‌نمایش: %s' ;;
+				'Skipped: %s') printf '%s' 'رد شد : %s' ;;
+				'Failed : %s') printf '%s' 'ناموفق : %s' ;;
+				'Nothing to treat.') printf '%s' 'چیزی برای پردازش نیست.' ;;
+				'Sorting %s file(s) - mode: %s, jobs: %s') printf '%s' 'مرتب‌سازی %s فایل - حالت: %s، نخ‌ها: %s' ;;
+				'Waiting for background jobs to finish...') printf '%s' 'در انتظار پایان کارهای پس‌زمینه...' ;;
+				'Finished.') printf '%s' 'تمام شد.' ;;
+				'Terminated by user!') printf '%s' 'توسط کاربر متوقف شد!' ;;
+				'deps: missing: %s') printf '%s' 'deps: غایب: %s' ;;
+				'deps: proposed install: %s') printf '%s' 'deps: نصب پیشنهادی: %s' ;;
+				'deps: install now? [y/N] ') printf '%s' 'deps: الان نصب شود؟ [y/N] ' ;;
+				'deps: not installed (set DEPS_YES=1 to install without asking)') printf '%s' 'deps: نصب نشد (برای نصب بدون پرسش DEPS_YES=1 بگذارید)' ;;
+				'deps: skipped') printf '%s' 'deps: رد شد' ;;
+				'deps: no supported package manager found') printf '%s' 'deps: هیچ مدیر بسته پشتیبانی‌شده‌ای یافت نشد' ;;
+				'deps: no way to gain root (run as root or install sudo)') printf '%s' 'deps: راهی برای دسترسی root نیست (به‌عنوان root اجرا کنید یا sudo نصب کنید)' ;;
+				'Error: ') printf '%s' 'خطا: ' ;;
+				'Warning: ') printf '%s' 'هشدار: ' ;;
+				'unknown camera') printf '%s' 'دوربین نامعلوم' ;;
+				'unknown date') printf '%s' 'تاریخ نامعلوم' ;;
+				'--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)') printf '%s' '--lang=XX          زبان رابط کاربری (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)' ;;
+				'--lang             Print the language list') printf '%s' '--lang             چاپ فهرست زبان‌ها' ;;
+				'Languages') printf '%s' 'زبان‌ها' ;;
+				'Available languages (--lang=XX):') printf '%s' 'زبان‌های موجود (--lang=XX):' ;;
+				'(default)          Preview only - print source <=> target') printf '%s' '(پیش‌فرض)          فقط پیش‌نمایش - چاپ مبدأ <=> هدف' ;;
+				'--copy             Copy every file to its sorted location') printf '%s' '--copy             هر فایل را به جای مرتب‌شده‌اش رونوشت می‌کند' ;;
+				'--move             Move every file to its sorted location') printf '%s' '--move             هر فایل را به جای مرتب‌شده‌اش جابه‌جا می‌کند' ;;
+				'--remove           Remove the file at the calculated TARGET path') printf '%s' '--remove           فایل را در مسیر هدف (TARGET) محاسبه‌شده حذف می‌کند' ;;
+				'--delete           Alias for --remove') printf '%s' '--delete           مترادف --remove' ;;
+				'--trash            Send the calculated target to the desktop trash') printf '%s' '--trash            هدف محاسبه‌شده را به زباله‌دان می‌فرستد' ;;
+				'--shred            Run shred -u -n 1 on the calculated target') printf '%s' '--shred            روی هدف محاسبه‌شده shred -u -n 1 اجرا می‌کند' ;;
+				'--mode=VALUE       Long form of any mode above (copy/move/...)') printf '%s' '--mode=VALUE       شکل بلند یکی از حالت‌های بالا (copy/move/...)' ;;
+				'--type=VALUE       Only files whose MIME type contains VALUE') printf '%s' '--type=VALUE       فقط فایل‌هایی که نوع MIME شامل VALUE باشد' ;;
+				'                   (image, video, audio, pdf, application, ...)') printf '%s' '                   (image, video, audio, pdf, application, ...)' ;;
+				'--recursive        Walk supplied directories to full depth') printf '%s' '--recursive        پوشه‌های داده‌شده را تا عمق کامل می‌پیماید' ;;
+				'--hidden           Include hidden files and directories') printf '%s' '--hidden           فایل‌ها و پوشه‌های پنهان را شامل می‌شود' ;;
+				'--links            Include symbolic links') printf '%s' '--links            پیوندهای نمادین را شامل می‌شود' ;;
+				'--pause=SECONDS    Wait after each file') printf '%s' '--pause=SECONDS    بعد از هر فایل منتظر می‌ماند' ;;
+				'--jobs=N           Thread pool size (default: nproc, min 1)') printf '%s' '--jobs=N           اندازه استخر نخ‌ها (پیش‌فرض: nproc، حداقل 1)' ;;
+				'--target=DIR       Base directory of the sorted tree (default: .)') printf '%s' '--target=DIR       پوشه پایه درخت مرتب (پیش‌فرض: .)' ;;
+				'--dirs=LIST        Primary directory components (default: mime)') printf '%s' '--dirs=LIST        مؤلفه‌های پوشه اصلی (پیش‌فرض: mime)' ;;
+				'--subdirs=LIST     Directory components beneath the primary') printf '%s' '--subdirs=LIST     مؤلفه‌های پوشه زیر سطح اصلی' ;;
+				'--rename=VALUE     Generate the filename (without extension)') printf '%s' '--rename=VALUE     نام فایل را می‌سازد (بدون پسوند)' ;;
+				'--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)') printf '%s' '--extension=VALUE  پسوند را می‌سازد (none/mime/mime-sub/mime-ext/...)' ;;
+				'--title            Filename from embedded metadata (PDF /Title,') printf '%s' '--title            نام فایل از فراداده درون‌سازی‌شده (PDF /Title,' ;;
+				'                   image EXIF date, audio/video tags)') printf '%s' '                   تاریخ EXIF تصویر، برچسب‌های صوتی/ویدیویی)' ;;
+				'--replace          Overwrite existing targets, else unique ~(N) name') printf '%s' '--replace          روی اهداف موجود می‌نویسد، وگرنه نام یکتای ~(N)' ;;
+				'--exif             Add <Camera>/<YYYY-MM-DD> levels for images') printf '%s' '--exif             برای تصاویر سطح‌های <دوربین>/<YYYY-MM-DD> می‌افزاید' ;;
+				'--strip            Strip EXIF/GPS metadata from targets after copy/move') printf '%s' '--strip            بعد از copy/move فراداده EXIF/GPS را از اهداف حذف می‌کند' ;;
+				'--decompress       Extract archives to a temp dir and sort the contents') printf '%s' '--decompress       آرشیوها را در پوشه موقت باز و محتوایشان را مرتب می‌کند' ;;
+				'                   (the archive itself is deleted after success;') printf '%s' '                   (خود آرشیو پس از موفقیت حذف می‌شود؛' ;;
+				'                   --trash / --shred apply that fate to it instead)') printf '%s' '                   --trash / --shred به‌جای آن سرنوشت مذکور را اعمال می‌کنند)' ;;
+				'--rename=compressedName = main dir / single file inside the archive') printf '%s' '--rename=compressedنام = پوشه اصلی / تک‌فایل درون آرشیو' ;;
+				'--colored          Force colored output (auto-detected on a tty)') printf '%s' '--colored          خروجی رنگی را اجباری می‌کند (روی tty خودکار تشخیص داده می‌شود)' ;;
+				'--colors           Alias for --colored') printf '%s' '--colors           مترادف --colored' ;;
+				'--quiet            Per-file details off; summary only') printf '%s' '--quiet            جزئیات هر فایل خاموش؛ فقط خلاصه' ;;
+				'--verbose          Per-file details on (default)') printf '%s' '--verbose          جزئیات هر فایل روشن (پیش‌فرض)' ;;
+				'--stats            Print the summary (default)') printf '%s' '--stats            خلاصه را چاپ می‌کند (پیش‌فرض)' ;;
+				'--log=FILE         Append one line per action to FILE') printf '%s' '--log=FILE         هر عمل یک خط به FILE می‌افزاید' ;;
+				'--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)') printf '%s' '--undo[=FILE]      اسکریپت بازگردانی می‌نویسد (پیش‌فرض: sort_undo_<time>.sh)' ;;
+				'--usage            Short reminder') printf '%s' '--usage            یادآوری کوتاه' ;;
+				'--help             This help') printf '%s' '--help             این راهنما' ;;
+				'--version          Print the version') printf '%s' '--version          نسخه را چاپ می‌کند' ;;
+				*) printf '%s' "$1" ;;
+			esac
+			;;
+		*)
+			printf '%s' "$1" ;;
+	esac
+}
+
+# Tf: translate a %s template, then substitute the remaining arguments.
+Tf() {
+	local Tpl
+	Tpl=$(T "$1")
+	shift
+	printf "$Tpl" "$@"
+}
+
+# Lang_Name: native name of a language code.
+Lang_Name() {
+	case "$1" in
+		en) printf '%s' 'English' ;;
+		zh) printf '%s' 'Chinese (Mandarin) / 中文' ;;
+		hi) printf '%s' 'Hindi / हिन्दी' ;;
+		es) printf '%s' 'Spanish / Español' ;;
+		fr) printf '%s' 'French / Français' ;;
+		ar) printf '%s' 'Arabic / العربية' ;;
+		bn) printf '%s' 'Bengali / বাংলা' ;;
+		pt) printf '%s' 'Portuguese / Português' ;;
+		ru) printf '%s' 'Russian / Русский' ;;
+		ur) printf '%s' 'Urdu / اردو' ;;
+		id) printf '%s' 'Indonesian / Bahasa Indonesia' ;;
+		de) printf '%s' 'German / Deutsch' ;;
+		ja) printf '%s' 'Japanese / 日本語' ;;
+		tr) printf '%s' 'Turkish / Türkçe' ;;
+		ko) printf '%s' 'Korean / 한국어' ;;
+		vi) printf '%s' 'Vietnamese / Tiếng Việt' ;;
+		it) printf '%s' 'Italian / Italiano' ;;
+		pl) printf '%s' 'Polish / Polski' ;;
+		nl) printf '%s' 'Dutch / Nederlands' ;;
+		fa) printf '%s' 'Persian / فارسی' ;;
+		*) printf '%s' "$1" ;;
+	esac
+}
+
+# Lang_List: print the available UI languages.
+Lang_List() {
+	local Code
+	printf '%s\n' "$(T 'Available languages (--lang=XX):')"
+	for Code in $LANG_CODES; do
+		printf '  %s — %s\n' "$Code" "$(Lang_Name "$Code")"
+	done
+}
+
+
 Usage() {
-	Print_Header 'Sort 17.0 - self-contained threaded organizer'
+	Print_Header "$(T 'Sort 17.1 - self-contained threaded organizer')"
 	Print_Message 'Usage: Sort.sh [options] <file|directory> ...'
 	printf '\n'
 	Print_Message 'Common starts:'
@@ -4781,66 +7426,68 @@ Usage() {
 # ---------------------------------------------------------------------------
 
 Help() {
-	Print_Header 'Sort 17.0 - self-contained threaded organizer'
+	Print_Header "$(T 'Sort 17.1 - self-contained threaded organizer')"
 	Print_Message 'Sorts files into a dynamic directory tree built from MIME, dates,'
 	Print_Message 'sizes, media dimensions, checksums and metadata titles.'
 	printf '\n'
-	Print_Header 'Modes' '='
-	printf '\t%s\n' '(default)          Preview only - print source <=> target'
-	printf '\t%s\n' '--copy             Copy every file to its sorted location'
-	printf '\t%s\n' '--move             Move every file to its sorted location'
-	printf '\t%s\n' '--remove           Remove the file at the calculated TARGET path'
-	printf '\t%s\n' '--delete           Alias for --remove'
-	printf '\t%s\n' '--trash            Send the calculated target to the desktop trash'
-	printf '\t%s\n' '--shred            Run shred -u -n 1 on the calculated target'
-	printf '\t%s\n' '--mode=VALUE       Long form of any mode above (copy/move/...)'
+	Print_Header "$(T 'Modes')" '='
+	printf '\t%s\n' "$(T '(default)          Preview only - print source <=> target')"
+	printf '\t%s\n' "$(T '--copy             Copy every file to its sorted location')"
+	printf '\t%s\n' "$(T '--move             Move every file to its sorted location')"
+	printf '\t%s\n' "$(T '--remove           Remove the file at the calculated TARGET path')"
+	printf '\t%s\n' "$(T '--delete           Alias for --remove')"
+	printf '\t%s\n' "$(T '--trash            Send the calculated target to the desktop trash')"
+	printf '\t%s\n' "$(T '--shred            Run shred -u -n 1 on the calculated target')"
+	printf '\t%s\n' "$(T '--mode=VALUE       Long form of any mode above (copy/move/...)')"
 	printf '\n'
 	Print_Message 'IMPORTANT: remove/delete/trash/shred act on the calculated TARGET'
 	Print_Message 'path, not on the source. Source = target is refused. Review the'
 	Print_Message 'preview output before using a destructive mode.'
 	printf '\n'
-	Print_Header 'Filtering and processing' '='
-	printf '\t%s\n' '--type=VALUE       Only files whose MIME type contains VALUE'
-	printf '\t%s\n' '                   (image, video, audio, pdf, application, ...)'
-	printf '\t%s\n' '--recursive        Walk supplied directories to full depth'
-	printf '\t%s\n' '--hidden           Include hidden files and directories'
-	printf '\t%s\n' '--links            Include symbolic links'
-	printf '\t%s\n' '--pause=SECONDS    Wait after each file'
-	printf '\t%s\n' '--jobs=N           Thread pool size (default: nproc, min 1)'
+	Print_Header "$(T 'Filtering and processing')" '='
+	printf '\t%s\n' "$(T '--type=VALUE       Only files whose MIME type contains VALUE')"
+	printf '\t%s\n' "$(T '                   (image, video, audio, pdf, application, ...)')"
+	printf '\t%s\n' "$(T '--recursive        Walk supplied directories to full depth')"
+	printf '\t%s\n' "$(T '--hidden           Include hidden files and directories')"
+	printf '\t%s\n' "$(T '--links            Include symbolic links')"
+	printf '\t%s\n' "$(T '--pause=SECONDS    Wait after each file')"
+	printf '\t%s\n' "$(T '--jobs=N           Thread pool size (default: nproc, min 1)')"
 	printf '\n'
-	Print_Header 'Destination and naming' '='
-	printf '\t%s\n' '--target=DIR       Base directory of the sorted tree (default: .)'
-	printf '\t%s\n' '--dirs=LIST        Primary directory components (default: mime)'
-	printf '\t%s\n' '--subdirs=LIST     Directory components beneath the primary'
-	printf '\t%s\n' '--rename=VALUE     Generate the filename (without extension)'
-	printf '\t%s\n' '--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)'
-	printf '\t%s\n' '--title            Filename from embedded metadata (PDF /Title,'
-	printf '\t%s\n' '                   image EXIF date, audio/video tags)'
-	printf '\t%s\n' '--replace          Overwrite existing targets, else unique ~(N) name'
+	Print_Header "$(T 'Destination and naming')" '='
+	printf '\t%s\n' "$(T '--target=DIR       Base directory of the sorted tree (default: .)')"
+	printf '\t%s\n' "$(T '--dirs=LIST        Primary directory components (default: mime)')"
+	printf '\t%s\n' "$(T '--subdirs=LIST     Directory components beneath the primary')"
+	printf '\t%s\n' "$(T '--rename=VALUE     Generate the filename (without extension)')"
+	printf '\t%s\n' "$(T '--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)')"
+	printf '\t%s\n' "$(T '--title            Filename from embedded metadata (PDF /Title,')"
+	printf '\t%s\n' "$(T '                   image EXIF date, audio/video tags)')"
+	printf '\t%s\n' "$(T '--replace          Overwrite existing targets, else unique ~(N) name')"
 	printf '\n'
-	Print_Header 'EXIF / metadata' '='
-	printf '\t%s\n' '--exif             Add <Camera>/<YYYY-MM-DD> levels for images'
-	printf '\t%s\n' '--strip            Strip EXIF/GPS metadata from targets after copy/move'
+	Print_Header "$(T 'EXIF / metadata')" '='
+	printf '\t%s\n' "$(T '--exif             Add <Camera>/<YYYY-MM-DD> levels for images')"
+	printf '\t%s\n' "$(T '--strip            Strip EXIF/GPS metadata from targets after copy/move')"
 	printf '\n'
-	Print_Header 'Archives' '='
-	printf '\t%s\n' '--decompress       Extract archives to a temp dir and sort the contents'
-	printf '\t%s\n' '                   (the archive itself is deleted after success;'
-	printf '\t%s\n' '                   --trash / --shred apply that fate to it instead)'
+	Print_Header "$(T 'Archives')" '='
+	printf '\t%s\n' "$(T '--decompress       Extract archives to a temp dir and sort the contents')"
+	printf '\t%s\n' "$(T '                   (the archive itself is deleted after success;')"
+	printf '\t%s\n' "$(T '                   --trash / --shred apply that fate to it instead)')"
 	printf '\t%s\n' '--rename=compressed  Name = main dir / single file inside the archive'
 	printf '\n'
-	Print_Header 'Output and safety' '='
-	printf '\t%s\n' '--colored          Force colored output (auto-detected on a tty)'
-	printf '\t%s\n' '--colors           Alias for --colored'
-	printf '\t%s\n' '--quiet            Per-file details off; summary only'
-	printf '\t%s\n' '--verbose          Per-file details on (default)'
-	printf '\t%s\n' '--stats            Print the summary (default)'
-	printf '\t%s\n' '--log=FILE         Append one line per action to FILE'
-	printf '\t%s\n' '--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)'
-	printf '\t%s\n' '--usage            Short reminder'
-	printf '\t%s\n' '--help             This help'
-	printf '\t%s\n' '--version          Print the version'
+	Print_Header "$(T 'Output and safety')" '='
+	printf '\t%s\n' "$(T '--colored          Force colored output (auto-detected on a tty)')"
+	printf '\t%s\n' "$(T '--colors           Alias for --colored')"
+	printf '\t%s\n' "$(T '--quiet            Per-file details off; summary only')"
+	printf '\t%s\n' "$(T '--verbose          Per-file details on (default)')"
+	printf '\t%s\n' "$(T '--stats            Print the summary (default)')"
+	printf '\t%s\n' "$(T '--log=FILE         Append one line per action to FILE')"
+	printf '\t%s\n' "$(T '--undo[=FILE]      Write an undo script (default: sort_undo_<time>.sh)')"
+	printf '\t%s\n' "$(T '--usage            Short reminder')"
+	printf '\t%s\n' "$(T '--help             This help')"
+	printf '\t%s\n' "$(T '--version          Print the version')"
+	printf '\t%s\n' "$(T '--lang=XX          UI language (en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa)')"
+	printf '\t%s\n' "$(T '--lang             Print the language list')"
 	printf '\n'
-	Print_Header 'Dynamic values' '='
+	Print_Header "$(T 'Dynamic values')" '='
 	Print_Message 'Case-insensitive keywords for --dirs, --subdirs, --rename and'
 	Print_Message '--extension. Unknown words become literal names. Lists are joined'
 	Print_Message 'with + or , (e.g. --dirs=year+month --subdirs=format,size).'
@@ -4872,11 +7519,15 @@ Help() {
 	printf '\t%s\n' 'exifdate    EXIF capture date as YYYY-MM-DD'
 	printf '\t%s\n' 'title       embedded title (PDF /Title, media tags, EXIF date)'
 	printf '\n'
-	Print_Header 'Examples' '='
+	Print_Header "$(T 'Examples')" '='
 	printf '\t%s\n' 'Sort.sh --dirs=mime-main --type=image ./Downloads/*'
 	printf '\t%s\n' 'Sort.sh --mode=move --dirs=year+month --title --type=video ~/V'
 	printf '\t%s\n' 'Sort.sh --mode=copy --dirs=year --rename=sha256sum --type=image *.jpg'
 	printf '\t%s\n' 'Sort.sh --mode=trash --recursive --type=audio --pause=1 ~/Music'
+	printf '\n'
+	printf '\n'
+	Print_Header "$(T 'Languages')" '='
+	Lang_List
 	printf '\n'
 	Print_Message 'Missing tools are proposed for install on first use (init-system).'
 }
@@ -4995,14 +7646,22 @@ Parse_Arguments() {
 			exit 0
 			;;
 		--version)
-			printf 'Sort 17.0\n'
+			printf 'Sort 17.1\n'
+			exit 0
+			;;
+		--lang=*)
+			Lang=${Item#--lang=}
+			Lang=${Lang,,}
+			;;
+		--lang)
+			Lang_List
 			exit 0
 			;;
 		--)
 			shift
 			;;
 		-*)
-			Print_Warning "Unknown option: $Item (ignored)"
+			Print_Warning "$(Tf 'Unknown option: %s (ignored)' "$Item")"
 			;;
 		*)
 			Files+=("$Item")
@@ -5016,16 +7675,26 @@ Parse_Arguments() {
 # ---------------------------------------------------------------------------
 
 Validate_Options() {
+	case " $LANG_CODES " in
+	*" $Lang "*)
+		;;
+	*)
+		Print_Error "$(Tf 'Unsupported language: %s (see --lang)' "$Lang")"
+		Lang_List >&2
+		return 1
+		;;
+	esac
+
 	case "$Modus" in
 	Print | Copy | Move | Remove | Trash | Shred) ;;
 	*)
-		Print_Error "Unsupported mode: $Modus"
+		Print_Error "$(Tf 'Unsupported mode: %s' "$Modus")"
 		return 1
 		;;
 	esac
 
 	if [ -n "$Pause" ] && ! [[ "$Pause" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-		Print_Error "Invalid --pause value: $Pause"
+		Print_Error "$(Tf 'Invalid --pause value: %s' "$Pause")"
 		return 1
 	fi
 
@@ -5035,7 +7704,7 @@ Validate_Options() {
 	fi
 
 	mkdir -p -- "$Target_Dir" || {
-		Print_Error "Cannot create target directory: $Target_Dir"
+		Print_Error "$(Tf 'Cannot create target directory: %s' "$Target_Dir")"
 		return 1
 	}
 }
@@ -5075,11 +7744,11 @@ Collect_Files() {
 		elif [ -f "$Item" ] || { [ "$Links" -eq 1 ] && [ -L "$Item" ]; }; then
 			Targets+=("$Item")
 		else
-			Print_Warning "Not a file or directory: $Item"
+			Print_Warning "$(Tf 'Not a file or directory: %s' "$Item")"
 		fi
 	done
 
-	[ "$Quiet" -eq 1 ] || Print_Info "Files to treat: ${#Targets[@]}"
+	[ "$Quiet" -eq 1 ] || Print_Info "$(Tf 'Files to treat: %s' "${#Targets[@]}")"
 }
 
 # ---------------------------------------------------------------------------
@@ -5527,12 +8196,12 @@ Build_Extension() {
 Prepare_Optional_Output() {
 	if [ -n "$LogFile" ]; then
 		mkdir -p -- "$(dirname -- "$LogFile")" 2>/dev/null
-		printf '# Sort 17.0 log started at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" >>"$LogFile"
+		printf '# Sort 17.1 log started at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" >>"$LogFile"
 	fi
 	if [ -n "$UndoFile" ]; then
 		{
 			printf '#!/usr/bin/env bash\n'
-			printf '# Undo script generated by Sort 17.0 at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+			printf '# Undo script generated by Sort 17.1 at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')"
 			printf '# Run this script to reverse the copy/move actions.\n'
 		} >"$UndoFile"
 	fi
@@ -5563,10 +8232,10 @@ Strip_Target() {
 
 	if EXIF_Strip "$Target" "$Tmp"; then
 		mv -f -- "$Tmp" "$Target"
-		[ "$Quiet" -eq 1 ] || Print_Info "Stripped metadata: $Target"
+		[ "$Quiet" -eq 1 ] || Print_Info "$(Tf 'Stripped metadata: %s' "$Target")"
 	else
 		rm -f -- "$Tmp"
-		Print_Warning "Could not strip metadata: $Target"
+		Print_Warning "$(Tf 'Could not strip metadata: %s' "$Target")"
 	fi
 }
 
@@ -5609,19 +8278,19 @@ Process_Archive() {
 	Status='FAILED'
 
 	[ "$Decompress_Depth" -lt 8 ] || {
-		Print_Error "Decompression too deep: $File"
+		Print_Error "$(Tf 'Decompression too deep: %s' "$File")"
 		return 1
 	}
 
 	# Extract + test: a failing archive is never touched further
 	Archive_Test "$File" || {
-		Print_Error "Archive test failed: $File"
+		Print_Error "$(Tf 'Archive test failed: %s' "$File")"
 		return 1
 	}
 
 	Tmp=$(mktemp -d) || return 1
 	Archive_Extract "$File" "$Tmp" || {
-		Print_Error "Extract failed: $File"
+		Print_Error "$(Tf 'Extract failed: %s' "$File")"
 		rm -rf -- "$Tmp"
 		return 1
 	}
@@ -5648,7 +8317,7 @@ Process_Archive() {
 	case "$Modus" in
 	Print)
 		Status='PREVIEW'
-		Print_Message "EXTRACT($Count): $File <=> delete archive"
+		Print_Message "$(Tf 'EXTRACT(%s): %s <=> delete archive' "$Count" "$File")"
 		;;
 	Trash)
 		Deps_Ensure trash-put || {
@@ -5658,33 +8327,33 @@ Process_Archive() {
 		}
 		if trash-put -- "$File"; then
 			Status='EXTRACTED'
-			Print_Ok "Extracted($Count) + trashed: $File"
+			Print_Ok "$(Tf 'Extracted(%s) + trashed: %s' "$Count" "$File")"
 			Log_Action "TRASH $File"
 		else
 			Status='FAILED'
-			Print_Error "Trash failed: $File"
+			Print_Error "$(Tf 'Trash failed: %s' "$File")"
 			return 1
 		fi
 		;;
 	Shred)
 		if shred -u -n 1 -- "$File"; then
 			Status='EXTRACTED'
-			Print_Ok "Extracted($Count) + shredded: $File"
+			Print_Ok "$(Tf 'Extracted(%s) + shredded: %s' "$Count" "$File")"
 			Log_Action "SHRED $File"
 		else
 			Status='FAILED'
-			Print_Error "Shred failed: $File"
+			Print_Error "$(Tf 'Shred failed: %s' "$File")"
 			return 1
 		fi
 		;;
 	*)
 		if rm -v -- "$File"; then
 			Status='EXTRACTED'
-			Print_Ok "Extracted($Count) + deleted: $File"
+			Print_Ok "$(Tf 'Extracted(%s) + deleted: %s' "$Count" "$File")"
 			Log_Action "DELETE $File"
 		else
 			Status='FAILED'
-			Print_Error "Delete failed: $File"
+			Print_Error "$(Tf 'Delete failed: %s' "$File")"
 			return 1
 		fi
 		;;
@@ -5701,13 +8370,13 @@ Process_File() {
 	Status='FAILED'
 
 	[ -f "$File" ] || [ -L "$File" ] || {
-		Print_Error "Not a regular file: $File"
+		Print_Error "$(Tf 'Not a regular file: %s' "$File")"
 		return 1
 	}
 
 	# MIME type drives everything; no type -> no destination
 	Mime=$(Get_MIME_Type "$File") || {
-		Print_Error "No MIME type for: $File"
+		Print_Error "$(Tf 'No MIME type for: %s' "$File")"
 		return 1
 	}
 	Main=${Mime%%/*}
@@ -5715,7 +8384,7 @@ Process_File() {
 	# --type filter: the value must occur in the MIME type
 	if [ -n "$Type_Filter" ] && [[ "${Mime,,}" != *"${Type_Filter,,}"* ]]; then
 		Status='SKIPPED'
-		[ "$Quiet" -eq 1 ] || Print_Info "Type skip ($Mime): $File"
+		[ "$Quiet" -eq 1 ] || Print_Info "$(Tf 'Type skip (%s): %s' "$Mime" "$File")"
 		return 0
 	fi
 
@@ -5754,7 +8423,7 @@ Process_File() {
 				[ -n "$Pre" ] && SubPart="$Pre/$SubPart"
 
 				if [ "$Quiet" -eq 0 ] && [ -n "$Cam$DateDir" ]; then
-					Print_Info "EXIF: ${Cam:-unknown camera} ${DateDir:-unknown date}"
+					Print_Info "$(Tf 'EXIF: %s %s' "${Cam:-$(T 'unknown camera')}" "${DateDir:-$(T 'unknown date')}")"
 				fi
 			fi
 			;;
@@ -5778,13 +8447,13 @@ Process_File() {
 
 	# New name and extension
 	Name=$(Build_Name "$File" "$Mime" "$Main") || {
-		Print_Error "Cannot build a name for: $File"
+		Print_Error "$(Tf 'Cannot build a name for: %s' "$File")"
 		return 1
 	}
 	Ext=$(Build_Extension "$File" "$Mime")
 
 	mkdir -p -- "$NewDir" || {
-		Print_Error "Cannot create: $NewDir"
+		Print_Error "$(Tf 'Cannot create: %s' "$NewDir")"
 		return 1
 	}
 	New="$NewDir/$Name$Ext"
@@ -5808,7 +8477,7 @@ Process_File() {
 	TargetReal=$(realpath -m -- "$New" 2>/dev/null)
 	if [ -n "$SourceReal" ] && [ "$SourceReal" = "$TargetReal" ]; then
 		Status='SKIPPED'
-		[ "$Quiet" -eq 1 ] || Print_Info "Same place: $File"
+		[ "$Quiet" -eq 1 ] || Print_Info "$(Tf 'Same place: %s' "$File")"
 		return 0
 	fi
 
@@ -5822,7 +8491,7 @@ Process_File() {
 			Undo_Action "rm -f -- '$(printf "%s" "$New" | sed "s/'/'\\\\''/g")'"
 			[ "$Strip" -eq 1 ] && Strip_Target "$New"
 		else
-			Print_Error "Copy failed: $File"
+			Print_Error "$(Tf 'Copy failed: %s' "$File")"
 			return 1
 		fi
 		;;
@@ -5834,29 +8503,29 @@ Process_File() {
 			Undo_Action "mv -f -- '$(printf "%s" "$New" | sed "s/'/'\\\\''/g")' '$(printf "%s" "$File" | sed "s/'/'\\\\''/g")'"
 			[ "$Strip" -eq 1 ] && Strip_Target "$New"
 		else
-			Print_Error "Move failed: $File"
+			Print_Error "$(Tf 'Move failed: %s' "$File")"
 			return 1
 		fi
 		;;
 	Remove)
 		if [ ! -e "$New" ]; then
 			Status='FAILED'
-			Print_Warning "Remove: target not found: $New"
+			Print_Warning "$(Tf 'Remove: target not found: %s' "$New")"
 			return 1
 		fi
 		if rm -v -- "$New"; then
 			Status='REMOVED'
-			Print_Ok "Removed: $New"
+			Print_Ok "$(Tf 'Removed: %s' "$New")"
 			Log_Action "REMOVE $New"
 		else
-			Print_Error "Remove failed: $New"
+			Print_Error "$(Tf 'Remove failed: %s' "$New")"
 			return 1
 		fi
 		;;
 	Trash)
 		if [ ! -e "$New" ]; then
 			Status='FAILED'
-			Print_Warning "Trash: target not found: $New"
+			Print_Warning "$(Tf 'Trash: target not found: %s' "$New")"
 			return 1
 		fi
 		Deps_Ensure trash-put || {
@@ -5865,25 +8534,25 @@ Process_File() {
 		}
 		if trash-put -- "$New"; then
 			Status='TRASHED'
-			Print_Ok "Trashed: $New"
+			Print_Ok "$(Tf 'Trashed: %s' "$New")"
 			Log_Action "TRASH $New"
 		else
-			Print_Error "Trash failed: $New"
+			Print_Error "$(Tf 'Trash failed: %s' "$New")"
 			return 1
 		fi
 		;;
 	Shred)
 		if [ ! -e "$New" ]; then
 			Status='FAILED'
-			Print_Warning "Shred: target not found: $New"
+			Print_Warning "$(Tf 'Shred: target not found: %s' "$New")"
 			return 1
 		fi
 		if shred -u -n 1 -- "$New"; then
 			Status='SHREDDED'
-			Print_Ok "Shredded: $New"
+			Print_Ok "$(Tf 'Shredded: %s' "$New")"
 			Log_Action "SHRED $New"
 		else
-			Print_Error "Shred failed: $New"
+			Print_Error "$(Tf 'Shred failed: %s' "$New")"
 			return 1
 		fi
 		;;
@@ -5944,14 +8613,14 @@ Run_Threads() {
 
 	# Summary
 	printf '\n'
-	Print_Header 'Summary'
-	Print_Message "Copied : $Done_Copied"
-	Print_Message "Moved  : $Done_Moved"
-	Print_Message "Removed: $Done_Other"
-	Print_Message "Extracted: $Done_Extracted"
-	Print_Message "Preview: $Done_Preview"
-	Print_Message "Skipped: $Done_Skipped"
-	[ "$Done_Failed" -eq 0 ] && Print_Ok "Failed : $Done_Failed" || Print_Error "Failed : $Done_Failed"
+	Print_Header "$(T 'Summary')"
+	Print_Message "$(Tf 'Copied : %s' "$Done_Copied")"
+	Print_Message "$(Tf 'Moved  : %s' "$Done_Moved")"
+	Print_Message "$(Tf 'Removed: %s' "$Done_Other")"
+	Print_Message "$(Tf 'Extracted: %s' "$Done_Extracted")"
+	Print_Message "$(Tf 'Preview: %s' "$Done_Preview")"
+	Print_Message "$(Tf 'Skipped: %s' "$Done_Skipped")"
+	[ "$Done_Failed" -eq 0 ] && Print_Ok "$(Tf 'Failed : %s' "$Done_Failed")" || Print_Error "$(Tf 'Failed : %s' "$Done_Failed")"
 
 	[ "$Done_Failed" -eq 0 ]
 }
@@ -6006,7 +8675,7 @@ Main() {
 
 	if [ "$Quiet" -eq 0 ]; then
 		Draw_Line '='
-		Print_Header "Sorting ${#Targets[@]} file(s) - mode: $Modus, jobs: $Max_Jobs"
+		Print_Header "$(Tf 'Sorting %s file(s) - mode: %s, jobs: %s' "${#Targets[@]}" "$Modus" "$Max_Jobs")"
 	fi
 
 	Run_Threads "${Targets[@]}"
