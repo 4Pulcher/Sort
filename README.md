@@ -1,49 +1,15 @@
 # Sort — Sort.sh / Sort.pas
 
-**English** · **中文** · **हिन्दी** · **Español** · **Français**
+One sentence, five alphabets — the **same English sentence**, rendered phonetically in the five most-used symbol systems (no translations: it still reads "Sort — sort, rename and organize your files. Be careful with this script!").
 
-The same message in every script the tool speaks — the UI itself follows `--lang=XX` (`en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa`, default `en`).
+- **English (Latin alphabet):** Sort — sort, rename and organize your files. Be careful with this script!
+- **中文符号 (Han symbols):** 索特 — 索特、雷内姆 安徳 奥根奈兹 尤尔 法伊尔斯。比 凯尔富 威兹 迪斯 斯克里普特！
+- **देवनागरि (Devanagari):** सॉर्ट — सॉर्ट, रिनेम ऍण्ड ऑर्गनाइझ युअर फाइल्स. बी केअरफुल विथ दिस स्क्रिप्ट!
+- **Кириллица (Cyrillic):** Сорт — сорт, ринейм энд органайз ёр файлс. Би кэрефул уиз зис скрипт!
+- **العربية (Arabic):** سورت — سورت، رينيم أند أورغنايز يور فايلز. بي كيرفول ويذ ذيس سكريبت!
 
----
+For real translations the script itself speaks 20 UI languages: `--lang=XX` (`en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa`, default `en`).
 
-## English
-
-## Hey,
-
-# !! BE CAREFULL WITH THIS SCRIPT !!
-I strongly advise you to understand the scripts content before you use it!
-
-"Offen, when recovering files with 'PhotoRec' or something similar,
-You end-up with a bunch of 'folders and files' mixed up!
-
-That's when I prefer this script to sort things out,
-'With ease'.."
-
-NB/If you want more options, please give a sign!
-
-## 中文
-
-Sort.sh — 按类型、日期、元数据和校验和来排序、重命名和整理文件。默认只预览，不实际移动任何文件。
-
-⚠ 请小心使用此脚本 — 使用前请先读懂它的内容！
-
-## हिन्दी
-
-Sort.sh — फ़ाइलों को प्रकार, तारीख़, मेटाडेटा और चेकसम के अनुसार सॉर्ट, रीनेम और व्यवस्थित करता है। डिफ़ॉल्ट रूप से केवल पूर्वावलोकन — कुछ भी नहीं हिलता।
-
-⚠ इस स्क्रिप्ट के साथ सावधान रहें — उपयोग करने से पहले इसे समझ लें!
-
-## Español
-
-Sort.sh — ordena, renombra y organiza archivos por tipo, fecha, metadatos y sumas de verificación. Vista previa por defecto: nada se mueve sin tu confirmación.
-
-⚠ ¡TEN CUIDADO con este script — entiéndelo antes de usarlo!
-
-## Français
-
-Sort.sh — trie, renomme et organise les fichiers par type, date, métadonnées et sommes de contrôle. Aperçu par défaut : rien ne bouge sans votre accord.
-
-⚠ ATTENTION avec ce script — comprenez-le avant de l’utiliser !
 ---
 
 # Sort.sh — V17.1, the self-contained edition
