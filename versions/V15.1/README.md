@@ -19,6 +19,10 @@ Modular edition: the main script sources helper functions from a FUNCTIONS/*.sh 
 ## Notes
 
 - Modular lib, most developed
+- The original `FUNCTIONS/` library was never uploaded; it has been rebuilt
+  at the repository root ([FUNCTIONS/](../../FUNCTIONS/)) as a thin adapter
+  layer over the modern `functions/` toolkit. This copy sources it from
+  `../../FUNCTIONS/`.
 
 ## Usage
 

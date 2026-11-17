@@ -23,13 +23,13 @@ trap Break INT
 OIFS=$IFS
 IFS=$'\n\b'
 
-. ${0%/*}/FUNCTIONS/get_file.sh
+. ${0%/*}/../../FUNCTIONS/get_file.sh
 
-. ${0%/*}/FUNCTIONS/get_mime.sh
+. ${0%/*}/../../FUNCTIONS/get_mime.sh
 
-. ${0%/*}/FUNCTIONS/get_image_exif.sh
+. ${0%/*}/../../FUNCTIONS/get_image_exif.sh
 
-. ${0%/*}/FUNCTIONS/get_video_exif.sh
+. ${0%/*}/../../FUNCTIONS/get_video_exif.sh
 
 # Sort_Recursive: sort recursive
 function Sort_Recursive {

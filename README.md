@@ -55,6 +55,11 @@ see [Sort-Versions.md](Sort-Versions.md) for the full map, sources and reasoning
 ```
 Sort.sh                 <- MAIN script (version V15.1, the last one)
 Sort-Versions.md        <- the full version map: every version, its source, its notes
+FUNCTIONS/              <- legacy helper library sourced by Sort.sh (V15.1)
+  get_file.sh           <- get_file_*, built on functions/file + functions/hash
+  get_mime.sh           <- get_mime*, built on functions/mime
+  get_image_exif.sh     <- get_image_*, built on functions/imagemagick
+  get_video_exif.sh     <- get_video_*, built on functions/ffmpeg
 versions/
   V1.0/
     Sort-V1.0.sh        <- the script itself (HEjder edition)
@@ -89,8 +94,10 @@ size, position in the lineage, notes, and any fixes that were applied.
 ## The main script
 
 The root `Sort.sh` is **V15.1 — the modular library edition** (the last version).
-It sources its helper functions from a `FUNCTIONS/*.sh` library directory, so it
-expects `FUNCTIONS/` next to it. If you want a single self-contained file instead,
+It sources its helper functions from a `FUNCTIONS/*.sh` library directory
+(next to it in the repository root) — the original library was never
+uploaded, so it was rebuilt as adapters over the modern `functions/`
+toolkit. If you want a single self-contained file instead,
 use **[versions/V13.1](versions/V13.1/Sort-V13.1.sh)** — the most developed
 standalone edition — or the classic **[versions/V11.0](versions/V11.0/Sort-V11.0.sh)**
 (the version that was previously published here as `Sort.sh`).
