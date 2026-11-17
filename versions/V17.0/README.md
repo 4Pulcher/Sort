@@ -7,7 +7,7 @@
 | **Version** | 17.0 |
 | **Era** | V17.x — self-contained rewrite |
 | **Source** | Rewrite commit `6811f9a` (mime case fix `bdbf63b`) |
-| **Size** | 5290 lines |
+| **Size** | 5301 lines |
 | **Role** | Current main script — identical to the root `Sort.sh` |
 | **Preceded by** | V16.1 |
 | **Followed by** | — (last version) |

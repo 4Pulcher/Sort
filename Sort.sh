@@ -4254,7 +4254,7 @@ Help() {
 	printf '\t%s\n' '--dirs=LIST        Primary directory components (default: mime)'
 	printf '\t%s\n' '--subdirs=LIST     Directory components beneath the primary'
 	printf '\t%s\n' '--rename=VALUE     Generate the filename (without extension)'
-	printf '\t%s\n' '--extension=VALUE  Generate the extension (none/mime/mime-sub/...)'
+	printf '\t%s\n' '--extension=VALUE  Generate the extension (none/mime/mime-sub/mime-ext/...)'
 	printf '\t%s\n' '--title            Filename from embedded metadata (PDF /Title,'
 	printf '\t%s\n' '                   image EXIF date, audio/video tags)'
 	printf '\t%s\n' '--replace          Overwrite existing targets, else unique ~(N) name'
@@ -4286,6 +4286,7 @@ Help() {
 	printf '\n'
 	Print_Message 'File identity:'
 	printf '\t%s\n' 'extension mime (text/plain) mime-main (TEXT) mime-sub (plain)'
+	printf '\t%s\n' 'mime-ext (jpg - canonical extension for the MIME type)'
 	printf '\t%s\n' 'md5|md5sum sha1 sha224 sha256 sha384 sha512 sha|shasum b2 crc32'
 	printf '\t%s\n' 'random randomN (N concatenated random values, e.g. random3)'
 	printf '\n'
@@ -4678,6 +4679,16 @@ Resolve_Segment() {
 	# File identity
 	extension)
 		Get_File_Ext "$File"
+		;;
+	mime-ext)
+		local MExt Rc
+		MExt=$(Get_MIME_Extension "$File")
+		Rc=$?
+		if [ "$Rc" -eq 0 ] && [ -n "$MExt" ]; then
+			printf '%s' "$MExt"
+		else
+			return 1
+		fi
 		;;
 	mime)
 		printf '%s' "$Mime"

@@ -24,7 +24,7 @@ array through a bounded pool of background jobs (threading).
 - **Dry-run preview by default** — nothing moves until you say `--copy` or `--move`
 - **Verbose by default**, colored output with `--colored`
 - **Modes**: `--copy`, `--move`, `--remove`/`--delete`, `--trash`, `--shred` (destructive modes act on the calculated TARGET path and refuse source = target)
-- **Dynamic values**: `--dirs=`, `--subdirs=`, `--rename=`, `--extension=` accept keywords — dates (`year`, `year+month`, `modified`, ...), `mime`, `mime-main`, `mime-sub`, `extension`, checksums (`md5` … `sha512`, `b2`, `crc32`), `random`, `randomN`, `size`, `format` (tiers `TINY…HUGE` × `SQUARE/WIDE/HIGH`), `duration`, `camera`, `exifdate`, `title` — unknown words become literal names
+- **Dynamic values**: `--dirs=`, `--subdirs=`, `--rename=`, `--extension=` accept keywords — dates (`year`, `year+month`, `modified`, ...), `mime`, `mime-main`, `mime-sub`, `extension`, `mime-ext` (canonical extension for the MIME type), checksums (`md5` … `sha512`, `b2`, `crc32`), `random`, `randomN`, `size`, `format` (tiers `TINY…HUGE` × `SQUARE/WIDE/HIGH`), `duration`, `camera`, `exifdate`, `title` — unknown words become literal names
 - **Default naming**: without `--rename=`/`--title`, files keep their plain name when they come from the working directory itself; files found in other folders get their folder prefixed (`sub_b.txt`) so same-named files never collide
 - **Filtering**: `--type=image|video|...` (MIME substring), `--recursive`, `--hidden`, `--links`
 - **Metadata**: `--title` (PDF `/Title`, EXIF date, audio/video tags), `--exif` (`<Camera>/<date>` levels), `--strip` (remove EXIF/GPS from targets)
