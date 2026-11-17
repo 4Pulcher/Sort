@@ -140,6 +140,7 @@ the main one: root `Sort.sh` = `V17.0`
 
 ```
 Sort.sh                 <- MAIN script (V17.0, self-contained, all lineage features)
+Sort.pas                <- MAIN FreePascal translation (V17.0 port)
 Sort-Versions.md        <- the full version map: every version, its source, its notes
 FUNCTIONS/              <- legacy helper library sourced by Sort.sh (V15.1)
   get_file.sh           <- get_file_*, built on functions/file + functions/hash
@@ -149,14 +150,17 @@ FUNCTIONS/              <- legacy helper library sourced by Sort.sh (V15.1)
 versions/
   V1.0/
     Sort-V1.0.sh        <- the script itself (HEjder edition)
+    Sort-V1.0.pas       <- FreePascal 3.2.2 translation of this version
     README.md           <- custom readme for this version
   ...
   V15.1/
     Sort-V15.1.sh
+    Sort-V15.1.pas
     README.md
   ...
   V17.0/
     Sort-V17.0.sh        <- identical to the root Sort.sh
+    Sort-V17.0.pas       <- identical to the root Sort.pas
     README.md
 functions/              <- isolated function library (see functions/README.md)
   system/  ui/  file/  hash/  mime/  imagemagick/  ffmpeg/  exif/
@@ -201,6 +205,29 @@ functions/              <- isolated function library (see functions/README.md)
 | V15.x | 15.0–15.1 | Modular library era |
 | V16.x | 16.0–16.1 | Rewrite on the `functions/` toolkit (threaded) |
 | V17.x | 17.0 | Self-contained all-features edition (the current main) |
+
+## FreePascal translations
+
+**Every version — all 95 plus the main script — is also available as a
+FreePascal program**: root `Sort.pas` (the V17.0 port) and
+`versions/V#.#/Sort-V#.#.pas` for each version.
+
+- Written for **FreePascal 3.2.2**, `{$MODE OBJFPC}{$H+}` — stated in every
+  file header, with the compile hint `fpc -Mobjfpc -Sh <file>.pas`
+- **Native FPC libraries wherever possible**: `SysUtils`, `Classes`, `Math`,
+  `SyncObjs` (thread pool with `TCriticalSection`), `MD5` and `SHA1`
+  (packages/hash — native hashing), `Zipper` (FCL zip read/extract),
+  `BaseUnix` (stat / symlink / chmod), `Process` (`TProcess` for the same
+  external tools the shell called: file, exiftool, ffprobe, identify,
+  trash-put, shred, tar, 7z, unrar, ...)
+- **SHA256/SHA512 have no native FPC unit** (packages/hash only ships md5 and
+  sha1), so those fall back to the external `sha256sum`/`sha512sum` tools —
+  exactly what the shell versions did
+- Each port keeps its version's own option set and era behavior (V1.x
+  positional words, V2.x extension sorter, V3.x+ option parser, ...)
+- NB/These translations were written conservatively for FPC 3.2.2 but could
+  not be compiled inside the build sandbox (no FPC compiler available) —
+  verify locally with `fpc -Mobjfpc -Sh Sort.pas`
 
 ## HEjder edition
 

@@ -252,3 +252,21 @@ All 92 files now pass `bash -n`.
    author were left untouched).
 6. **Closing phrase** — every script ends with `echo "Thanks for using HEjder scripts!"`
    (inserted before a trailing `exit` where one exists, so it actually prints).
+
+## FreePascal translations (all 95 versions + main)
+
+Every version in this archive now also exists as a FreePascal program:
+
+| | |
+|---|---|
+| **Files** | `versions/V#.#/Sort-V#.#.pas` (95) + root `Sort.pas` (V17.0 port) |
+| **Target** | FreePascal 3.2.2, `{$MODE OBJFPC}{$H+}` (stated in every header) |
+| **Compile** | `fpc -Mobjfpc -Sh <file>.pas` |
+| **Native libraries** | SysUtils, Classes, Math, SyncObjs, MD5, SHA1, Zipper, BaseUnix (per version, as needed) |
+| **External tools** | via `TProcess`: file, exiftool, ffprobe, identify, trash-put, shred, tar, 7z, unrar — and `sha256sum`/`sha512sum`, because FPC has **no native SHA256/SHA512 unit** (packages/hash only ships md5 and sha1) |
+
+Each `.pas` port mirrors its shell version's option set and era behavior; every
+header names the FreePascal version used. NB/These translations were written
+conservatively for FPC 3.2.2 but could not be compiled inside the build sandbox
+(no FPC compiler available, downloads blocked) — they are compilation-UNVERIFIED;
+please verify locally with `fpc -Mobjfpc -Sh Sort.pas`.
