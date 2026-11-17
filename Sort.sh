@@ -3,8 +3,8 @@
 ###############################################################################
 #                                                                             #
 # Script  : Sort.sh                                                           #
-# Version : 16.0                                                              #
-# Desc    : Threaded, colored file organizer built on the functions/ library  #
+# Version : 16.1                                                              #
+# Desc    : Threaded, colored file organizer on the full functions/ library    #
 # Author  : HEjder                                                            #
 #                                                                             #
 ###############################################################################
@@ -13,7 +13,10 @@
 # functions/ toolkit: it collects every file to treat into an array up front,
 # classifies each file by MIME type / dimensions / size, and processes the
 # array through a bounded pool of background jobs (threading). Verbose by
-# default, with colored output via --colored.
+# default, with colored output via --colored. The whole library is in play:
+# EXIF data (exiftool) can add camera/date levels or be stripped, documents
+# can be renamed by their internal title, and the system/ui helpers drive
+# the interrupt handling and the banner.
 
 # ---------------------------------------------------------------------------
 # Library loading - the functions/ map at the repository root
@@ -22,14 +25,22 @@
 # Resolve the directory this script lives in, so Sort.sh works from anywhere.
 Lib_Dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/functions
 
-# Load only what this driver needs; each module is standalone.
+# Load the complete functions/ map; each module is standalone.
 . "$Lib_Dir/deps/deps.sh"
 . "$Lib_Dir/colors/colors.sh"
+. "$Lib_Dir/system/system.sh"
+. "$Lib_Dir/ui/ui.sh"
 . "$Lib_Dir/file/file.sh"
 . "$Lib_Dir/mime/mime.sh"
 . "$Lib_Dir/hash/hash.sh"
 . "$Lib_Dir/imagemagick/imagemagick.sh"
 . "$Lib_Dir/ffmpeg/ffmpeg.sh"
+. "$Lib_Dir/exif/exif.sh"
+. "$Lib_Dir/docs/docs.sh"
+. "$Lib_Dir/core/core.sh"
+
+# The system helpers (Exit/Break) restore this on the way out.
+OIFS=$IFS
 
 # ---------------------------------------------------------------------------
 # Defaults
@@ -37,9 +48,11 @@ Lib_Dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/functions
 
 Modus='Print'                                              # copy / move / Print (dry-run preview)
 Replace='No'                                               # overwrite existing targets?
-Rename=''                                                  # '' = folder_name, sha256sum, long, short, random
+Rename=''                                                  # '' = folder_name, sha256sum, long, short, random, title
 Append=''                                                  # '' = original extension, none, mime, mime-sub
 Quiet=0                                                    # 1 = per-file details suppressed
+Use_EXIF=0                                                 # 1 = add <Camera>/<date> levels for images
+Strip=0                                                    # 1 = strip EXIF/GPS metadata from targets
 Max_Jobs=$(command -v nproc >/dev/null && nproc || echo 4) # thread pool size
 
 Files=()   # raw arguments that are files/directories
@@ -50,14 +63,14 @@ Targets=() # every single file to treat, collected up front
 # ---------------------------------------------------------------------------
 
 Usage() {
-	Print_Header 'Sort 16.0 - threaded file organizer'
+	Print_Header 'Sort 16.1 - threaded file organizer'
 	Print_Message 'Usage: Sort.sh [options] <file|directory> ...'
 	printf '\n'
 	Print_Message 'Common starts:'
 	printf '\n'
 	printf '\t%s\n' 'Sort.sh --copy --replace ~/Pictures/2Sort'
 	printf '\t%s\n' 'Sort.sh --move --rename=sha256sum --extension=none .'
-	printf '\t%s\n' 'Sort.sh --colored --jobs=8 ~/Downloads'
+	printf '\t%s\n' 'Sort.sh --colored --jobs=8 --exif ~/Pictures'
 	printf '\n'
 	Print_Message 'Use --help for the full option list.'
 }
@@ -67,7 +80,7 @@ Usage() {
 # ---------------------------------------------------------------------------
 
 Help() {
-	Print_Header 'Sort 16.0 - threaded file organizer'
+	Print_Header 'Sort 16.1 - threaded file organizer'
 	Print_Message 'Sorts files into a MIME-type tree: <mime>/<form-or-size>/...'
 	printf '\n'
 	Print_Header 'Actions' '='
@@ -80,6 +93,7 @@ Help() {
 	printf '\t%s\n' '--rename=long        Keep the full base name (with extension)'
 	printf '\t%s\n' '--rename=short       Base name without its extension'
 	printf '\t%s\n' '--rename=random      Random numeric name'
+	printf '\t%s\n' '--rename=title       Document internal title (PDF / office)'
 	printf '\t%s\n' '--rename=(empty)     <folder>_<name> (default)'
 	printf '\n'
 	Print_Header 'Extensions' '='
@@ -87,6 +101,10 @@ Help() {
 	printf '\t%s\n' '--extension=mime       .image.png style, from the MIME type'
 	printf '\t%s\n' '--extension=mime-sub   .png style, from the MIME sub type'
 	printf '\t%s\n' '--extension=(empty)    Original extension (default)'
+	printf '\n'
+	Print_Header 'EXIF / metadata' '='
+	printf '\t%s\n' '--exif            Add <Camera>/<YYYY-MM-DD> levels for images with EXIF'
+	printf '\t%s\n' '--strip           Strip EXIF/GPS metadata from targets after copy/move'
 	printf '\n'
 	Print_Header 'Behaviour' '='
 	printf '\t%s\n' '--replace         Overwrite existing targets instead of ~(N)'
@@ -132,6 +150,12 @@ Parse_Arguments() {
 		--colored)
 			Color_Enable
 			;;
+		--exif)
+			Use_EXIF=1
+			;;
+		--strip)
+			Strip=1
+			;;
 		--quiet)
 			Quiet=1
 			;;
@@ -148,7 +172,7 @@ Parse_Arguments() {
 			exit 0
 			;;
 		--version)
-			printf 'Sort 16.0\n'
+			printf 'Sort 16.1\n'
 			exit 0
 			;;
 		--)
@@ -190,6 +214,50 @@ Collect_Files() {
 # ---------------------------------------------------------------------------
 # Classification helpers - one destination sub-path per file kind
 # ---------------------------------------------------------------------------
+
+# Make a string safe as a directory/file name (camera names, doc titles)
+Sanitize_Name() {
+	local String=${1// /_}
+
+	printf '%s' "$String" | tr -d '/\\:*?"<>|'
+}
+
+# EXIF capture date as a YYYY-MM-DD directory tag, empty when unusable
+Exif_Date_Dir() {
+	local Date Dir
+
+	Date=$(Get_EXIF_Date "$1" 2>/dev/null) || return 1
+	Dir=${Date%% *}
+	Dir=${Dir//:/-}
+
+	[[ "$Dir" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || return 1
+	printf '%s' "$Dir"
+}
+
+# EXIF camera as a directory tag, empty when unreadable
+Exif_Camera_Dir() {
+	local Cam
+
+	Cam=$(Get_EXIF_Camera "$1" 2>/dev/null) || return 1
+	Cam=$(Sanitize_Name "$Cam")
+	[ -n "$Cam" ] || return 1
+	printf '%s' "$Cam"
+}
+
+# Strip EXIF/GPS metadata from a target in place (needs exiftool or ImageMagick)
+Strip_Target() {
+	local Target=$1 Tmp
+
+	Tmp="$Target.strip.$$"
+
+	if EXIF_Strip "$Target" "$Tmp"; then
+		mv -f -- "$Tmp" "$Target"
+		[ "$Quiet" -eq 1 ] || Print_Info "Stripped metadata: $Target"
+	else
+		rm -f -- "$Tmp"
+		Print_Warning "Could not strip metadata: $Target"
+	fi
+}
 
 # Aspect form from a WxH string: Square / Portrait / Landscape
 Image_Form() {
@@ -254,6 +322,10 @@ Build_Name() {
 		;;
 	random)
 		printf 'RND-%s-%s' "$RANDOM" "$SECONDS"
+		;;
+	title)
+		# Internal document title, falling back to the filename inside Get_Doc_Title
+		Sanitize_Name "$(Get_Doc_Title "$File")"
 		;;
 	long)
 		Get_File_Base "$File"
@@ -322,9 +394,22 @@ Process_File() {
 	# Sub-path per kind: images by shape, videos by geometry+length, rest by size
 	case "$Main" in
 	image)
-		local WxH
+		local WxH Cam DateDir
 		WxH=$(Get_Image_WxH "$File") || WxH='unknown'
 		Sub="$(Image_Form "$WxH")/$WxH"
+
+		# With --exif, images with EXIF gain <Camera>/<YYYY-MM-DD> levels
+		if [ "$Use_EXIF" -eq 1 ]; then
+			Cam=$(Exif_Camera_Dir "$File") || Cam=''
+			DateDir=$(Exif_Date_Dir "$File") || DateDir=''
+
+			[ -n "$Cam" ] && Sub="$Cam/$Sub"
+			[ -n "$DateDir" ] && Sub="$DateDir/$Sub"
+
+			if [ "$Quiet" -eq 0 ] && [ -n "$Cam$DateDir" ]; then
+				Print_Info "EXIF: ${Cam:-unknown camera} ${DateDir:-unknown date}"
+			fi
+		fi
 		;;
 	video)
 		local WxH Dur
@@ -372,6 +457,7 @@ Process_File() {
 		if cp -v -- "$File" "$New"; then
 			Status='COPIED'
 			Print_Ok "$File -> $New"
+			[ "$Strip" -eq 1 ] && Strip_Target "$New"
 		else
 			Print_Error "Copy failed: $File"
 			return 1
@@ -381,6 +467,7 @@ Process_File() {
 		if mv -v -- "$File" "$New"; then
 			Status='MOVED'
 			Print_Ok "$File -> $New"
+			[ "$Strip" -eq 1 ] && Strip_Target "$New"
 		else
 			Print_Error "Move failed: $File"
 			return 1
@@ -447,17 +534,11 @@ Run_Threads() {
 }
 
 # ---------------------------------------------------------------------------
-# Interrupt handling - stop the pool and clean up
+# Interrupt handling - the system module's Break waits for the running jobs,
+# restores IFS and exits 130
 # ---------------------------------------------------------------------------
 
-On_Interrupt() {
-	Print_Error 'Interrupted - stopping running jobs...'
-	jobs -rp | xargs -r kill 2>/dev/null
-	wait 2>/dev/null
-	exit 130
-}
-
-trap On_Interrupt INT
+trap Break INT
 
 # ---------------------------------------------------------------------------
 # Main
@@ -472,9 +553,14 @@ Main() {
 
 	Parse_Arguments "$@"
 
-	# Init-system: propose one batch install for the optional media tools
+	# Init-system: one batch install proposal for the optional media tools
+	# (exiftool joins when EXIF features are requested)
 	if [ "$Quiet" -eq 0 ]; then
-		Deps_Init identify ffprobe || true
+		if [ "$Use_EXIF" -eq 1 ] || [ "$Strip" -eq 1 ]; then
+			Deps_Init identify ffprobe exiftool || true
+		else
+			Deps_Init identify ffprobe || true
+		fi
 	fi
 
 	# The array of files to treat, built before any work starts
@@ -485,7 +571,10 @@ Main() {
 		return 1
 	fi
 
-	[ "$Quiet" -eq 1 ] || Print_Header "Sorting ${#Targets[@]} file(s) - mode: $Modus, jobs: $Max_Jobs"
+	if [ "$Quiet" -eq 0 ]; then
+		Draw_Line '='
+		Print_Header "Sorting ${#Targets[@]} file(s) - mode: $Modus, jobs: $Max_Jobs"
+	fi
 
 	Run_Threads "${Targets[@]}"
 }

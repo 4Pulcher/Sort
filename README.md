@@ -93,14 +93,17 @@ size, position in the lineage, notes, and any fixes that were applied.
 
 ## The main script
 
-The root `Sort.sh` is **V16.0 — the threaded edition**, a complete rewrite of
-the mainline as a thin driver over the `functions/` toolkit. It collects
-every file to treat into an array up front, sorts each into a
+The root `Sort.sh` is **V16.1 — the threaded edition**, a complete rewrite of
+the mainline as a thin driver over the **whole** `functions/` toolkit. It
+collects every file to treat into an array up front, sorts each into a
 `<mime>/<form-or-size>/...` tree, and processes the array through a bounded
 pool of background jobs (`--jobs=N`). Verbose by default, colored output
 with `--colored`, dry-run preview by default (`--copy` / `--move` to act),
 full `--help` and `--usage` sections, and the deps init-system proposes
-installs for missing media tools.
+installs for missing media tools. EXIF integration: `--exif` adds
+`<Camera>/<YYYY-MM-DD>` levels for images (exiftool), `--strip` removes
+EXIF/GPS metadata from targets, and `--rename=title` renames documents by
+their internal title.
 
 The previous main script, **V15.1 — the modular library edition**, sources
 its helper functions from a `FUNCTIONS/*.sh` directory (next to it in the
