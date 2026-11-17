@@ -96,6 +96,41 @@ Get_Media_WxH() {
 	printf '%s' "${Resolution:-0x0}"
 }
 
+# Width, height and duration in ONE ffprobe call - "<WxH>|<HH-MM-SS>".
+# Get_Media_Info <file>
+Get_Media_Info() {
+	local File=$1 Out W H WxH Dur
+
+	# First use without ffprobe: propose the install, then fall back.
+	command -v ffprobe >/dev/null 2>&1 ||
+		{ declare -F Deps_Ensure >/dev/null 2>&1 && Deps_Ensure ffprobe; }
+
+	Out=$(timeout 10s ffprobe \
+		-v error \
+		-select_streams v:0 \
+		-show_entries stream=width,height:format=duration \
+		-of default=noprint_wrappers=1:nokey=1 \
+		-- "$File" 2>/dev/null) || {
+		printf '0x0|unknown'
+		return 1
+	}
+
+	# Lines: width, height, duration - flatten and read them back
+	Out=${Out//$'\n'/ }
+	read -r W H Dur <<<"$Out"
+
+	if [[ "$W" =~ ^[0-9]+$ ]] && [[ "$H" =~ ^[0-9]+$ ]]; then
+		WxH="${W}x${H}"
+	else
+		WxH='0x0'
+	fi
+
+	[[ "$Dur" =~ ^[0-9]+([.][0-9]+)?$ ]] || Dur=''
+	[ -n "$Dur" ] && Dur=$(Duration_Tag_From_Seconds "$Dur") || Dur='unknown'
+
+	printf '%s|%s' "$WxH" "$Dur"
+}
+
 # ---------------------------------------------------------------------------
 # Codecs, container, duration, bitrate, FPS, channels, sample rate
 # ---------------------------------------------------------------------------
@@ -122,6 +157,27 @@ Get_Duration() {
 	local File=$1
 
 	_Probe format=duration "$File"
+}
+
+# HH-MM-SS tag from a seconds value - shared core for the duration segments.
+# Duration_Tag_From_Seconds <seconds>
+Duration_Tag_From_Seconds() {
+	local Seconds=${1%.*}
+	Seconds=${Seconds:-0}
+	local H=$((Seconds / 3600))
+	local M=$(((Seconds % 3600) / 60))
+	local S=$((Seconds % 60))
+
+	printf '%02d-%02d-%02d' "$H" "$M" "$S"
+}
+
+# Duration of a video as an HH-MM-SS tag, empty when unusable.
+# Video_Duration_Tag <file>
+Video_Duration_Tag() {
+	local Seconds
+
+	Seconds=$(Get_Duration "$1") || return 1
+	Duration_Tag_From_Seconds "$Seconds"
 }
 
 Get_Duration_Human() {

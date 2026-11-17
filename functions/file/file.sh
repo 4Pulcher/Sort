@@ -125,15 +125,58 @@ Get_File_Size() {
 	printf '%d' "${Size:-0}"
 }
 
+# Human-readable size from a byte count - pure bash arithmetic, no du fork.
+# Human_From_Bytes <bytes>
+Human_From_Bytes() {
+	local S=$1 Frac=0 U=0
+	local -a Unit=('B' 'K' 'M' 'G' 'T')
+
+	while [ "$S" -ge 1024 ] && [ "$U" -lt 4 ]; do
+		Frac=$((S % 1024))
+		S=$((S / 1024))
+		U=$((U + 1))
+	done
+	if [ "$U" -eq 0 ]; then
+		printf '%s%s' "$S" "${Unit[$U]}"
+	else
+		printf '%s.%s%s' "$S" "$((Frac * 10 / 1024))" "${Unit[$U]}"
+	fi
+}
+
+# Human-readable size of a file (stat + arithmetic instead of du | cut).
+# Get_File_Size_Human <file>
 Get_File_Size_Human() {
-	local File=$1
 	local Size
 
-	[ -e "$File" ] || return 1
-	command -v du >/dev/null || return 127
+	Size=$(Get_File_Size "$1") || return 1
+	Human_From_Bytes "$Size"
+}
 
-	Size=$(du -h -- "$File" 2>/dev/null | cut -f1)
-	printf '%s' "${Size:-ERROR}"
+# Size class name from a byte count - shared core for size-based segments.
+# Size_Unit_From_Bytes <bytes>
+Size_Unit_From_Bytes() {
+	local Size=$1
+
+	if [ "$Size" -lt 1024 ]; then
+		printf 'Byte'
+	elif [ "$Size" -lt 1048576 ]; then
+		printf 'Kilo'
+	elif [ "$Size" -lt 1073741824 ]; then
+		printf 'Mega'
+	elif [ "$Size" -lt 1099511627776 ]; then
+		printf 'Giga'
+	else
+		printf 'Tera'
+	fi
+}
+
+# Size class name of a file (Byte / Kilo / Mega / Giga / Tera).
+# Size_Unit_Name <file>
+Size_Unit_Name() {
+	local Size
+
+	Size=$(Get_File_Size "$1") || return 1
+	Size_Unit_From_Bytes "$Size"
 }
 
 Get_File_Block_Size() {

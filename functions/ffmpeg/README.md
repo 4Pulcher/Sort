@@ -11,6 +11,7 @@ When the deps module is loaded, a missing ffmpeg/ffprobe triggers an install pro
 ### Dimensions
 
 - `Get_Media_WxH`
+- `Get_Media_Info` (width, height AND duration in ONE ffprobe call — `<WxH>|<HH-MM-SS>`; one launch instead of two per video)
 
 ### Streams and container
 
@@ -18,6 +19,8 @@ When the deps module is loaded, a missing ffmpeg/ffprobe triggers an install pro
 - `Get_Audio_Codec`
 - `Get_Container`
 - `Get_Duration`
+- `Duration_Tag_From_Seconds` (seconds → `HH-MM-SS` tag, shared core)
+- `Video_Duration_Tag`
 - `Get_Duration_Human`
 - `Get_Bitrate`
 - `Get_FPS`

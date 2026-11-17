@@ -34,10 +34,10 @@ fpc -Mobjfpc -Sh <unit>.pas
 |---|---|---|
 | [systools.pas](system/) | Process / tool discovery | `RunTool`, `HaveTool`, `First_Token` |
 | [uitools.pas](ui/) | Terminal display | `Draw_Line` |
-| [filetools.pas](file/) | File toolkit | `Get_File_Ext`, `Get_Base_Name`, `Name_Without_Ext`, `Get_Compound_Ext`, `File_Size`, `Is_File`, `Is_Dir`, `Is_Symlink`, `File_Time`, `File_Perms`, `File_Owner`, `Is_Empty_File`, `Count_Files`, `Total_Size` |
+| [filetools.pas](file/) | File toolkit | `Get_File_Ext`, `Get_Base_Name`, `Name_Without_Ext`, `Get_Compound_Ext`, `File_Size`, `Human_From_Bytes`, `Get_File_Size_Human`, `Size_Unit_From_Bytes`, `Size_Unit_Name`, `Is_File`, `Is_Dir`, `Is_Symlink`, `File_Time`, `File_Perms`, `File_Owner`, `Is_Empty_File`, `Count_Files`, `Total_Size` |
 | [hash.pas](hash/) | Checksums | `Hash_String`, `Hash_File`, `Hash_Verify` |
 | [imagemagick.pas](imagemagick/) | Image info | `IM_Has`, `IM_Dimensions`, `IM_Format` |
-| [ffmpeg.pas](ffmpeg/) | Media info | `FFMPEG_Has`, `FFPROBE_Get`, `FFMPEG_Mime_Runs` |
+| [ffmpeg.pas](ffmpeg/) | Media info | `Video_Duration`, `Duration_Tag_From_Seconds`, `Video_Duration_Tag`, `Get_Media_Info`, `Media_Title`, `Media_Camera` |
 | [exif.pas](exif/) | EXIF | `ExifTool_Has`, `ExifTool_Get_Tag`, `ExifTool_Strip` |
 | [deps.pas](deps/) | Init-system | `Detect_Installer`, `Ensure_Installed` |
 | [colors.pas](colors/) | Colors | `C_Color_Init`, `Print_Message` |
@@ -54,10 +54,10 @@ NB/This code is not tested yet!
 |---|---|---|
 | [system](system/) | System process control | `Exit`, `Break` |
 | [ui](ui/) | Terminal display | `Draw_Line` |
-| [file](file/) | Complete file toolkit — coreutils / file(1) | 38 functions: MIME, name/extension splitting, sizes, timestamps, permissions, ownership, predicates |
+| [file](file/) | Complete file toolkit — coreutils / file(1) | 41 functions: MIME, name/extension splitting, sizes (fork-free human sizes via `Human_From_Bytes`), timestamps, permissions, ownership, predicates |
 | [hash](hash/) | Complete checksum toolkit — md5 / SHA family / crc32 / blake2 | 22 functions: per-algorithm getters, dispatcher, string hashing, verification, containment, directory diff/minus, duplicate finding |
 | [imagemagick](imagemagick/) | Complete image toolkit — ImageMagick identify / magick | 20 functions: dimensions, format, colors, depth, quality, DPI, orientation, camera, GPS, actions |
-| [ffmpeg](ffmpeg/) | Complete media toolkit — ffmpeg / ffprobe | 24 functions: codecs, container, duration, bitrate, FPS, channels, tags, actions |
+| [ffmpeg](ffmpeg/) | Complete media toolkit — ffmpeg / ffprobe | 27 functions: dimensions, one-call media info (`Get_Media_Info`), codecs, container, duration, bitrate, FPS, channels, tags, actions |
 | [exif](exif/) | Complete EXIF toolkit — exiftool / ImageMagick fallback | 23 functions: generic tag access, dumps, camera, lens, exposure, GPS, strip/set/copy actions |
 | [deps](deps/) | Init-system for external tools — installer / privilege detection | 8 functions: detection, package mapping, install, ensure, init |
 | [colors](colors/) | Complete color toolkit — ANSI colors / print helpers | 13 functions: `C_*` color variables, Print_Message/Info/Ok/Error/Warning/Log/Debug, headers, separators |
@@ -66,4 +66,4 @@ NB/This code is not tested yet!
 | [docs](docs/) | Documents (pdftotext / exiftool) | `Get_Doc_Title` |
 | [core](core/) | Organizer core logic | `Resolve_Path_Segment`, `Parse_Arguments`, `Validate_Options`, `Perform_Action`, `Sort`, `Show_Help` |
 
-Total: 191 shell functions in 13 modules, plus 13 FreePascal units.
+Total: 197 shell functions in 13 modules, plus 13 FreePascal units.

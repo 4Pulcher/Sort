@@ -24,6 +24,19 @@ function Is_Symlink(const F: string): Boolean;
 { Get_File_Size: file size in bytes (stat) }
 function Get_File_Size(const F: string): Int64;
 
+{ Human_From_Bytes: human-readable size from a byte count - pure arithmetic,
+  no external tool. Returns forms like 15B, 4.0K, 1.4M, 2.7G, 1.0T }
+function Human_From_Bytes(Size: Int64): string;
+
+{ Get_File_Size_Human: human-readable size of a file (native stat + arithmetic) }
+function Get_File_Size_Human(const F: string): string;
+
+{ Size_Unit_From_Bytes: size class name from a byte count (Byte..Tera) }
+function Size_Unit_From_Bytes(Size: Int64): string;
+
+{ Size_Unit_Name: size class name of a file (Byte / Kilo / Mega / Giga / Tera) }
+function Size_Unit_Name(const F: string): string;
+
 { Copy_File: copy a file byte by byte (TFileStream) }
 function Copy_File(const Src, Dst: string): Boolean;
 
@@ -73,6 +86,58 @@ begin
     Result := 0;
     if FpStat(F, SB) = 0 then
         Result := SB.st_size;
+end;
+
+{ Human_From_Bytes: human-readable size from a byte count - pure arithmetic,
+  no external tool. Returns forms like 15B, 4.0K, 1.4M, 2.7G, 1.0T }
+function Human_From_Bytes(Size: Int64): string;
+const
+    Units: array[0..4] of string = ('B', 'K', 'M', 'G', 'T');
+var
+    S: Int64;
+    Frac: Int64;
+    U: Integer;
+begin
+    S := Size;
+    Frac := 0;
+    U := 0;
+    while (S >= 1024) and (U < 4) do
+    begin
+        Frac := S mod 1024;
+        S := S div 1024;
+        Inc(U);
+    end;
+    if U = 0 then
+        Result := IntToStr(S) + Units[U]
+    else
+        Result := IntToStr(S) + '.' + IntToStr(Frac * 10 div 1024) + Units[U];
+end;
+
+{ Get_File_Size_Human: human-readable size of a file (native stat + arithmetic) }
+function Get_File_Size_Human(const F: string): string;
+begin
+    Result := Human_From_Bytes(Get_File_Size(F));
+end;
+
+{ Size_Unit_From_Bytes: size class name from a byte count (Byte..Tera) }
+function Size_Unit_From_Bytes(Size: Int64): string;
+begin
+    if Size < 1024 then
+        Result := 'Byte'
+    else if Size < 1048576 then
+        Result := 'Kilo'
+    else if Size < 1073741824 then
+        Result := 'Mega'
+    else if Size < 1099511627776 then
+        Result := 'Giga'
+    else
+        Result := 'Tera';
+end;
+
+{ Size_Unit_Name: size class name of a file (Byte / Kilo / Mega / Giga / Tera) }
+function Size_Unit_Name(const F: string): string;
+begin
+    Result := Size_Unit_From_Bytes(Get_File_Size(F));
 end;
 
 function Copy_File(const Src, Dst: string): Boolean;

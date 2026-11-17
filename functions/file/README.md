@@ -25,7 +25,10 @@ A complete, standalone bag of file tools: MIME detection, name/extension splitti
 ### Size
 
 - `Get_File_Size`
-- `Get_File_Size_Human`
+- `Human_From_Bytes` (bytes → `15B` / `4.0K` / `1.4M` / `2.7G` / `1.0T`, pure bash arithmetic — no `du` fork)
+- `Get_File_Size_Human` (stat + arithmetic instead of `du -h | cut`)
+- `Size_Unit_From_Bytes` (bytes → `Byte`/`Kilo`/`Mega`/`Giga`/`Tera`)
+- `Size_Unit_Name`
 - `Get_File_Block_Size`
 - `Get_File_Line_Count`
 - `Get_File_Header_Hex`

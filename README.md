@@ -190,7 +190,7 @@ functions/              <- isolated function library (see functions/README.md)
   compression/  docs/    core/  colors/  deps/
 ```
 
-- `functions/` — the modern, isolated per-resource toolkit (190 functions:
+- `functions/` — the modern, isolated per-resource toolkit (197 functions:
   file, hash, mime, imagemagick, ffmpeg, exif, compression, colors, deps,
   system, ui, docs, core), each module with its own ASCII header and README
 - `FUNCTIONS/` — the legacy lowercase adapter layer that V15.1 sources
