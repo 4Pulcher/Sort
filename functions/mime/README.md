@@ -1,6 +1,6 @@
 # functions/mime
 
-> Complete MIME toolkit - file(1) / magic bytes / extension maps (v2.1)
+> Complete MIME toolkit - file(1) / magic bytes / extension maps (v2.2)
 
 A complete, standalone bag of MIME tools built on file(1): MIME type, main/sub parts, human description, charset, magic bytes (hex and print-string), magic-number detection, bidirectional MIME <-> extension mapping, filename-to-MIME guessing, pattern matching and main-type predicates. Every function takes a path as its first argument, prints its result on stdout and returns non-zero on failure.
 
@@ -25,6 +25,7 @@ Since v2.1 the extension maps are distilled from the user's MIME database: 911 e
 
 ### MIME <-> extension mapping
 
+- `Get_MIME_Best_Extension` - best matching extension: exact table, then x- variants, then own ext when it maps to the type, then main-type default, then original
 - `Get_MIME_Extension` — canonical extension for the file's MIME type (687 types, database-sourced)
 - `Get_Extension_MIME <ext>` — MIME for an extension (leading dot and case ignored; 911 extensions, database-sourced)
 - `Get_Name_MIME <name>` — MIME guessed from a filename alone, no file needed

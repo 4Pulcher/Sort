@@ -1023,14 +1023,12 @@ Get_MIME_By_Magic() {
 # MIME <-> extension mapping (common types)
 # ---------------------------------------------------------------------------
 
-# Canonical extension for a MIME type (first/canonical one). Get_MIME_Extension <file>
-Get_MIME_Extension() {
-	local File=$1
-	local MIME
+# Canonical extension for a MIME type (exact table lookup, no file needed).
+# _MIME_Lookup_Ext <type>
+_MIME_Lookup_Ext() {
+	local Type=$1
 
-	MIME=$(Get_MIME_Type "$File") || return $?
-
-	case "$MIME" in
+	case "$Type" in
 	application/andrew-inset) printf 'ez' ;;
 	application/applixware) printf 'aw' ;;
 	application/atom+xml) printf 'atom' ;;
@@ -1722,6 +1720,107 @@ Get_MIME_Extension() {
 		return 1
 		;;
 	esac
+}
+
+# Canonical extension for a file's MIME type. Get_MIME_Extension <file>
+Get_MIME_Extension() {
+	local File=$1
+	local MIME
+
+	MIME=$(Get_MIME_Type "$File") || return $?
+	_MIME_Lookup_Ext "$MIME"
+}
+
+# Best matching extension for a file: exact MIME-table entry first, then
+# x- normalized variants of the subtype, then the file's own extension when
+# it already maps to the detected type, then a main-type default for
+# extensionless files, then the original extension as the last resort.
+# Get_MIME_Best_Extension <file>
+Get_MIME_Best_Extension() {
+	local File=$1
+	local Mime Sub Variant OwnExt Ext Main Base
+
+	Mime=$(Get_MIME_Type "$File") || return $?
+	Mime=${Mime%%;*}
+	Mime=${Mime,,}
+
+	# 1) exact entry in the type -> extension table
+	Ext=$(_MIME_Lookup_Ext "$Mime") && [ -n "$Ext" ] && {
+		printf '%s' "$Ext"
+		return 0
+	}
+
+	# 2) x- normalized variants of the subtype
+	Sub=${Mime#*/}
+	case "$Sub" in
+	x-*)
+		Variant="${Mime%%/*}/${Sub#x-}"
+		Ext=$(_MIME_Lookup_Ext "$Variant") && [ -n "$Ext" ] && {
+			printf '%s' "$Ext"
+			return 0
+		}
+		;;
+	*)
+		Variant="${Mime%%/*}/x-${Sub}"
+		Ext=$(_MIME_Lookup_Ext "$Variant") && [ -n "$Ext" ] && {
+			printf '%s' "$Ext"
+			return 0
+		}
+		;;
+	esac
+
+	# The file's own extension (same semantics as Get_File_Ext, kept inline
+	# so this module stays standalone)
+	Base=${File##*/}
+	case "$Base" in
+	.*.* | *.*.*) OwnExt=${Base##*.} ;;
+	*) OwnExt='' ;;
+	esac
+	OwnExt=${OwnExt,,}
+
+	# 3) the own extension, when it already maps to the detected type
+	if [ -n "$OwnExt" ]; then
+		Ext=$(Get_Extension_MIME "$OwnExt") || Ext=''
+		if [ "$Ext" = "$Mime" ]; then
+			printf '%s' "$OwnExt"
+			return 0
+		fi
+	fi
+
+	# 4) main-type default - only for files without any extension
+	if [ -z "$OwnExt" ]; then
+		Main=${Mime%%/*}
+		case "$Main" in
+		text)
+			printf 'txt'
+			return 0
+			;;
+		image)
+			printf 'img'
+			return 0
+			;;
+		audio)
+			printf 'mp3'
+			return 0
+			;;
+		video)
+			printf 'mp4'
+			return 0
+			;;
+		application)
+			printf 'bin'
+			return 0
+			;;
+		esac
+	fi
+
+	# 5) keep the original extension as the last resort
+	if [ -n "$OwnExt" ]; then
+		printf '%s' "$OwnExt"
+		return 0
+	fi
+
+	return 1
 }
 
 # MIME type for an extension (no file needed). Get_Extension_MIME <ext>
@@ -4752,7 +4851,7 @@ Help() {
 	printf '\n'
 	Print_Message 'File identity:'
 	printf '\t%s\n' 'extension mime (text/plain) mime-main (TEXT) mime-sub (plain)'
-	printf '\t%s\n' 'mime-ext (jpg - canonical extension for the MIME type)'
+	printf '\t%s\n' 'mime-ext (jpg - best matching extension for the MIME type)'
 	printf '\t%s\n' 'compressed (main dir / single file inside an archive)'
 	printf '\t%s\n' 'md5|md5sum sha1 sha224 sha256 sha384 sha512 sha|shasum b2 crc32'
 	printf '\t%s\n' 'random randomN (N concatenated random values, e.g. random3)'
@@ -5159,7 +5258,7 @@ Resolve_Segment() {
 		;;
 	mime-ext)
 		local MExt Rc
-		MExt=$(Get_MIME_Extension "$File")
+		MExt=$(Get_MIME_Best_Extension "$File")
 		Rc=$?
 		if [ "$Rc" -eq 0 ] && [ -n "$MExt" ]; then
 			printf '%s' "$MExt"
