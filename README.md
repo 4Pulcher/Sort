@@ -53,7 +53,7 @@ see [Sort-Versions.md](Sort-Versions.md) for the full map, sources and reasoning
 ## Layout
 
 ```
-Sort.sh                 <- MAIN script (version V15.1, the last one)
+Sort.sh                 <- MAIN script (V16.0, threaded edition on the functions/ library)
 Sort-Versions.md        <- the full version map: every version, its source, its notes
 FUNCTIONS/              <- legacy helper library sourced by Sort.sh (V15.1)
   get_file.sh           <- get_file_*, built on functions/file + functions/hash
@@ -93,12 +93,21 @@ size, position in the lineage, notes, and any fixes that were applied.
 
 ## The main script
 
-The root `Sort.sh` is **V15.1 — the modular library edition** (the last version).
-It sources its helper functions from a `FUNCTIONS/*.sh` library directory
-(next to it in the repository root) — the original library was never
-uploaded, so it was rebuilt as adapters over the modern `functions/`
-toolkit. If you want a single self-contained file instead,
-use **[versions/V13.1](versions/V13.1/Sort-V13.1.sh)** — the most developed
+The root `Sort.sh` is **V16.0 — the threaded edition**, a complete rewrite of
+the mainline as a thin driver over the `functions/` toolkit. It collects
+every file to treat into an array up front, sorts each into a
+`<mime>/<form-or-size>/...` tree, and processes the array through a bounded
+pool of background jobs (`--jobs=N`). Verbose by default, colored output
+with `--colored`, dry-run preview by default (`--copy` / `--move` to act),
+full `--help` and `--usage` sections, and the deps init-system proposes
+installs for missing media tools.
+
+The previous main script, **V15.1 — the modular library edition**, sources
+its helper functions from a `FUNCTIONS/*.sh` directory (next to it in the
+repository root) — the original library was never uploaded, so it was
+rebuilt as adapters over the modern `functions/` toolkit. If you want a
+single self-contained file instead, use
+**[versions/V13.1](versions/V13.1/Sort-V13.1.sh)** — the most developed
 standalone edition — or the classic **[versions/V11.0](versions/V11.0/Sort-V11.0.sh)**
 (the version that was previously published here as `Sort.sh`).
 

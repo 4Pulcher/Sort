@@ -8,7 +8,7 @@
 | **Era** | V15.x — Modular library era |
 | **Source** | B5 `zL2Zk5Ny` |
 | **Size** | 183 lines |
-| **Role** | **Main script** — copied to the repository root as `Sort.sh` |
+| **Role** | Former main script — the root `Sort.sh` has since evolved into the threaded V16.0 edition |
 | **Preceded by** | V15.0 |
 | **Followed by** | — (last version) |
 

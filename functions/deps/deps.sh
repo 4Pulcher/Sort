@@ -162,7 +162,7 @@ _Deps_Propose_Install() {
 			read -r Answer || Answer=""
 		elif [ -e /dev/tty ]; then
 			printf 'deps: install now? [y/N] ' >&2
-			read -r Answer </dev/tty || Answer=""
+			read -r Answer </dev/tty 2>/dev/null || Answer=""
 		else
 			printf 'deps: not installed (set DEPS_YES=1 to install without asking)\n' >&2
 			return 1
