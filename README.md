@@ -53,7 +53,7 @@ see [Sort-Versions.md](Sort-Versions.md) for the full map, sources and reasoning
 ## Layout
 
 ```
-Sort.sh                 <- MAIN script (V16.0, threaded edition on the functions/ library)
+Sort.sh                 <- MAIN script (V17.0, self-contained, all lineage features)
 Sort-Versions.md        <- the full version map: every version, its source, its notes
 FUNCTIONS/              <- legacy helper library sourced by Sort.sh (V15.1)
   get_file.sh           <- get_file_*, built on functions/file + functions/hash
@@ -93,17 +93,40 @@ size, position in the lineage, notes, and any fixes that were applied.
 
 ## The main script
 
-The root `Sort.sh` is **V16.1 — the threaded edition**, a complete rewrite of
-the mainline as a thin driver over the **whole** `functions/` toolkit. It
-collects every file to treat into an array up front, sorts each into a
-`<mime>/<form-or-size>/...` tree, and processes the array through a bounded
-pool of background jobs (`--jobs=N`). Verbose by default, colored output
-with `--colored`, dry-run preview by default (`--copy` / `--move` to act),
-full `--help` and `--usage` sections, and the deps init-system proposes
-installs for missing media tools. EXIF integration: `--exif` adds
-`<Camera>/<YYYY-MM-DD>` levels for images (exiftool), `--strip` removes
-EXIF/GPS metadata from targets, and `--rename=title` renames documents by
-their internal title.
+The root `Sort.sh` is **V17.0 — the self-contained edition**: a comparison
+with all 92 lineage versions was made and **every functionality from
+V1.0–V15.1 is merged in**, with all needed functions embedded (no external
+`FUNCTIONS/` or `functions/` sourcing — the script runs standalone).
+
+Merged lineage features:
+
+- **Modes** (V9.x/V12.x/V13.1): `--copy`, `--move`, `--remove`/`--delete`,
+  `--trash`, `--shred`, `--mode=…` — destructive modes act on the
+  calculated TARGET path and refuse source = target
+- **Dynamic values** (V13.1 engine): `--dirs=` / `--subdirs=` /
+  `--rename=` / `--extension=` accept keywords — `year`, `month`, `day`,
+  `year+month`, `created`/`modified`/`accessed`, `mime`, `mime-main`,
+  `mime-sub`, `extension`, the whole checksum family (`md5`…`sha512`,
+  `b2`, `crc32`), `random`, `randomN`, `size`, `format` (resolution tiers
+  TINY…HUGE × SQUARE/WIDE/HIGH), `duration`, `camera`, `exifdate`,
+  `title` — unknown words become literal names
+- **Filtering** (V7.x/V8.x/V13.x): `--type=VALUE` (MIME substring),
+  `--recursive`, `--hidden`, `--links`
+- **Destination** (V8.x): `--target=DIR`, `--dirs=`, `--subdirs=`
+- **Metadata** (V10.x/V13.1 + v16.1): `--title` (PDF /Title, EXIF date,
+  audio/video tags), `--exif` (`<Camera>/<date>` levels), `--strip`
+- **Safety/output** (V10.2/V12.x): `--log=FILE`, `--undo[=FILE]` (writes a
+  runnable undo script), `--pause=SEC`, `--replace` vs `~(N)` collision
+  names, `--quiet`, `--colored`, `--stats`
+- **Threading** (V12.x + v16.0): file array built up front, bounded
+  background-job pool (`--jobs=N`, default nproc)
+- **Init-system**: missing tools (`identify`, `ffprobe`, `exiftool`,
+  `trash-put`) are proposed for install on first use
+
+It collects every file to treat into an array up front, sorts each into
+the dynamic tree, and processes the array through the job pool. Verbose by
+default, colored output with `--colored`, dry-run preview by default
+(`--copy` / `--move` to act), full `--help` and `--usage` sections.
 
 The previous main script, **V15.1 — the modular library edition**, sources
 its helper functions from a `FUNCTIONS/*.sh` directory (next to it in the
