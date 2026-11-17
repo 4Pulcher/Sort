@@ -4,6 +4,8 @@
 
 A complete, standalone bag of EXIF tools built on exiftool (with an ImageMagick identify fallback for common tags): generic tag access, full dumps, camera / lens / exposure / GPS getters, plus strip / set / copy actions. Every function prints its result on stdout and returns non-zero on failure (127 when no EXIF reader is installed).
 
+When the deps module is loaded, a missing exiftool triggers an install proposal (see ../deps).
+
 ## Functions
 
 ### Generic access and dumps

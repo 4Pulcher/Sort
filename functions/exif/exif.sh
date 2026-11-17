@@ -3,7 +3,7 @@
 ###############################################################################
 #                                                                             #
 # Script  : exif.sh                                                           #
-# Version : 2.0                                                               #
+# Version : 2.1                                                               #
 # Desc    : Complete EXIF toolkit - exiftool / ImageMagick fallback           #
 # Author  : HEjder                                                            #
 #                                                                             #
@@ -13,7 +13,8 @@
 # ImageMagick identify fallback for common tags): generic tag access, full
 # dumps, camera / lens / exposure / GPS getters, plus strip / set / copy
 # actions. Every function prints its result on stdout and returns non-zero
-# on failure. No globals required.
+# on failure. When the deps module is loaded, a missing exiftool triggers an
+# install proposal (see ../deps). No globals required.
 
 # ---------------------------------------------------------------------------
 # Internal helper: read one EXIF tag. Tries exiftool first, then the
@@ -32,6 +33,9 @@ _Exif_Read() {
 		Value=$(
 			timeout 10s identify -ping -format "%[exif:${Tag}]" -- "$File" 2>/dev/null
 		)
+	elif declare -F Deps_Ensure >/dev/null 2>&1 && Deps_Ensure exiftool; then
+		# exiftool was just installed - retry the read with it.
+		Value=$(timeout 10s exiftool -s3 -"$Tag" -- "$File" 2>/dev/null)
 	else
 		return 127
 	fi
@@ -43,6 +47,16 @@ _Exif_Read() {
 # Internal helper: true when at least one EXIF reader is installed.
 _Exif_Has_Reader() {
 	command -v exiftool >/dev/null || command -v identify >/dev/null
+}
+
+# Internal helper: true when the tool exists - otherwise propose installing
+# it through the deps module (when loaded) and report the outcome.
+# _Exif_Have <tool>
+_Exif_Have() {
+	local Tool=$1
+
+	command -v "$Tool" >/dev/null 2>&1 && return 0
+	declare -F Deps_Ensure >/dev/null 2>&1 && Deps_Ensure "$Tool"
 }
 
 # ---------------------------------------------------------------------------
@@ -65,7 +79,7 @@ Get_EXIF_All() {
 	local Dump
 
 	[ -f "$File" ] || return 1
-	command -v exiftool >/dev/null || return 127
+	_Exif_Have exiftool || return 127
 
 	Dump=$(timeout 10s exiftool -s -- "$File" 2>/dev/null)
 	[ -n "$Dump" ] || return 1
@@ -283,7 +297,7 @@ EXIF_Set() {
 	local File=$3
 
 	[ -n "$Tag" ] && [ -n "$Value" ] && [ -f "$File" ] || return 1
-	command -v exiftool >/dev/null || return 127
+	_Exif_Have exiftool || return 127
 
 	timeout 60s exiftool -overwrite_original "-$Tag=$Value" -- "$File" >/dev/null 2>&1
 }
@@ -294,7 +308,7 @@ EXIF_Copy() {
 	local Dst=$2
 
 	[ -f "$Src" ] && [ -f "$Dst" ] || return 1
-	command -v exiftool >/dev/null || return 127
+	_Exif_Have exiftool || return 127
 
 	timeout 60s exiftool -overwrite_original -tagsfromfile "$Src" -exif:all -- "$Dst" >/dev/null 2>&1
 }

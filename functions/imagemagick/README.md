@@ -4,6 +4,8 @@
 
 A complete, standalone bag of image tools built on ImageMagick: dimension, format, color, depth, quality, DPI, orientation, camera and GPS getters, plus resize / thumbnail / convert / rotate / grayscale / strip actions. Every function prints its result on stdout and returns non-zero on failure (127 when ImageMagick is missing).
 
+When the deps module is loaded, a missing ImageMagick triggers an install proposal (see ../deps).
+
 ## Functions
 
 ### Dimensions

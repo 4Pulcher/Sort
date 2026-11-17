@@ -3,7 +3,7 @@
 ###############################################################################
 #                                                                             #
 # Script  : ffmpeg.sh                                                         #
-# Version : 2.0                                                               #
+# Version : 2.1                                                               #
 # Desc    : Complete media toolkit - ffmpeg / ffprobe                         #
 # Author  : HEjder                                                            #
 #                                                                             #
@@ -13,28 +13,58 @@
 # container, duration, bitrate, FPS, channels, sample rate, tag getters,
 # validity checks, plus extract-audio / convert / thumbnail / strip actions.
 # Every function takes a path as its first argument, prints its result on
-# stdout and returns non-zero on failure. No globals required.
+# stdout and returns non-zero on failure. When the deps module is loaded,
+# a missing ffmpeg/ffprobe triggers an install proposal (see ../deps).
 
 # ---------------------------------------------------------------------------
-# Internal helper: ffprobe a list of entries, print values one per line.
-# Returns 127 when ffprobe is absent. _Probe <entries> <file>
+# Internal helper: true when the tool exists - otherwise propose installing
+# it through the deps module (when loaded) and report the outcome.
+# _FF_Have <tool>
 # ---------------------------------------------------------------------------
 
+_FF_Have() {
+	local Tool=$1
+
+	command -v "$Tool" >/dev/null 2>&1 && return 0
+	declare -F Deps_Ensure >/dev/null 2>&1 && Deps_Ensure "$Tool"
+}
+
+# Internal helper: raw ffprobe run. _FF_Run <select|''> <entries> <file>
+_FF_Run() {
+	local Select=$1
+	local Entries=$2
+	local File=$3
+	local Args=()
+
+	[[ -n "$Select" ]] && Args=(-select_streams "$Select")
+
+	timeout 10s ffprobe \
+		-v error \
+		"${Args[@]}" \
+		-show_entries "$Entries" \
+		-of default=noprint_wrappers=1:nokey=1 \
+		-- "$File" 2>/dev/null
+}
+
+# Internal helper: probe and fail cleanly on empty output.
+# _Probe <entries> <file>
 _Probe() {
-	local Entries=$1
-	local File=$2
 	local Out
 
-	command -v ffprobe >/dev/null || return 127
+	_FF_Have ffprobe || return 127
 
-	Out=$(
-		timeout 10s ffprobe \
-			-v error \
-			-show_entries "$Entries" \
-			-of default=noprint_wrappers=1:nokey=1 \
-			-- "$File" 2>/dev/null
-	)
+	Out=$(_FF_Run '' "$1" "$2")
+	[ -n "$Out" ] || return 1
+	printf '%s' "$Out"
+}
 
+# Internal helper: probe one stream. _Probe_Stream <entries> <select> <file>
+_Probe_Stream() {
+	local Out
+
+	_FF_Have ffprobe || return 127
+
+	Out=$(_FF_Run "$2" "$1" "$3")
 	[ -n "$Out" ] || return 1
 	printf '%s' "$Out"
 }
@@ -46,6 +76,10 @@ _Probe() {
 Get_Media_WxH() {
 	local File=$1
 	local Resolution
+
+	# First use without ffprobe: propose the install, then fall back to 0x0.
+	command -v ffprobe >/dev/null 2>&1 ||
+		{ declare -F Deps_Ensure >/dev/null 2>&1 && Deps_Ensure ffprobe; }
 
 	Resolution=$(
 		timeout 10s ffprobe \
@@ -68,52 +102,26 @@ Get_Media_WxH() {
 
 Get_Video_Codec() {
 	local File=$1
-	local Codec
 
-	Codec=$(
-		timeout 10s ffprobe \
-			-v error \
-			-select_streams v:0 \
-			-show_entries stream=codec_name \
-			-of default=noprint_wrappers=1:nokey=1 \
-			-- "$File" 2>/dev/null
-	)
-
-	[ -n "$Codec" ] || return 1
-	printf '%s' "$Codec"
+	_Probe_Stream stream=codec_name v:0 "$File"
 }
 
 Get_Audio_Codec() {
 	local File=$1
-	local Codec
 
-	Codec=$(
-		timeout 10s ffprobe \
-			-v error \
-			-select_streams a:0 \
-			-show_entries stream=codec_name \
-			-of default=noprint_wrappers=1:nokey=1 \
-			-- "$File" 2>/dev/null
-	)
-
-	[ -n "$Codec" ] || return 1
-	printf '%s' "$Codec"
+	_Probe_Stream stream=codec_name a:0 "$File"
 }
 
 Get_Container() {
 	local File=$1
-	local Container
 
-	Container=$(_Probe format=format_name "$File") || return $?
-	printf '%s' "$Container"
+	_Probe format=format_name "$File"
 }
 
 Get_Duration() {
 	local File=$1
-	local Duration
 
-	Duration=$(_Probe format=duration "$File") || return $?
-	printf '%s' "$Duration"
+	_Probe format=duration "$File"
 }
 
 Get_Duration_Human() {
@@ -134,26 +142,15 @@ Get_Duration_Human() {
 
 Get_Bitrate() {
 	local File=$1
-	local Bitrate
 
-	Bitrate=$(_Probe format=bit_rate "$File") || return $?
-	printf '%s' "$Bitrate"
+	_Probe format=bit_rate "$File"
 }
 
 Get_FPS() {
 	local File=$1
 	local Fraction Num Den
 
-	Fraction=$(
-		timeout 10s ffprobe \
-			-v error \
-			-select_streams v:0 \
-			-show_entries stream=avg_frame_rate \
-			-of default=noprint_wrappers=1:nokey=1 \
-			-- "$File" 2>/dev/null
-	)
-
-	[ -n "$Fraction" ] || return 1
+	Fraction=$(_Probe_Stream stream=avg_frame_rate v:0 "$File") || return $?
 
 	# avg_frame_rate is a fraction like "30000/1001" - evaluate it safely.
 	Num=${Fraction%%/*}
@@ -167,36 +164,14 @@ Get_FPS() {
 
 Get_Audio_Channels() {
 	local File=$1
-	local Channels
 
-	Channels=$(
-		timeout 10s ffprobe \
-			-v error \
-			-select_streams a:0 \
-			-show_entries stream=channels \
-			-of default=noprint_wrappers=1:nokey=1 \
-			-- "$File" 2>/dev/null
-	)
-
-	[ -n "$Channels" ] || return 1
-	printf '%s' "$Channels"
+	_Probe_Stream stream=channels a:0 "$File"
 }
 
 Get_Sample_Rate() {
 	local File=$1
-	local Rate
 
-	Rate=$(
-		timeout 10s ffprobe \
-			-v error \
-			-select_streams a:0 \
-			-show_entries stream=sample_rate \
-			-of default=noprint_wrappers=1:nokey=1 \
-			-- "$File" 2>/dev/null
-	)
-
-	[ -n "$Rate" ] || return 1
-	printf '%s' "$Rate"
+	_Probe_Stream stream=sample_rate a:0 "$File"
 }
 
 # ---------------------------------------------------------------------------
@@ -205,50 +180,38 @@ Get_Sample_Rate() {
 
 Get_Media_Title() {
 	local File=$1
-	local Title
 
-	Title=$(_Probe format_tags=title "$File") || return $?
-	printf '%s' "$Title"
+	_Probe format_tags=title "$File"
 }
 
 Get_Media_Artist() {
 	local File=$1
-	local Artist
 
-	Artist=$(_Probe format_tags=artist "$File") || return $?
-	printf '%s' "$Artist"
+	_Probe format_tags=artist "$File"
 }
 
 Get_Media_Album() {
 	local File=$1
-	local Album
 
-	Album=$(_Probe format_tags=album "$File") || return $?
-	printf '%s' "$Album"
+	_Probe format_tags=album "$File"
 }
 
 Get_Media_Genre() {
 	local File=$1
-	local Genre
 
-	Genre=$(_Probe format_tags=genre "$File") || return $?
-	printf '%s' "$Genre"
+	_Probe format_tags=genre "$File"
 }
 
 Get_Media_Track() {
 	local File=$1
-	local Track
 
-	Track=$(_Probe format_tags=track "$File") || return $?
-	printf '%s' "$Track"
+	_Probe format_tags=track "$File"
 }
 
 Get_Media_Date() {
 	local File=$1
-	local Date
 
-	Date=$(_Probe format_tags=date "$File") || return $?
-	printf '%s' "$Date"
+	_Probe format_tags=date "$File"
 }
 
 # Print every "KEY=VALUE" format tag, one per line.
@@ -256,7 +219,7 @@ Get_Media_Tags() {
 	local File=$1
 	local Tags
 
-	command -v ffprobe >/dev/null || return 127
+	_FF_Have ffprobe || return 127
 
 	Tags=$(
 		timeout 10s ffprobe \
@@ -278,7 +241,7 @@ Media_Is_Valid() {
 	local File=$1
 
 	[ -f "$File" ] || return 1
-	command -v ffprobe >/dev/null || return 127
+	_FF_Have ffprobe || return 127
 
 	timeout 10s ffprobe -v error -- "$File" >/dev/null 2>&1
 }
@@ -290,6 +253,8 @@ Media_Is_Valid() {
 Get_Audio_Info() {
 	local File=$1
 	local Artist Album Title Info=""
+
+	_FF_Have ffprobe || return 127
 
 	Artist=$(
 		timeout 10s ffprobe \
@@ -328,6 +293,8 @@ Get_Video_Title() {
 	local File=$1
 	local Title Artist Info=""
 
+	_FF_Have ffprobe || return 127
+
 	Title=$(
 		timeout 10s ffprobe \
 			-v error \
@@ -360,7 +327,7 @@ Media_Extract_Audio() {
 	local Out=$2
 
 	[ -f "$In" ] && [ -n "$Out" ] || return 1
-	command -v ffmpeg >/dev/null || return 127
+	_FF_Have ffmpeg || return 127
 
 	timeout 600s ffmpeg -y -v error -i "$In" -vn -acodec copy -- "$Out" >/dev/null 2>&1
 }
@@ -370,7 +337,7 @@ Media_Convert() {
 	local Out=$2
 
 	[ -f "$In" ] && [ -n "$Out" ] || return 1
-	command -v ffmpeg >/dev/null || return 127
+	_FF_Have ffmpeg || return 127
 
 	timeout 600s ffmpeg -y -v error -i "$In" -- "$Out" >/dev/null 2>&1
 }
@@ -381,7 +348,7 @@ Media_Thumbnail() {
 	local Out=$3
 
 	[ -f "$Video" ] && [ -n "$Out" ] || return 1
-	command -v ffmpeg >/dev/null || return 127
+	_FF_Have ffmpeg || return 127
 
 	timeout 60s ffmpeg -y -v error -ss "$Time" -i "$Video" -frames:v 1 -q:v 2 -- "$Out" >/dev/null 2>&1
 }
@@ -391,7 +358,7 @@ Media_Strip_Metadata() {
 	local Out=$2
 
 	[ -f "$In" ] && [ -n "$Out" ] || return 1
-	command -v ffmpeg >/dev/null || return 127
+	_FF_Have ffmpeg || return 127
 
 	timeout 600s ffmpeg -y -v error -i "$In" -map_metadata -1 -c copy -- "$Out" >/dev/null 2>&1
 }

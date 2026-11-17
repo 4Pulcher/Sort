@@ -4,6 +4,8 @@
 
 A complete, standalone bag of media tools built on ffmpeg/ffprobe: codecs, container, duration, bitrate, FPS, channels, sample rate, tag getters, validity checks, plus extract-audio / convert / thumbnail / strip actions. Every function prints its result on stdout and returns non-zero on failure (127 when ffmpeg/ffprobe is missing).
 
+When the deps module is loaded, a missing ffmpeg/ffprobe triggers an install proposal (see ../deps).
+
 ## Functions
 
 ### Dimensions

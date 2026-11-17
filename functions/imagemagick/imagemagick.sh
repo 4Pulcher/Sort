@@ -3,7 +3,7 @@
 ###############################################################################
 #                                                                             #
 # Script  : imagemagick.sh                                                    #
-# Version : 2.0                                                               #
+# Version : 2.1                                                               #
 # Desc    : Complete image toolkit - ImageMagick identify / magick            #
 # Author  : HEjder                                                            #
 #                                                                             #
@@ -13,7 +13,8 @@
 # format, color, depth, quality, DPI, orientation, camera and GPS getters,
 # plus resize / thumbnail / convert / rotate / grayscale / strip actions.
 # Every function takes a path as its first argument, prints its result on
-# stdout and returns non-zero on failure. No globals required.
+# stdout and returns non-zero on failure. When the deps module is loaded,
+# a missing ImageMagick triggers an install proposal (see ../deps).
 
 # ---------------------------------------------------------------------------
 # Internal helper: identify with a magick-identify fallback (returns 127 when
@@ -29,6 +30,9 @@ _IM_Identify() {
 		Out=$(timeout 10s identify -ping -format "$Format" -- "$File" 2>/dev/null)
 	elif command -v magick >/dev/null; then
 		Out=$(timeout 10s magick identify -ping -format "$Format" -- "$File" 2>/dev/null)
+	elif declare -F Deps_Ensure >/dev/null 2>&1 && Deps_Ensure identify; then
+		# ImageMagick was just installed - retry the read.
+		Out=$(timeout 10s identify -ping -format "$Format" -- "$File" 2>/dev/null)
 	else
 		return 127
 	fi
@@ -47,6 +51,9 @@ _IM_Tool() {
 		timeout 120s magick "$@" 2>/dev/null
 	elif command -v convert >/dev/null; then
 		timeout 120s convert "$@" 2>/dev/null
+	elif declare -F Deps_Ensure >/dev/null 2>&1 && Deps_Ensure magick; then
+		# ImageMagick was just installed - retry the action.
+		timeout 120s magick "$@" 2>/dev/null
 	else
 		return 127
 	fi
@@ -59,6 +66,11 @@ _IM_Tool() {
 Get_Image_WxH() {
 	local File=$1
 	local Resolution
+
+	# First use without ImageMagick: propose the install, then fall back to 0x0.
+	command -v identify >/dev/null || command -v magick >/dev/null || {
+		declare -F Deps_Ensure >/dev/null 2>&1 && Deps_Ensure identify
+	}
 
 	Resolution=$(
 		identify -ping -format '%wx%h\n' -- "$File" 2>/dev/null |

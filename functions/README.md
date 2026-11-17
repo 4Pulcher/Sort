@@ -14,8 +14,8 @@ source functions/file/file.sh
 
 Note: the `system`, `ui` and `core` modules use globals defined by the main
 script (ANSI color variables, option values); source the color/ui setup first
-or define them yourself. The `file`, `hash`, `imagemagick`, `ffmpeg` and
-`exif` modules are fully standalone — no globals required.
+or define them yourself. The `file`, `hash`, `imagemagick`, `ffmpeg`, `exif`
+and `deps` modules are fully standalone — no globals required.
 
 ## Modules
 
@@ -28,7 +28,8 @@ or define them yourself. The `file`, `hash`, `imagemagick`, `ffmpeg` and
 | [imagemagick](imagemagick/) | Complete image toolkit — ImageMagick identify / magick | 20 functions: dimensions, format, colors, depth, quality, DPI, orientation, camera, GPS, actions |
 | [ffmpeg](ffmpeg/) | Complete media toolkit — ffmpeg / ffprobe | 24 functions: codecs, container, duration, bitrate, FPS, channels, tags, actions |
 | [exif](exif/) | Complete EXIF toolkit — exiftool / ImageMagick fallback | 23 functions: generic tag access, dumps, camera, lens, exposure, GPS, strip/set/copy actions |
+| [deps](deps/) | Init-system for external tools — installer / privilege detection | 8 functions: detection, package mapping, install, ensure, init |
 | [docs](docs/) | Documents (pdftotext / exiftool) | `Get_Doc_Title` |
 | [core](core/) | Organizer core logic | `Resolve_Path_Segment`, `Parse_Arguments`, `Validate_Options`, `Perform_Action`, `Sort`, `Show_Help` |
 
-Total: 137 functions in 9 modules.
+Total: 145 functions in 10 modules.
