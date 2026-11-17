@@ -1,11 +1,33 @@
 # functions/hash
 
-> Checksums (md5sum / sha*sum)
+> Complete checksum toolkit - md5 / SHA family / crc32 / blake2
 
-Checksum helpers: MD5 and the SHA family via the md5sum/sha*sum toolset.
+A complete, standalone bag of checksum tools: the md5/SHA family, crc32, blake2, a generic dispatcher, string hashing, verification, comparison and duplicate finding. Every function prints its result on stdout and returns non-zero on failure (127 when the needed tool is missing).
 
 ## Functions
 
+### Per-algorithm getters
+
 - `Get_MD5Sum`
-- `Get_SHA_Keys`
+- `Get_SHA1Sum`
+- `Get_SHA224Sum`
 - `Get_SHA256Sum`
+- `Get_SHA384Sum`
+- `Get_SHA512Sum`
+- `Get_B2Sum`
+- `Get_CRC32`
+
+### Dispatcher and strings
+
+- `Get_Hash`
+- `Get_Hash_Of_String`
+
+### Verification and comparison
+
+- `Verify_Hash`
+- `Files_Are_Identical`
+- `Same_Hash`
+- `Get_Quick_Hash`
+- `Find_Duplicates`
+
+Total: 15 functions.
