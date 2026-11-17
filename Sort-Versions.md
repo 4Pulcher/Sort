@@ -5,8 +5,9 @@ they are inconsistent (re-used, re-arranged, out of order). Each `Sort-V#.#.sh` 
 started as a byte-exact copy of one uploaded script (or the GitHub `Sort.sh`), then was turned
 into the **HEjder edition** (see bottom of this file).
 
-- **92 files**: `Sort-V1.0.sh` … `Sort-V15.1.sh`
+- **95 files**: `Sort-V1.0.sh` … `Sort-V15.1.sh` (92 reconstructed) + the rewrite editions `Sort-V16.0.sh`, `Sort-V16.1.sh`, `Sort-V17.0.sh`
 - **V11.0 = `./Sort`** (the `Sort.sh` from the GitHub repo `4Pulcher/Sort`)
+- **V17.0 = the root `Sort.sh`** (self-contained; the last version is always the main one)
 - Ordering method: family clustering by header/signature, then greedy nearest-neighbor
   chain on pairwise `diff` distances, corrected by feature evidence (option growth,
   helper vocabulary, structural sophistication).
@@ -177,6 +178,19 @@ into the **HEjder edition** (see bottom of this file).
 |---|---|---|---|
 | V15.0 | B2 `oztrmyOi` | 21 | Sources `FUNCTIONS/*.sh` |
 | V15.1 | B5 `zL2Zk5Ny` | 183 | Modular lib, most developed |
+
+## V16.x–V17.x — Rewrite era (3)
+
+Written from scratch on top of the reconstructed history: V16.0/V16.1 are thin
+drivers over the `functions/` toolkit at the repository root (they load it from
+`../../functions/` in their version folders); V17.0 embeds everything in one
+self-contained file and is the current main script (root `Sort.sh`).
+
+| Version | Source | Lines | Notes |
+|---|---|---|---|
+| V16.0 | commit `a071fdd` | 495 | Threaded driver over 7 `functions/` modules; array of files, `--jobs=N`, status tags, `~(N)` collisions |
+| V16.1 | commit `6d13ab3` | 584 | All 12 modules; `--exif`, `--strip`, `--title`, Break trap, banner |
+| V17.0 | commit `6811f9a` (+ `bdbf63b`) | 5290 | Self-contained: all lineage features merged, dynamic values, modes copy/move/remove/trash/shred, `--undo`, `--log`, init-system |
 
 ## Duplicates found (not double-counted)
 

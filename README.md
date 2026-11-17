@@ -128,10 +128,12 @@ cd Pictures/Sorted ;
 
 # The version archive
 
-This repository keeps the **complete history of the Sort script** — 92 versions,
-reconstructed from content evolution and numbered `V1.0` → `V15.1` (the version labels
-found inside the old files were inconsistent, so they were discarded and re-derived;
-see [Sort-Versions.md](Sort-Versions.md) for the full map, sources and reasoning).
+This repository keeps the **complete history of the Sort script** — 95 versions:
+92 reconstructed from content evolution and numbered `V1.0` → `V15.1` (the version labels
+found inside the old files were inconsistent, so they were discarded and re-derived),
+plus the three rewrite editions `V16.0`, `V16.1` and `V17.0`. The last version is always
+the main one: root `Sort.sh` = `V17.0`
+(see [Sort-Versions.md](Sort-Versions.md) for the full map, sources and reasoning).
 
 ## Layout
 
@@ -150,6 +152,10 @@ versions/
   ...
   V15.1/
     Sort-V15.1.sh
+    README.md
+  ...
+  V17.0/
+    Sort-V17.0.sh        <- identical to the root Sort.sh
     README.md
 functions/              <- isolated function library (see functions/README.md)
   system/  ui/  file/  hash/  mime/  imagemagick/  ffmpeg/  exif/
@@ -192,11 +198,12 @@ functions/              <- isolated function library (see functions/README.md)
 | V13.x | 13.0–13.1 | Commented edition |
 | V14.x | 14.0–14.1 | Safe Transport Engine |
 | V15.x | 15.0–15.1 | Modular library era |
-| V16.x–V17.0 | rewrite | Threaded → self-contained all-features edition |
+| V16.x | 16.0–16.1 | Rewrite on the `functions/` toolkit (threaded) |
+| V17.x | 17.0 | Self-contained all-features edition (the current main) |
 
 ## HEjder edition
 
-All 92 scripts are HEjder editions: every syntax error fixed (all pass `bash -n`),
+All 92 lineage scripts are HEjder editions: every syntax error fixed (all pass `bash -n`),
 formatting unified, author credited as **HEjder**, every function commented, and each
 script ends with:
 

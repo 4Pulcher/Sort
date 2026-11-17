@@ -10,7 +10,7 @@
 | **Size** | 183 lines |
 | **Role** | Former main script — the root `Sort.sh` has since evolved into the threaded V16.0 edition |
 | **Preceded by** | V15.0 |
-| **Followed by** | — (last version) |
+| **Followed by** | V16.0 |
 
 ## About this version
 
