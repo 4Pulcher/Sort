@@ -94,6 +94,7 @@ var
 { Output helpers (thread-safe)                                        }
 { ------------------------------------------------------------------ }
 
+{ Out_Tagged: print a tagged line (thread-safe) }
 procedure Out_Tagged(const Tag, S: string);
 begin
     Lock.Enter;
@@ -107,6 +108,7 @@ begin
     end;
 end;
 
+{ Out_Err: print an error line to stderr }
 procedure Out_Err(const S: string);
 begin
     Lock.Enter;
@@ -120,6 +122,7 @@ begin
     end;
 end;
 
+{ Out_Log: verbose line + append to the log file }
 procedure Out_Log(const S: string);
 begin
     if DoVerbose then
@@ -143,6 +146,7 @@ begin
     end;
 end;
 
+{ Bump: thread-safe counter increment }
 procedure Bump(var C: Integer);
 begin
     Lock.Enter;
@@ -157,6 +161,7 @@ end;
 { External tool helpers (same tools the shell version called)         }
 { ------------------------------------------------------------------ }
 
+{ HaveTool: true when an external tool exists on PATH }
 function HaveTool(const Exe: string): Boolean;
 begin
     if Pos(PathSep, Exe) > 0 then
@@ -208,6 +213,7 @@ end;
 { File helpers                                                        }
 { ------------------------------------------------------------------ }
 
+{ Is_Symlink: true when the path is a symbolic link }
 function Is_Symlink(const F: string): Boolean;
 var
     SB: TStat;
@@ -217,6 +223,7 @@ begin
         Result := FPS_ISLNK(SB.st_mode);
 end;
 
+{ Get_File_Size: file size in bytes (stat) }
 function Get_File_Size(const F: string): Int64;
 var
     SB: TStat;
@@ -226,6 +233,7 @@ begin
         Result := SB.st_size;
 end;
 
+{ Copy_File: copy a file byte by byte (TFileStream) }
 function Copy_File(const Src, Dst: string): Boolean;
 var
     InS, OutS: TFileStream;
@@ -248,6 +256,7 @@ begin
     end;
 end;
 
+{ Move_File: move a file: rename, or copy+delete across devices }
 function Move_File(const Src, Dst: string): Boolean;
 begin
     if RenameFile(Src, Dst) then
@@ -260,6 +269,7 @@ begin
     end;
 end;
 
+{ Shred_File: overwrite a file with random bytes, then delete it }
 procedure Shred_File(const F: string);
 var
     FS   : TFileStream;
@@ -297,6 +307,7 @@ begin
     DeleteFile(F);
 end;
 
+{ Trash_File: move a file to the trash (trash-put / trash) }
 function Trash_File(const F: string; out Text: string): Integer;
 begin
     if HaveTool('trash-put') then
@@ -376,6 +387,7 @@ end;
 { MIME helpers (file(1), same as the shell library)                   }
 { ------------------------------------------------------------------ }
 
+{ Detect_MIME: MIME type of a file via file(1) }
 function Detect_MIME(const F: string): string;
 var
     Res: string;
@@ -390,6 +402,7 @@ begin
     end;
 end;
 
+{ MIME_Main: main part of a MIME type (before the /) }
 function MIME_Main(const M: string): string;
 var
     P: Integer;
@@ -401,6 +414,7 @@ begin
         Result := M;
 end;
 
+{ MIME_Sub: sub part of a MIME type (after the /) }
 function MIME_Sub(const M: string): string;
 var
     P: Integer;
@@ -518,6 +532,7 @@ begin
         Result := '';
 end;
 
+{ Get_MIME_Best_Extension: best matching extension for the MIME type of a file }
 function Get_MIME_Best_Extension(const F: string): string;
 var
     Mime, OwnExt, Base: string;
@@ -561,6 +576,7 @@ end;
 { Hashing (native MD5/SHA1, external sha256sum/sha512sum)             }
 { ------------------------------------------------------------------ }
 
+{ First_Token: first space-separated token of a string }
 function First_Token(const S: string): string;
 var
     P: Integer;
@@ -572,6 +588,7 @@ begin
         Result := S;
 end;
 
+{ Hash_File: hash a file with the given algorithm (md5/sha1 native, sha256/sha512 external) }
 function Hash_File(const F, Algo: string): string;
 var
     Res: string;
@@ -597,6 +614,7 @@ end;
 { Archives (native Zipper for zip, external tools for the rest)       }
 { ------------------------------------------------------------------ }
 
+{ Is_Zip_File: true when the file starts with the PK zip magic }
 function Is_Zip_File(const F: string): Boolean;
 var
     FS: TFileStream;
@@ -622,6 +640,7 @@ begin
     end;
 end;
 
+{ Is_Tar_Suffix: true for .tar / .tar.gz / .tar.bz2 / ... names }
 function Is_Tar_Suffix(const F: string): Boolean;
 var
     S: string;
@@ -791,6 +810,7 @@ end;
 { Time helpers                                                        }
 { ------------------------------------------------------------------ }
 
+{ File_Time: modified/created/accessed time of a file as TDateTime }
 function File_Time(const F, Which: string): TDateTime;
 var
     SB: TStat;
@@ -819,6 +839,7 @@ end;
 { File collection (FindFirst/FindNext walk)                           }
 { ------------------------------------------------------------------ }
 
+{ Collect_Dir: recursively collect the files of one directory }
 procedure Collect_Dir(const Dir: string; List: TStringList);
 var
     SR: TSearchRec;
@@ -854,6 +875,7 @@ begin
     end;
 end;
 
+{ Collect_Files: build the global work list from the start directory }
 procedure Collect_Files;
 var
     Start: string;
@@ -867,6 +889,7 @@ begin
     Files.Sort;
 end;
 
+{ Find_All_Files: recursively list every file below a directory }
 procedure Find_All_Files(const Dir: string; List: TStringList);
 var
     SR: TSearchRec;
@@ -892,6 +915,7 @@ begin
     end;
 end;
 
+{ Remove_Tree: delete a whole directory tree }
 procedure Remove_Tree(const Dir: string);
 var
     SR: TSearchRec;
@@ -922,6 +946,7 @@ end;
 { Dynamic value engine (Resolve_Segment)                              }
 { ------------------------------------------------------------------ }
 
+{ Media_Tier: size tier name (TINY..HUGE) for width x height }
 function Media_Tier(const W, H: Integer): string;
 begin
     if (W < 64) or (H < 64) then Result := 'TINY'
@@ -934,6 +959,7 @@ begin
     else Result := 'HUGE';
 end;
 
+{ Media_Orient: orientation name (WIDE/HIGH/SQUARE) for width x height }
 function Media_Orient(const W, H: Integer): string;
 begin
     if W > H then Result := 'WIDE'
@@ -941,6 +967,7 @@ begin
     else Result := 'SQUARE';
 end;
 
+{ Exif_Field: one metadata field of a file via exiftool }
 function Exif_Field(const F, Field: string): string;
 var
     Res: string;
@@ -950,6 +977,7 @@ begin
         Result := Trim(Res);
 end;
 
+{ Video_Duration: video duration in seconds via ffprobe }
 function Video_Duration(const F: string): string;
 var
     Res: string;
@@ -967,6 +995,7 @@ begin
     end;
 end;
 
+{ Image_WxH: image width and height via identify }
 function Image_WxH(const F: string; out W, H: Integer): Boolean;
 var
     Res: string;
@@ -986,6 +1015,7 @@ begin
     Result := (W > 0) and (H > 0);
 end;
 
+{ Underscore: replace spaces with underscores }
 function Underscore(const S: string): string;
 var
     I: Integer;
@@ -1146,6 +1176,7 @@ begin
     end;
 end;
 
+{ Sanitize_Name: replace filesystem-unsafe characters with underscores }
 function Sanitize_Name(const S: string): string;
 var
     I: Integer;
@@ -1270,6 +1301,7 @@ end;
 { Temp dirs (--decompress)                                            }
 { ------------------------------------------------------------------ }
 
+{ Make_Temp_Dir: create a unique temporary directory }
 function Make_Temp_Dir: string;
 var
     Base, D: string;
@@ -1291,6 +1323,7 @@ end;
 { Per-file processing                                                 }
 { ------------------------------------------------------------------ }
 
+{ Process_File: process one file according to the active mode }
 procedure Process_File(const F: string); forward;
 
 { Extract to a temp dir, process the contents, then apply the mode to
@@ -1362,6 +1395,7 @@ begin
     Remove_Tree(Tmp);
 end;
 
+{ Looks_Like_Archive: true when the file name looks like an archive (zip/tar/7z/rar/...) }
 function Looks_Like_Archive(const F: string): Boolean;
 var
     E: string;
@@ -1371,6 +1405,7 @@ begin
               or (E = 'gz') or (E = 'bz2') or (E = 'xz') or (E = 'zst');
 end;
 
+{ Process_File: process one file according to the active mode }
 procedure Process_File(const F: string);
 var
     Target, Tmp: string;
@@ -1505,6 +1540,7 @@ end;
 { Thread pool (TThread)                                               }
 { ------------------------------------------------------------------ }
 
+{ TSortThread: worker thread: take the next index and process that file }
 procedure TSortThread.Execute;
 var
     Idx: Integer;
@@ -1526,6 +1562,7 @@ begin
     end;
 end;
 
+{ Run_Threads: run the work list: thread pool when --jobs > 1, else sequential }
 procedure Run_Threads;
 var
     I, N: Integer;
@@ -1555,6 +1592,7 @@ end;
 { Self test (--self-test)                                             }
 { ------------------------------------------------------------------ }
 
+{ Self_Test: built-in self test (hash vectors, temp-file write) }
 function Self_Test: Boolean;
 var
     Ok: Boolean;
@@ -1593,17 +1631,20 @@ end;
 { Usage / Help                                                        }
 { ------------------------------------------------------------------ }
 
+{ Show_Version: print the version banner }
 procedure Show_Version;
 begin
     WriteLn('Sort ', ScriptVersion, ' (FreePascal 3.2.2 translation of Sort.sh)');
 end;
 
+{ Show_Usage: print the short usage reminder }
 procedure Show_Usage;
 begin
     WriteLn('Usage: sort [OPTIONS] [DIR...]');
     WriteLn('Try ''sort --help'' for the full option list.');
 end;
 
+{ Show_Help: print the full option help }
 procedure Show_Help;
 begin
     Show_Version;
@@ -1658,11 +1699,13 @@ end;
 { Argument parsing                                                    }
 { ------------------------------------------------------------------ }
 
+{ Opt_Value: value part of an --option=value argument }
 function Opt_Value(const Arg: string): string;
 begin
     Result := Copy(Arg, Pos('=', Arg) + 1, MaxInt);
 end;
 
+{ Parse_Arguments: parse the command line into the option variables }
 procedure Parse_Arguments;
 var
     I: Integer;
@@ -1773,6 +1816,7 @@ begin
     end;
 end;
 
+{ Validate_Options: sanity-check the parsed options }
 procedure Validate_Options;
 begin
     if not ((Modus = 'print') or (Modus = 'copy') or (Modus = 'move')
@@ -1797,6 +1841,7 @@ end;
 { Main                                                                }
 { ------------------------------------------------------------------ }
 
+{ Main: program flow: parse, validate, collect, run, summarize }
 procedure Main;
 begin
     Parse_Arguments;

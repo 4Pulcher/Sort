@@ -39,6 +39,7 @@ var
     CountFailed : Integer;
 
 
+{ HaveTool: true when an external tool exists on PATH }
 function HaveTool(const Exe: string): Boolean;
 begin
     if Pos(PathSep, Exe) > 0 then
@@ -86,16 +87,19 @@ begin
     end;
 end;
 
+{ Out_Tagged: print a tagged line (thread-safe) }
 procedure Out_Tagged(const Tag, S: string);
 begin
     WriteLn(Tag + ' ' + S);
 end;
 
+{ Out_Err: print an error line to stderr }
 procedure Out_Err(const S: string);
 begin
     WriteLn(StdErr, S);
 end;
 
+{ Bump: thread-safe counter increment }
 procedure Bump(var C: Integer);
 begin
     C := C + 1;
@@ -105,6 +109,7 @@ end;
 { MIME helpers                                                        }
 { ------------------------------------------------------------------ }
 
+{ Detect_MIME: MIME type of a file via file(1) }
 function Detect_MIME(const F: string): string;
 var
     Res: string;
@@ -119,6 +124,7 @@ begin
     end;
 end;
 
+{ MIME_Main: main part of a MIME type (before the /) }
 function MIME_Main(const M: string): string;
 var
     P: Integer;
@@ -130,6 +136,7 @@ begin
         Result := M;
 end;
 
+{ MIME_Sub: sub part of a MIME type (after the /) }
 function MIME_Sub(const M: string): string;
 var
     P: Integer;
@@ -171,6 +178,7 @@ end;
 { Hash / image helpers                                                }
 { ------------------------------------------------------------------ }
 
+{ First_Token: first space-separated token of a string }
 function First_Token(const S: string): string;
 var
     P: Integer;
@@ -192,6 +200,7 @@ begin
         Result := First_Token(Trim(Res));
 end;
 
+{ Image_WxH: image width and height via identify }
 procedure Image_WxH(const F: string; out W, H: Integer);
 var
     Res: string;
@@ -215,6 +224,7 @@ end;
 { File operations                                                     }
 { ------------------------------------------------------------------ }
 
+{ Copy_File: copy a file byte by byte (TFileStream) }
 function Copy_File(const Src, Dst: string): Boolean;
 var
     InS, OutS: TFileStream;
@@ -237,6 +247,7 @@ begin
     end;
 end;
 
+{ Move_File: move a file: rename, or copy+delete across devices }
 function Move_File(const Src, Dst: string): Boolean;
 begin
     if RenameFile(Src, Dst) then
@@ -282,6 +293,7 @@ end;
 { File processing                                                     }
 { ------------------------------------------------------------------ }
 
+{ Process_File: process one file according to the active mode }
 procedure Process_File(const F: string);
 var
     Mime, Type_, Ext, Fext, Name, Dir, New, Sub, Class_: string;
@@ -330,6 +342,7 @@ begin
             Dir := Dir + '/' + Class_ + '/' + IntToStr(W) + '-' + IntToStr(H);
         end;
     end;
+    { the early eras used ALL-CAPS directory names }
     Dir := UpCase(Dir);
     New := Target_Path(Dir, Name, Fext, 0);
     if (F = New) or (ExpandFileName(F) = ExpandFileName(New)) then
@@ -456,6 +469,7 @@ end;
 { Main                                                                }
 { ------------------------------------------------------------------ }
 
+{ Main: program flow: parse, validate, collect, run, summarize }
 procedure Main;
 var
     I: Integer;

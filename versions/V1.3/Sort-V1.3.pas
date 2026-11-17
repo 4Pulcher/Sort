@@ -50,21 +50,25 @@ var
     CountPreview   : Integer;
 
 
+{ Out_Tagged: print a tagged line (thread-safe) }
 procedure Out_Tagged(const Tag, S: string);
 begin
     WriteLn(Tag + ' ' + S);
 end;
 
+{ Out_Err: print an error line to stderr }
 procedure Out_Err(const S: string);
 begin
     WriteLn(StdErr, S);
 end;
 
+{ Bump: thread-safe counter increment }
 procedure Bump(var C: Integer);
 begin
     C := C + 1;
 end;
 
+{ HaveTool: true when an external tool exists on PATH }
 function HaveTool(const Exe: string): Boolean;
 begin
     if Pos(PathSep, Exe) > 0 then
@@ -112,6 +116,7 @@ begin
     end;
 end;
 
+{ Copy_File: copy a file byte by byte (TFileStream) }
 function Copy_File(const Src, Dst: string): Boolean;
 var
     InS, OutS: TFileStream;
@@ -135,6 +140,7 @@ begin
 end;
 
 
+{ Move_File: move a file: rename, or copy+delete across devices }
 function Move_File(const Src, Dst: string): Boolean;
 begin
     if RenameFile(Src, Dst) then
@@ -176,11 +182,13 @@ begin
         Result := Base;
 end;
 
+{ Get_Base_Name: name without extension }
 function Get_Base_Name(const F: string): string;
 begin
     Result := Name_Without_Ext(F);
 end;
 
+{ Detect_MIME: MIME type of a file via file(1) }
 function Detect_MIME(const F: string): string;
 var
     Res: string;
@@ -195,6 +203,7 @@ begin
     end;
 end;
 
+{ MIME_Main: main part of a MIME type (before the /) }
 function MIME_Main(const M: string): string;
 var
     P: Integer;
@@ -206,6 +215,7 @@ begin
         Result := M;
 end;
 
+{ MIME_Sub: sub part of a MIME type (after the /) }
 function MIME_Sub(const M: string): string;
 var
     P: Integer;
@@ -217,6 +227,7 @@ begin
         Result := '';
 end;
 
+{ First_Token: first space-separated token of a string }
 function First_Token(const S: string): string;
 var
     P: Integer;
@@ -228,6 +239,7 @@ begin
         Result := S;
 end;
 
+{ Hash_File: hash a file with the given algorithm (md5/sha1 native, sha256/sha512 external) }
 function Hash_File(const F, Algo: string): string;
 var
     Res: string;
@@ -250,6 +262,7 @@ begin
 end;
 
 
+{ Collect_Dir: recursively collect the files of one directory }
 procedure Collect_Dir(const Dir: string; List: TStringList);
 var
     SR: TSearchRec;
@@ -278,6 +291,7 @@ begin
     end;
 end;
 
+{ Collect_Files: build the global work list from the start directory }
 procedure Collect_Files;
 var
     Start: string;
@@ -330,6 +344,7 @@ begin
         Result := 2;  { unknown -> treated as literal }
 end;
 
+{ Sanitize_Name: replace filesystem-unsafe characters with underscores }
 function Sanitize_Name(const S: string): string;
 var
     I: Integer;
@@ -462,6 +477,7 @@ begin
     Result := Base + '~(' + IntToStr(N) + ')' + Ext;
 end;
 
+{ Process_File: process one file according to the active mode }
 procedure Process_File(const F: string);
 var
     Target, Tmp: string;
@@ -470,6 +486,7 @@ begin
     Target := Build_Name(F);
     Target := Unique_Target(Target);
 
+    { dry-run: only show the computed target }
     if Modus = 'print' then
     begin
         Out_Tagged('PREVIEW', F + ' -> ' + Target);
@@ -477,6 +494,7 @@ begin
         Exit;
     end;
 
+    { create the target directory, then copy or move }
     if not ForceDirectories(ExtractFileDir(Target)) then
     begin
         Out_Err('FAILED) mkdir ' + ExtractFileDir(Target));
@@ -514,6 +532,7 @@ begin
 
 end;
 
+{ Run_Threads: run the work list: thread pool when --jobs > 1, else sequential }
 procedure Run_Threads;
 var
     I: Integer;
@@ -522,11 +541,13 @@ begin
         Process_File(Files[I]);
 end;
 
+{ Show_Version: print the version banner }
 procedure Show_Version;
 begin
     WriteLn('Sort ', ScriptVersion, ' (FreePascal 3.2.2 translation of Sort.sh)');
 end;
 
+{ Show_Usage: print the short usage reminder }
 procedure Show_Usage;
 begin
     WriteLn('Usage: sort [OPTIONS] [DIR]');
@@ -534,17 +555,21 @@ begin
 end;
 
 
+{ Opt_Value: value part of an --option=value argument }
 function Opt_Value(const Arg: string): string;
 begin
     Result := Copy(Arg, Pos('=', Arg) + 1, MaxInt);
 end;
 
 
+{ Parse_Arguments: parse the command line into the option variables }
 procedure Parse_Arguments;
 var
     I: Integer;
     A, K: string;
 begin
+    { walk the command line: every --word sets an option,
+      a bare word is the start directory }
     I := 1;
     while I <= ParamCount do
     begin
@@ -584,6 +609,7 @@ begin
         I := I + 1;
     end;
 end;
+{ Validate_Options: sanity-check the parsed options }
 procedure Validate_Options;
 begin
     if not ((Modus = 'print') or (Modus = 'copy') or (Modus = 'move')) then
@@ -597,13 +623,18 @@ begin
         Halt(2);
     end;
 end;
+{ Main: program flow: parse, validate, collect, run, summarize }
 procedure Main;
 begin
     Parse_Arguments;
+    { validate the options before touching anything }
     Validate_Options;
+    { collect the complete work list up front }
     Collect_Files;
     WriteLn('Found ' + IntToStr(Files.Count) + ' file(s)');
+    { process the work list }
     Run_Threads;
+    { summary }
     WriteLn('');
     WriteLn('--- Summary ---');
     WriteLn('Copied   : ' + IntToStr(CountCopied));
@@ -634,7 +665,9 @@ begin
     CountFailed := 0;
     CountPreview := 0;
     Files := TStringList.Create;
+    { seed the random generator (--rename=random) }
     Randomize;
+    { run the program, then always clean up }
     try
         Main;
         Rc := 0;

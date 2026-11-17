@@ -27,6 +27,7 @@ var
     CountFailed: Integer;
 
 
+{ HaveTool: true when an external tool exists on PATH }
 function HaveTool(const Exe: string): Boolean;
 begin
     if Pos(PathSep, Exe) > 0 then
@@ -74,16 +75,19 @@ begin
     end;
 end;
 
+{ Out_Tagged: print a tagged line (thread-safe) }
 procedure Out_Tagged(const Tag, S: string);
 begin
     WriteLn(Tag + ' ' + S);
 end;
 
+{ Out_Err: print an error line to stderr }
 procedure Out_Err(const S: string);
 begin
     WriteLn(StdErr, S);
 end;
 
+{ Bump: thread-safe counter increment }
 procedure Bump(var C: Integer);
 begin
     C := C + 1;
@@ -93,6 +97,7 @@ end;
 { MIME helpers                                                        }
 { ------------------------------------------------------------------ }
 
+{ Detect_MIME: MIME type of a file via file(1) }
 function Detect_MIME(const F: string): string;
 var
     Res: string;
@@ -107,6 +112,7 @@ begin
     end;
 end;
 
+{ MIME_Sub: sub part of a MIME type (after the /) }
 function MIME_Sub(const M: string): string;
 var
     P: Integer;
@@ -134,6 +140,7 @@ end;
 { File operations                                                     }
 { ------------------------------------------------------------------ }
 
+{ Copy_File: copy a file byte by byte (TFileStream) }
 function Copy_File(const Src, Dst: string): Boolean;
 var
     InS, OutS: TFileStream;
@@ -156,6 +163,7 @@ begin
     end;
 end;
 
+{ Move_File: move a file: rename, or copy+delete across devices }
 function Move_File(const Src, Dst: string): Boolean;
 begin
     if RenameFile(Src, Dst) then
@@ -213,6 +221,7 @@ begin
             Bump(CountFailed);
             Exit;
         end;
+        { the whole relative path is flattened into the file name }
         Target := Dir + '/' + Name + '.' + LowerCase(Ext);
         if Move_File(P, Target) then
         begin
@@ -233,6 +242,7 @@ end;
 { Main                                                                }
 { ------------------------------------------------------------------ }
 
+{ Main: program flow: parse, validate, collect, run, summarize }
 procedure Main;
 var
     I: Integer;
