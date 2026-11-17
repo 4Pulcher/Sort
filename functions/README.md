@@ -19,6 +19,35 @@ yourself — or use the standalone [colors](colors/) module instead. The
 and `compression` modules are fully standalone — no main-script globals
 required.
 
+## FreePascal layer
+
+Every module also ships a FreePascal translation as `<module>.pas` inside
+the module directory (`functions/<module>/<module>.pas`), using native FPC
+libraries wherever possible (Zipper, MD5, SHA1, BaseUnix, ...). They are
+standalone units compiled with:
+
+```
+fpc -Mobjfpc -Sh <unit>.pas
+```
+
+| Unit | Resource | Functions |
+|---|---|---|
+| [systools.pas](system/) | Process / tool discovery | `RunTool`, `HaveTool`, `First_Token` |
+| [uitools.pas](ui/) | Terminal display | `Draw_Line` |
+| [filetools.pas](file/) | File toolkit | `Get_File_Ext`, `Get_Base_Name`, `Name_Without_Ext`, `Get_Compound_Ext`, `File_Size`, `Is_File`, `Is_Dir`, `Is_Symlink`, `File_Time`, `File_Perms`, `File_Owner`, `Is_Empty_File`, `Count_Files`, `Total_Size` |
+| [hash.pas](hash/) | Checksums | `Hash_String`, `Hash_File`, `Hash_Verify` |
+| [imagemagick.pas](imagemagick/) | Image info | `IM_Has`, `IM_Dimensions`, `IM_Format` |
+| [ffmpeg.pas](ffmpeg/) | Media info | `FFMPEG_Has`, `FFPROBE_Get`, `FFMPEG_Mime_Runs` |
+| [exif.pas](exif/) | EXIF | `ExifTool_Has`, `ExifTool_Get_Tag`, `ExifTool_Strip` |
+| [deps.pas](deps/) | Init-system | `Detect_Installer`, `Ensure_Installed` |
+| [colors.pas](colors/) | Colors | `C_Color_Init`, `Print_Message` |
+| [mime.pas](mime/) | MIME | `Detect_MIME`, `MIME_Main`, `MIME_Sub`, `MIME_Description`, `MIME_Charset`, `Get_MIME_Best_Extension` |
+| [compression.pas](compression/) | Archives | `Is_Zip_File`, `Is_Tar_Suffix`, `Get_Compound_Ext_Last`, `Archive_Main_Name`, `Archive_Extract` |
+| [coretools.pas](core/) | Naming core | `Sanitize_Name`, `Underscore`, `Unique_Target` |
+| [docs.pas](docs/) | Documents | `Get_Doc_Title` |
+
+NB/This code is not tested yet!
+
 ## Modules
 
 | Module | Resource | Functions |
@@ -37,4 +66,4 @@ required.
 | [docs](docs/) | Documents (pdftotext / exiftool) | `Get_Doc_Title` |
 | [core](core/) | Organizer core logic | `Resolve_Path_Segment`, `Parse_Arguments`, `Validate_Options`, `Perform_Action`, `Sort`, `Show_Help` |
 
-Total: 191 functions in 13 modules.
+Total: 191 shell functions in 13 modules, plus 13 FreePascal units.
