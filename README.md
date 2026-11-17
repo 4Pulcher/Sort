@@ -1,3 +1,13 @@
+# Sort — Sort.sh / Sort.pas
+
+**English** · **中文** · **हिन्दी** · **Español** · **Français**
+
+The same message in every script the tool speaks — the UI itself follows `--lang=XX` (`en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa`, default `en`).
+
+---
+
+## English
+
 ## Hey,
 
 # !! BE CAREFULL WITH THIS SCRIPT !!
@@ -11,6 +21,29 @@ That's when I prefer this script to sort things out,
 
 NB/If you want more options, please give a sign!
 
+## 中文
+
+Sort.sh — 按类型、日期、元数据和校验和来排序、重命名和整理文件。默认只预览，不实际移动任何文件。
+
+⚠ 请小心使用此脚本 — 使用前请先读懂它的内容！
+
+## हिन्दी
+
+Sort.sh — फ़ाइलों को प्रकार, तारीख़, मेटाडेटा और चेकसम के अनुसार सॉर्ट, रीनेम और व्यवस्थित करता है। डिफ़ॉल्ट रूप से केवल पूर्वावलोकन — कुछ भी नहीं हिलता।
+
+⚠ इस स्क्रिप्ट के साथ सावधान रहें — उपयोग करने से पहले इसे समझ लें!
+
+## Español
+
+Sort.sh — ordena, renombra y organiza archivos por tipo, fecha, metadatos y sumas de verificación. Vista previa por defecto: nada se mueve sin tu confirmación.
+
+⚠ ¡TEN CUIDADO con este script — entiéndelo antes de usarlo!
+
+## Français
+
+Sort.sh — trie, renomme et organise les fichiers par type, date, métadonnées et sommes de contrôle. Aperçu par défaut : rien ne bouge sans votre accord.
+
+⚠ ATTENTION avec ce script — comprenez-le avant de l’utiliser !
 ---
 
 # Sort.sh — V17.1, the self-contained edition
