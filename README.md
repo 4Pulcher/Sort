@@ -66,7 +66,22 @@ versions/
   V15.1/
     Sort-V15.1.sh
     README.md
+functions/              <- isolated function library (see functions/README.md)
+  system/system.sh      <- Exit, Break
+  ui/ui.sh              <- Draw_Line
+  file/file.sh          <- Get_MIME, Get_File_*, Get_Date_Part
+  hash/hash.sh          <- Get_MD5Sum, Get_SHA_Keys, Get_SHA256Sum
+  imagemagick/imagemagick.sh <- Get_Image_WxH, Get_Image_Meta, Get_WxH_Format
+  ffmpeg/ffmpeg.sh      <- Get_Media_WxH, Get_Audio_Info, Get_Video_Title
+  docs/docs.sh          <- Get_Doc_Title
+  core/core.sh          <- Resolve_Path_Segment, Parse_Arguments, Validate_Options,
+                           Perform_Action, Sort, Show_Help
 ```
+
+All 28 functions of the Sort mainline are also available as isolated, per-resource
+modules under `functions/` — each with its own ASCII header (script name, version,
+description, author: HEjder) and a logical name: `system`, `ui`, `file`, `hash`,
+`imagemagick`, `ffmpeg`, `docs`, `core`.
 
 Every version folder contains the script and its own README with: era, source,
 size, position in the lineage, notes, and any fixes that were applied.
