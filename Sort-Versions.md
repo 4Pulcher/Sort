@@ -190,7 +190,7 @@ self-contained file and is the current main script (root `Sort.sh`).
 |---|---|---|---|
 | V16.0 | commit `a071fdd` | 495 | Threaded driver over 7 `functions/` modules; array of files, `--jobs=N`, status tags, `~(N)` collisions |
 | V16.1 | commit `6d13ab3` | 584 | All 12 modules; `--exif`, `--strip`, `--title`, Break trap, banner |
-| V17.0 | commit `6811f9a` (+ `bdbf63b`) | 5301 | Self-contained: all lineage features merged, dynamic values, modes copy/move/remove/trash/shred, `--undo`, `--log`, init-system |
+| V17.0 | commit `6811f9a` (+ `bdbf63b`) | 5926 | Self-contained: all lineage features merged, dynamic values, modes copy/move/remove/trash/shred, `--undo`, `--log`, init-system |
 
 ## Duplicates found (not double-counted)
 

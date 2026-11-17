@@ -93,6 +93,13 @@ Deps_Package() {
 	ffprobe:* | ffmpeg:* | ffplay:*) printf 'ffmpeg' ;;
 	identify:* | magick:* | convert:* | compare:*) printf 'imagemagick' ;;
 	file:*) printf 'file' ;;
+	tar:* | gzip:* | gunzip:* | bzip2:* | bunzip2:* | xz:* | unxz:* | zstd:* | unzip:* | zip:*)
+		printf '%s' "$Tool"
+		;;
+	7z:apt-get | 7z:apt) printf 'p7zip-full' ;;
+	7z:*) printf 'p7zip' ;;
+	unrar:*) printf 'unrar' ;;
+	trash-put:* | trash:*) printf 'trash-cli' ;;
 	md5sum:* | sha1sum:* | sha224sum:* | sha256sum:* | sha384sum:* | sha512sum:* | b2sum:* | cksum:* | cmp:* | stat:* | timeout:* | od:* | wc:* | du:* | head:* | tail:*)
 		printf 'coreutils'
 		;;

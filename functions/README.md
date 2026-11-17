@@ -15,8 +15,9 @@ source functions/file/file.sh
 Note: the `system`, `ui` and `core` modules use globals defined by the main
 script (option values); source the color/ui setup first or define them
 yourself — or use the standalone [colors](colors/) module instead. The
-`file`, `hash`, `imagemagick`, `ffmpeg`, `exif`, `deps`, `colors` and `mime`
-modules are fully standalone — no main-script globals required.
+`file`, `hash`, `imagemagick`, `ffmpeg`, `exif`, `deps`, `colors`, `mime`
+and `compression` modules are fully standalone — no main-script globals
+required.
 
 ## Modules
 
@@ -32,7 +33,8 @@ modules are fully standalone — no main-script globals required.
 | [deps](deps/) | Init-system for external tools — installer / privilege detection | 8 functions: detection, package mapping, install, ensure, init |
 | [colors](colors/) | Complete color toolkit — ANSI colors / print helpers | 13 functions: `C_*` color variables, Print_Message/Info/Ok/Error/Warning/Log/Debug, headers, separators |
 | [mime](mime/) | Complete MIME toolkit — file(1) / magic bytes / extension maps | 20 functions: type/main/sub/description/charset, magic bytes, magic detection, database-sourced MIME↔extension maps (911 extensions / 687 types), pattern match, type predicates |
+| [compression](compression/) | Complete archive toolkit — tar / gz / bz2 / xz / zst / zip / 7z / rar | 12 functions: magic-byte type detection, integrity test, listing, extraction, main-name lookup, creation, single-file compression |
 | [docs](docs/) | Documents (pdftotext / exiftool) | `Get_Doc_Title` |
 | [core](core/) | Organizer core logic | `Resolve_Path_Segment`, `Parse_Arguments`, `Validate_Options`, `Perform_Action`, `Sort`, `Show_Help` |
 
-Total: 178 functions in 12 modules.
+Total: 190 functions in 13 modules.

@@ -30,7 +30,8 @@ array through a bounded pool of background jobs (threading).
 - **Metadata**: `--title` (PDF `/Title`, EXIF date, audio/video tags), `--exif` (`<Camera>/<date>` levels), `--strip` (remove EXIF/GPS from targets)
 - **Safety net**: `--log=FILE`, `--undo[=FILE]` (writes a runnable undo script), `--pause=SEC`, `--replace` vs automatic `~(N)` collision names
 - **Threading**: `--jobs=N` (default: nproc)
-- **Init-system**: missing tools (`identify`, `ffprobe`, `exiftool`, `trash-put`) are proposed for install on first use
+- **Archives**: `--decompress` (extract to a temp dir, sort the contents, then delete the archive — `--trash`/`--shred` apply that fate to it), `--rename=compressed` (name = main dir / single file inside the archive); compound extensions like `.tar.gz`/`.TAR.GZ` count as one extension
+- **Init-system**: missing tools (`identify`, `ffprobe`, `exiftool`, `trash-put`, `7z`, `unrar`, ...) are proposed for install on first use
 
 Full reference: `./Sort.sh --help` — short reminder: `./Sort.sh --usage`.
 
@@ -159,12 +160,12 @@ versions/
     README.md
 functions/              <- isolated function library (see functions/README.md)
   system/  ui/  file/  hash/  mime/  imagemagick/  ffmpeg/  exif/
-  docs/    core/  colors/  deps/
+  compression/  docs/    core/  colors/  deps/
 ```
 
-- `functions/` — the modern, isolated per-resource toolkit (200+ functions:
-  file, hash, mime, imagemagick, ffmpeg, exif, colors, deps, system, ui,
-  docs, core), each module with its own ASCII header and README
+- `functions/` — the modern, isolated per-resource toolkit (190 functions:
+  file, hash, mime, imagemagick, ffmpeg, exif, compression, colors, deps,
+  system, ui, docs, core), each module with its own ASCII header and README
 - `FUNCTIONS/` — the legacy lowercase adapter layer that V15.1 sources
 - Every version folder contains the script and its own README with: era,
   source, size, position in the lineage, notes, and any fixes applied
