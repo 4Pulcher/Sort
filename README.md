@@ -11,41 +11,124 @@ That's when I prefer this script to sort things out,
 
 NB/If you want more options, please give a sign!
 
-# Exp1)
+---
 
+# Sort.sh — V17.0, the self-contained edition
+
+One single file, no external libraries: a comparison with **all 92 lineage
+versions** was made and **every functionality from V1.0–V15.1 is merged in**,
+with all needed functions embedded. It collects every file to treat into an
+array up front, sorts each into a dynamic directory tree, and processes the
+array through a bounded pool of background jobs (threading).
+
+- **Dry-run preview by default** — nothing moves until you say `--copy` or `--move`
+- **Verbose by default**, colored output with `--colored`
+- **Modes**: `--copy`, `--move`, `--remove`/`--delete`, `--trash`, `--shred` (destructive modes act on the calculated TARGET path and refuse source = target)
+- **Dynamic values**: `--dirs=`, `--subdirs=`, `--rename=`, `--extension=` accept keywords — dates (`year`, `year+month`, `modified`, ...), `mime`, `mime-main`, `mime-sub`, `extension`, checksums (`md5` … `sha512`, `b2`, `crc32`), `random`, `randomN`, `size`, `format` (tiers `TINY…HUGE` × `SQUARE/WIDE/HIGH`), `duration`, `camera`, `exifdate`, `title` — unknown words become literal names
+- **Default naming**: without `--rename=`/`--title`, files keep their plain name when they come from the working directory itself; files found in other folders get their folder prefixed (`sub_b.txt`) so same-named files never collide
+- **Filtering**: `--type=image|video|...` (MIME substring), `--recursive`, `--hidden`, `--links`
+- **Metadata**: `--title` (PDF `/Title`, EXIF date, audio/video tags), `--exif` (`<Camera>/<date>` levels), `--strip` (remove EXIF/GPS from targets)
+- **Safety net**: `--log=FILE`, `--undo[=FILE]` (writes a runnable undo script), `--pause=SEC`, `--replace` vs automatic `~(N)` collision names
+- **Threading**: `--jobs=N` (default: nproc)
+- **Init-system**: missing tools (`identify`, `ffprobe`, `exiftool`, `trash-put`) are proposed for install on first use
+
+Full reference: `./Sort.sh --help` — short reminder: `./Sort.sh --usage`.
+
+---
+
+# 8 examples
+
+## Exp1) The classic PhotoRec rescue — random names, size folders
+
+```bash
 cd Pictures/Wallpapers ;
-~/BASH/Sort.sh --Move --Recursive --Replace --Rename=random --SubDirs=size *
+~/BASH/Sort.sh --copy --recursive --replace --rename=random --subdirs=size *
+```
 
-"This moves all files in Wallpapers - renaming to random-numbers - in to WorkingDirectory/WIDTHxHEIGHT - recursively!"
+> Copies all files in Wallpapers — renaming to random numbers — into
+> `WorkingDirectory/<MIME>/<WIDTHxHEIGHT>` — recursively! Preview first by
+> dropping `--copy`.
 
-# Exp2)
+## Exp2) SHA256 names, full media tree
 
-	cd Pictures/Wallpapers ;
-	~/BASH/Sort.sh --Move --Recursive --Replace --Rename=sha256sum --Dirs=mime-sub --SubDirs=format+size .
+```bash
+cd Pictures/Wallpapers ;
+~/BASH/Sort.sh --move --recursive --replace --rename=sha256sum --extension=none --dirs=mime --subdirs=format+size .
+```
 
-"This moves all files in WorkingDirectory - renaming to SHA256SUM of the files as filename - in to WorkingDirectory/MIME-TYPE/MIME-SUBTYPE/FORMAT/FORMAT2/WIDTHxHEIGHT - recursively!"
+> Moves all files in the working directory — renaming to the SHA256 of the
+> file — into `WorkingDirectory/<MIME-TYPE>/<TIER>/<ORIENTATION>/<WIDTHxHEIGHT>`
+> — recursively! Identical files end up with identical names, so duplicates
+> collapse naturally.
 
-# Exp3)
+## Exp3) Collect from a source directory into the current tree
 
-	cd Pictures/Sorted ;
-	~/BASH/Sort.sh --Copy --Recursive --Replace --Dirs=mime-sub --SubDirs=format+size ~/Pictures/2Sort
+```bash
+cd Pictures/Sorted ;
+~/BASH/Sort.sh --copy --recursive --replace --dirs=mime-sub --subdirs=format+size ~/Pictures/2Sort
+```
 
-"This copies all files from the directory $HOME/Pictures/2Sort - keeping filenames - in to WorkingDirectory/MIME-SUBTYPE/FORMAT/FORMAT2/WIDTHxHEIGTH - recursively!"
+> Copies all files from `$HOME/Pictures/2Sort` into
+> `WorkingDirectory/<MIME-SUBTYPE>/<FORMAT>/<WIDTHxHEIGHT>` — recursively!
+> Filenames are kept (folder-prefixed for files from sub-folders, e.g.
+> `sub_b.txt`, so same-named files never overwrite each other).
 
-# Exp4)
+## Exp4) Dates first — archive by year/month
 
-	cd Pictures/2Sort ;
-	~/BASH/Sort.sh --Remove --Recursive --Dirs=mime-sub --SubDirs=format+size ~/Pictures/Sorted
+```bash
+~/BASH/Sort.sh --move --recursive --dirs=year+month --subdirs=mime-main --target=~/Archive ~/Pictures/2Sort
+```
 
-"This removes all files in WorkingDirectory - all files with simalar names - from the $HOME/Pictures/Sorted/FORMAT/FORMAT2/WIDTHxHEIGHT - recursively!"
+> Moves everything into `$HOME/Archive/<YYYY>/<MM>/<IMAGE|VIDEO|...>/` —
+> organized by the files' own timestamps. Add `--rename=sha256sum` for a
+> duplicate-proof archive.
 
-!! You can use 'size' option with other files - other than pictures - where FORMAT and SIZE changes (exp '../MegaByte/5/' or '../5GiB/') !!
+## Exp5) EXIF — camera and shooting-date levels
+
+```bash
+~/BASH/Sort.sh --copy --recursive --exif --type=image --target=~/Pictures/ByCamera ~/DCIM
+```
+
+> Copies only images, into
+> `ByCamera/<MIME>/<Canon_EOS_5D>/<2024-03-14>/<Landscape>/<1920x1080>/` —
+> camera and capture date read from the EXIF data (exiftool). The job pool
+> (`--jobs=N`) handles large collections.
+
+## Exp6) Metadata titles — rename documents and media by what they contain
+
+```bash
+~/BASH/Sort.sh --move --title --type=application --target=~/Docs ~/Downloads
+```
+
+> Moves PDFs and office documents into `~/Docs/<MIME>/...`, renaming each by
+> its internal `/Title` (`Report_2024` style). For audio/video the tags
+> (`Artist_Album_Title`) are used instead.
+
+## Exp7) The safety net — log file plus undo script
+
+```bash
+~/BASH/Sort.sh --move --recursive --log=sort.log --undo ~/Downloads
+```
+
+> Moves everything, appends one timestamped line per action to `sort.log`,
+> and writes `sort_undo_<time>.sh` — run that script to reverse the moves.
+
+## Exp8) Cleanup — trash or shred at the calculated target
+
+```bash
+~/BASH/Sort.sh --trash --type=image --dirs=mime --subdirs=size ~/Sorted
+~/BASH/Sort.sh --shred --type=image --dirs=mime --subdirs=size ~/Sorted
+```
+
+> Destructive modes act on the file at the **calculated TARGET path** —
+> review the preview first! Source = target is refused; `--trash` needs
+> `trash-put`, `--shred` overwrites with `shred -u -n 1`.
 
 ---
 
 # The version archive
 
-This repository now keeps the **complete history of the Sort script** — 92 versions,
+This repository keeps the **complete history of the Sort script** — 92 versions,
 reconstructed from content evolution and numbered `V1.0` → `V15.1` (the version labels
 found inside the old files were inconsistent, so they were discarded and re-derived;
 see [Sort-Versions.md](Sort-Versions.md) for the full map, sources and reasoning).
@@ -64,78 +147,31 @@ versions/
   V1.0/
     Sort-V1.0.sh        <- the script itself (HEjder edition)
     README.md           <- custom readme for this version
-  V1.1/
-    Sort-V1.1.sh
-    README.md
   ...
   V15.1/
     Sort-V15.1.sh
     README.md
 functions/              <- isolated function library (see functions/README.md)
-  system/system.sh      <- Exit, Break
-  ui/ui.sh              <- Draw_Line
-  file/file.sh          <- Get_MIME, Get_File_*, Get_Date_Part
-  hash/hash.sh          <- Get_MD5Sum, Get_SHA_Keys, Get_SHA256Sum
-  imagemagick/imagemagick.sh <- Get_Image_WxH, Get_Image_Meta, Get_WxH_Format
-  ffmpeg/ffmpeg.sh      <- Get_Media_WxH, Get_Audio_Info, Get_Video_Title
-  docs/docs.sh          <- Get_Doc_Title
-  core/core.sh          <- Resolve_Path_Segment, Parse_Arguments, Validate_Options,
-                           Perform_Action, Sort, Show_Help
+  system/  ui/  file/  hash/  mime/  imagemagick/  ffmpeg/  exif/
+  docs/    core/  colors/  deps/
 ```
 
-All 28 functions of the Sort mainline are also available as isolated, per-resource
-modules under `functions/` — each with its own ASCII header (script name, version,
-description, author: HEjder) and a logical name: `system`, `ui`, `file`, `hash`,
-`imagemagick`, `ffmpeg`, `docs`, `core`.
+- `functions/` — the modern, isolated per-resource toolkit (200+ functions:
+  file, hash, mime, imagemagick, ffmpeg, exif, colors, deps, system, ui,
+  docs, core), each module with its own ASCII header and README
+- `FUNCTIONS/` — the legacy lowercase adapter layer that V15.1 sources
+- Every version folder contains the script and its own README with: era,
+  source, size, position in the lineage, notes, and any fixes applied
 
-Every version folder contains the script and its own README with: era, source,
-size, position in the lineage, notes, and any fixes that were applied.
+## The previous main scripts
 
-## The main script
-
-The root `Sort.sh` is **V17.0 — the self-contained edition**: a comparison
-with all 92 lineage versions was made and **every functionality from
-V1.0–V15.1 is merged in**, with all needed functions embedded (no external
-`FUNCTIONS/` or `functions/` sourcing — the script runs standalone).
-
-Merged lineage features:
-
-- **Modes** (V9.x/V12.x/V13.1): `--copy`, `--move`, `--remove`/`--delete`,
-  `--trash`, `--shred`, `--mode=…` — destructive modes act on the
-  calculated TARGET path and refuse source = target
-- **Dynamic values** (V13.1 engine): `--dirs=` / `--subdirs=` /
-  `--rename=` / `--extension=` accept keywords — `year`, `month`, `day`,
-  `year+month`, `created`/`modified`/`accessed`, `mime`, `mime-main`,
-  `mime-sub`, `extension`, the whole checksum family (`md5`…`sha512`,
-  `b2`, `crc32`), `random`, `randomN`, `size`, `format` (resolution tiers
-  TINY…HUGE × SQUARE/WIDE/HIGH), `duration`, `camera`, `exifdate`,
-  `title` — unknown words become literal names
-- **Filtering** (V7.x/V8.x/V13.x): `--type=VALUE` (MIME substring),
-  `--recursive`, `--hidden`, `--links`
-- **Destination** (V8.x): `--target=DIR`, `--dirs=`, `--subdirs=`
-- **Metadata** (V10.x/V13.1 + v16.1): `--title` (PDF /Title, EXIF date,
-  audio/video tags), `--exif` (`<Camera>/<date>` levels), `--strip`
-- **Safety/output** (V10.2/V12.x): `--log=FILE`, `--undo[=FILE]` (writes a
-  runnable undo script), `--pause=SEC`, `--replace` vs `~(N)` collision
-  names, `--quiet`, `--colored`, `--stats`
-- **Threading** (V12.x + v16.0): file array built up front, bounded
-  background-job pool (`--jobs=N`, default nproc)
-- **Init-system**: missing tools (`identify`, `ffprobe`, `exiftool`,
-  `trash-put`) are proposed for install on first use
-
-It collects every file to treat into an array up front, sorts each into
-the dynamic tree, and processes the array through the job pool. Verbose by
-default, colored output with `--colored`, dry-run preview by default
-(`--copy` / `--move` to act), full `--help` and `--usage` sections.
-
-The previous main script, **V15.1 — the modular library edition**, sources
-its helper functions from a `FUNCTIONS/*.sh` directory (next to it in the
-repository root) — the original library was never uploaded, so it was
-rebuilt as adapters over the modern `functions/` toolkit. If you want a
-single self-contained file instead, use
-**[versions/V13.1](versions/V13.1/Sort-V13.1.sh)** — the most developed
-standalone edition — or the classic **[versions/V11.0](versions/V11.0/Sort-V11.0.sh)**
-(the version that was previously published here as `Sort.sh`).
+- **V15.1 — the modular library edition** sources its helpers from
+  `FUNCTIONS/*.sh` (rebuilt as adapters over `functions/`, since the
+  original library was never uploaded)
+- **[V13.1](versions/V13.1/Sort-V13.1.sh)** — the most developed
+  *standalone* edition of the old lineage
+- **[V11.0](versions/V11.0/Sort-V11.0.sh)** — the classic edition that was
+  previously published here as `Sort.sh`
 
 ## The eras
 
@@ -156,6 +192,7 @@ standalone edition — or the classic **[versions/V11.0](versions/V11.0/Sort-V11
 | V13.x | 13.0–13.1 | Commented edition |
 | V14.x | 14.0–14.1 | Safe Transport Engine |
 | V15.x | 15.0–15.1 | Modular library era |
+| V16.x–V17.0 | rewrite | Threaded → self-contained all-features edition |
 
 ## HEjder edition
 

@@ -4285,7 +4285,7 @@ Help() {
 	printf '\t%s\n' 'created modified accessed'
 	printf '\n'
 	Print_Message 'File identity:'
-	printf '\t%s\n' 'extension mime mime-main mime-sub'
+	printf '\t%s\n' 'extension mime (text/plain) mime-main (TEXT) mime-sub (plain)'
 	printf '\t%s\n' 'md5|md5sum sha1 sha224 sha256 sha384 sha512 sha|shasum b2 crc32'
 	printf '\t%s\n' 'random randomN (N concatenated random values, e.g. random3)'
 	printf '\n'
@@ -4680,7 +4680,7 @@ Resolve_Segment() {
 		Get_File_Ext "$File"
 		;;
 	mime)
-		printf '%s' "${Mime^^}"
+		printf '%s' "$Mime"
 		;;
 	mime-main)
 		printf '%s' "${Main^^}"
