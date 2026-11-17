@@ -15,8 +15,8 @@ source functions/file/file.sh
 Note: the `system`, `ui` and `core` modules use globals defined by the main
 script (option values); source the color/ui setup first or define them
 yourself — or use the standalone [colors](colors/) module instead. The
-`file`, `hash`, `imagemagick`, `ffmpeg`, `exif`, `deps` and `colors` modules
-are fully standalone — no main-script globals required.
+`file`, `hash`, `imagemagick`, `ffmpeg`, `exif`, `deps`, `colors` and `mime`
+modules are fully standalone — no main-script globals required.
 
 ## Modules
 
@@ -31,7 +31,8 @@ are fully standalone — no main-script globals required.
 | [exif](exif/) | Complete EXIF toolkit — exiftool / ImageMagick fallback | 23 functions: generic tag access, dumps, camera, lens, exposure, GPS, strip/set/copy actions |
 | [deps](deps/) | Init-system for external tools — installer / privilege detection | 8 functions: detection, package mapping, install, ensure, init |
 | [colors](colors/) | Complete color toolkit — ANSI colors / print helpers | 13 functions: `C_*` color variables, Print_Message/Info/Ok/Error/Warning/Log/Debug, headers, separators |
+| [mime](mime/) | Complete MIME toolkit — file(1) / magic bytes / extension maps | 20 functions: type/main/sub/description/charset, magic bytes, magic detection, MIME↔extension maps, pattern match, type predicates |
 | [docs](docs/) | Documents (pdftotext / exiftool) | `Get_Doc_Title` |
 | [core](core/) | Organizer core logic | `Resolve_Path_Segment`, `Parse_Arguments`, `Validate_Options`, `Perform_Action`, `Sort`, `Show_Help` |
 
-Total: 158 functions in 11 modules.
+Total: 178 functions in 12 modules.
