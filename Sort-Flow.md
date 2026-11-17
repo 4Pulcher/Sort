@@ -1,6 +1,6 @@
-# Sort.sh V17.1 — program flow diagram
+# Sort.sh V17.3 — program flow diagram
 
-The actual control flow of the main `Sort.sh` (V17.1), traced from the code:
+The actual control flow of the main `Sort.sh` (V17.3), traced from the code:
 `Main` → `Parse_Arguments` → `Validate_Options` → `Deps_Init` → `Collect_Files`
 → `Run_Threads` (bounded job pool → `Process_File` per file) → `Summary`.
 
@@ -34,9 +34,9 @@ flowchart TD
     TYPEF -- "no" --> SKIP1[SKIPPED]
     TYPEF -- "yes" --> ARCH{--decompress and archive?}
     ARCH -- "yes" --> PARCH[Process_Archive:<br/>depth < 8? test archive - mktemp -d - extract<br/>sort contents with copy semantics<br/>then mode on the archive itself:<br/>preview / delete / trash / shred]
-    ARCH -- "no" --> DIRS[DirPart: --dirs= segments or MIME type<br/>SubPart: --subdirs= or defaults:<br/>image: Form/WxH + EXIF camera/date with --exif<br/>video: WxH/duration - other: size unit/human size]
+    ARCH -- "no" --> DIRS[DirPart: --dirs= segments or MIME type<br/>(dates / mime / checksums / size / format /<br/>duration / camera / exifdate / title /<br/>id3 - audio: Artist/Year - Album / id3-*)<br/>SubPart: --subdirs= or defaults:<br/>image: Form/WxH + EXIF camera/date with --exif<br/>video: WxH/duration - other: size unit/human size]
 
-    DIRS --> NAME[Build_Name: keep / sha / md5 / compressed /<br/>random / size / title - folder prefix for files<br/>from other directories] --> EXT[Build_Extension:<br/>none / mime / mime-main / mime-sub /<br/>mime-ext / literal]
+    DIRS --> NAME[Build_Name: keep / sha / md5 / compressed /<br/>random / size / title / id3-title - id3-track -<br/>folder prefix for files from other directories] --> EXT[Build_Extension:<br/>none / mime / mime-main / mime-sub /<br/>mime-ext / lower / upper /<br/>dynamic keywords (id3-genre ...) / literal]
     EXT --> MKDIR[mkdir -p NewDir]
     MKDIR --> COLL{target exists and<br/>not --replace and non-destructive?}
     COLL -- "yes" --> CNT[append ~(N) collision name] --> SAME
@@ -78,7 +78,8 @@ flowchart TD
                     Parse_Arguments
           (lang, colored, jobs, modes, dirs/subdirs/rename/
            extension specs, type filter, exif/strip/title,
-           decompress, log/undo, pause, replace, target)
+           audio tags (id3), decompress, log/undo, pause,
+           replace, target)
                               |
                     [ Validate_Options ]--no---> error + help hint --> exit 1
                               | yes
@@ -113,15 +114,18 @@ flowchart TD
               |            test -> mktemp -d -> extract   |
               |            -> sort contents (copy)        |
               |            -> mode on the archive itself  |
-              |   DirPart  (--dirs= segments | MIME)      |
+              |   DirPart  (--dirs= segments | MIME |     |
+              |      id3 tags: Artist/Year - Album)       |
               |   SubPart  (--subdirs= | defaults:        |
               |      image: Form/WxH [+ EXIF cam/date]    |
               |      video: WxH/duration                  |
               |      other: size unit / human size)       |
               |   Build_Name (keep|sha|md5|compressed|    |
-              |      random|size|title, folder prefix)    |
+              |      random|size|title|id3-*, folder      |
+              |      prefix)                              |
               |   Build_Extension (none|mime|mime-main|   |
-              |      mime-sub|mime-ext|literal)           |
+              |      mime-sub|mime-ext|lower|upper|       |
+              |      id3-*|literal)                       |
               |   mkdir -p NewDir                         |
               |   collision? -> append ~(N) (unless       |
               |      --replace / destructive mode)        |
@@ -158,12 +162,13 @@ flowchart TD
 
 ---
 
-# Complete control flow — all 233 functions
 
-Extracted mechanically from `Sort.sh` (V17.1): every function definition and
-every call edge between them. **94 functions are reachable from `Main`** — the
-actual program; the other **139 form the embedded library** (the "bag of tools":
-file, MIME, hash, image, media, EXIF, archive helpers) kept complete so they also
+# Complete control flow — all 254 functions
+
+Extracted mechanically from `Sort.sh` (V17.3): every function definition and
+every call edge between them. **112 functions are reachable from `Main`** — the
+actual program; the other **142 form the embedded library** (the "bag of tools":
+file, MIME, hash, image, media, EXIF, audio tags, archive helpers) kept complete so they also
 work when sourced or called interactively, exactly like the `functions/` modules.
 In the graph the library-only nodes are drawn grey/dashed.
 
@@ -175,107 +180,108 @@ Main
     Print_Header
       Print_Line
     T
-      Usage  ↳ (already shown)
+      Usage  ⤳ (already shown)
     Print_Message
-      T  ↳ (already shown)
+      T  ⤳ (already shown)
   Parse_Arguments
     Color_Enable
       _Color_Set
-    Usage  ↳ (already shown)
+    Usage  ⤳ (already shown)
     Help
-      Print_Header  ↳ (already shown)
-      T  ↳ (already shown)
-      Print_Message  ↳ (already shown)
+      Print_Header  ⤳ (already shown)
+      T  ⤳ (already shown)
+      Print_Message  ⤳ (already shown)
       Lang_List
-        T  ↳ (already shown)
+        T  ⤳ (already shown)
         Lang_Name
-    Lang_List  ↳ (already shown)
+    Lang_List  ⤳ (already shown)
     Print_Warning
-      T  ↳ (already shown)
+      T  ⤳ (already shown)
     Tf
-      T  ↳ (already shown)
+      T  ⤳ (already shown)
   Validate_Options
     Print_Error
-      T  ↳ (already shown)
-    Tf  ↳ (already shown)
-    Lang_List  ↳ (already shown)
+      T  ⤳ (already shown)
+    Tf  ⤳ (already shown)
+    Lang_List  ⤳ (already shown)
   Deps_Init
     Deps_Has
     Deps_Package
       Deps_Installer
-    Tf  ↳ (already shown)
+    Tf  ⤳ (already shown)
     _Deps_Propose_Install
-      Tf  ↳ (already shown)
-      T  ↳ (already shown)
+      Tf  ⤳ (already shown)
+      T  ⤳ (already shown)
       Deps_Install
-        Deps_Installer  ↳ (already shown)
-        T  ↳ (already shown)
+        Deps_Installer  ⤳ (already shown)
+        T  ⤳ (already shown)
         Deps_Priv
     Deps_Missing
-      Deps_Has  ↳ (already shown)
+      Deps_Has  ⤳ (already shown)
   Prepare_Optional_Output
   Collect_Files
-    Print_Warning  ↳ (already shown)
-    Tf  ↳ (already shown)
+    Print_Warning  ⤳ (already shown)
+    Tf  ⤳ (already shown)
     Print_Info
-      T  ↳ (already shown)
-  Print_Warning  ↳ (already shown)
+      T  ⤳ (already shown)
+  Print_Warning  ⤳ (already shown)
   Draw_Line
-  Print_Header  ↳ (already shown)
-  Tf  ↳ (already shown)
+  Print_Header  ⤳ (already shown)
+  Tf  ⤳ (already shown)
   Run_Threads
     Process_File
-      Main  ↳ (already shown)
-      Print_Error  ↳ (already shown)
-      Tf  ↳ (already shown)
+      Main  ⤳ (already shown)
+      Print_Error  ⤳ (already shown)
+      Tf  ⤳ (already shown)
       Get_MIME_Type
-      Print_Info  ↳ (already shown)
+      Print_Info  ⤳ (already shown)
       Archive_Is
         Get_Archive_Type
           _Comp_Magic
       Process_Archive
-        Print_Error  ↳ (already shown)
-        Tf  ↳ (already shown)
+        Print_Error  ⤳ (already shown)
+        Tf  ⤳ (already shown)
         Archive_Test
           _Comp_Norm
-          Get_Archive_Type  ↳ (already shown)
+          Get_Archive_Type  ⤳ (already shown)
           _Comp_Have
             Deps_Ensure
-              Deps_Has  ↳ (already shown)
-              Deps_Package  ↳ (already shown)
-              Tf  ↳ (already shown)
-              _Deps_Propose_Install  ↳ (already shown)
+              Deps_Has  ⤳ (already shown)
+              Deps_Package  ⤳ (already shown)
+              Tf  ⤳ (already shown)
+              _Deps_Propose_Install  ⤳ (already shown)
           _Comp_Is_Tar_Suffix
         Archive_Extract
-          _Comp_Norm  ↳ (already shown)
-          Get_Archive_Type  ↳ (already shown)
-          _Comp_Have  ↳ (already shown)
-          _Comp_Is_Tar_Suffix  ↳ (already shown)
-        Process_File  ↳ (already shown)
-        Print_Message  ↳ (already shown)
-        Deps_Ensure  ↳ (already shown)
+          _Comp_Norm  ⤳ (already shown)
+          Get_Archive_Type  ⤳ (already shown)
+          _Comp_Have  ⤳ (already shown)
+          _Comp_Is_Tar_Suffix  ⤳ (already shown)
+        Process_File  ⤳ (already shown)
+        Print_Message  ⤳ (already shown)
+        Deps_Ensure  ⤳ (already shown)
         Print_Ok
-          T  ↳ (already shown)
+          T  ⤳ (already shown)
         Log_Action
       Build_Segments
-        Main  ↳ (already shown)
+        Main  ⤳ (already shown)
         Resolve_Segment
-          Main  ↳ (already shown)
-          T  ↳ (already shown)
+          Main  ⤳ (already shown)
+          T  ⤳ (already shown)
+          Get_File_Timestamps
+          Get_Cached_Date
           Get_Compound_Ext
           Get_File_Ext
           Archive_Main_Name
             Archive_List
-              _Comp_Norm  ↳ (already shown)
-              Get_Archive_Type  ↳ (already shown)
-              _Comp_Have  ↳ (already shown)
-              _Comp_Is_Tar_Suffix  ↳ (already shown)
+              _Comp_Norm  ⤳ (already shown)
+              Get_Archive_Type  ⤳ (already shown)
+              _Comp_Have  ⤳ (already shown)
+              _Comp_Is_Tar_Suffix  ⤳ (already shown)
           Get_File_Name
           Get_MIME_Best_Extension
-            Main  ↳ (already shown)
-            Get_MIME_Type  ↳ (already shown)
+            Main  ⤳ (already shown)
+            Get_MIME_Type  ⤳ (already shown)
             _MIME_Lookup_Ext
-            Get_File_Ext  ↳ (already shown)
             Get_Extension_MIME
           Get_MD5Sum
           Get_SHA1Sum
@@ -286,83 +292,116 @@ Main
           Get_B2Sum
           Get_CRC32
           Get_Image_WxH
-            Deps_Ensure  ↳ (already shown)
+            Deps_Ensure  ⤳ (already shown)
           Get_Media_WxH
-            Deps_Ensure  ↳ (already shown)
+            Deps_Ensure  ⤳ (already shown)
           Get_File_Size_Human
+            Get_File_Size
+            Human_From_Bytes
+              T  ⤳ (already shown)
           Media_Tier
           Media_Orient
           Size_Unit_Name
-            Get_File_Size
+            Get_File_Size  ⤳ (already shown)
+            Size_Unit_From_Bytes
           Video_Duration_Tag
             Get_Duration
               _Probe
                 _FF_Have
-                  Deps_Ensure  ↳ (already shown)
+                  Deps_Ensure  ⤳ (already shown)
                 _FF_Run
+            Duration_Tag_From_Seconds
           Exif_Camera_Dir
             Get_EXIF_Camera
               _Exif_Has_Reader
               _Exif_Read
-                Deps_Ensure  ↳ (already shown)
+                Deps_Ensure  ⤳ (already shown)
             Sanitize_Name
           Exif_Date_Dir
             Get_EXIF_Date
-              _Exif_Read  ↳ (already shown)
+              _Exif_Read  ⤳ (already shown)
           Title_Name
-            Main  ↳ (already shown)
-            T  ↳ (already shown)
+            Main  ⤳ (already shown)
+            T  ⤳ (already shown)
             Get_Doc_Title
-              Get_File_Name  ↳ (already shown)
-            Exif_Date_Dir  ↳ (already shown)
-            Get_File_Name  ↳ (already shown)
+              Get_File_Name  ⤳ (already shown)
+            Exif_Date_Dir  ⤳ (already shown)
+            Get_File_Name  ⤳ (already shown)
+            Get_Audio_Artist
+              T  ⤳ (already shown)
+              Id3_Field
+                Id3v2_Field
+                  Id3v2_Present
+                  Id3v2_Major
+                    Id3v2_Present  ⤳ (already shown)
+                  Id3v2_Tag_Size
+                    Id3v2_Present  ⤳ (already shown)
+                Id3v1_Field
+                  Id3v1_Present
+                  Id3v1_Genre_Name
+                Id3v1_Genre_Name  ⤳ (already shown)
+            Get_Audio_Album
+              T  ⤳ (already shown)
+              Id3_Field  ⤳ (already shown)
+            Get_Audio_Title
+              T  ⤳ (already shown)
+              Id3_Field  ⤳ (already shown)
             Get_Media_Artist
-              _Probe  ↳ (already shown)
-            Get_Media_Album
-              _Probe  ↳ (already shown)
+              _Probe  ⤳ (already shown)
             Get_Media_Title
-              _Probe  ↳ (already shown)
+              _Probe  ⤳ (already shown)
+          Get_Audio_Tags_Dir
+            Get_Audio_Artist  ⤳ (already shown)
+            Get_Audio_Year
+              T  ⤳ (already shown)
+              Id3_Field  ⤳ (already shown)
+            Get_Audio_Album  ⤳ (already shown)
+            Sanitize_Name  ⤳ (already shown)
+          Sanitize_Name  ⤳ (already shown)
+          Id3_Field  ⤳ (already shown)
           Get_File_Base
           Get_Base_Name
-            Get_Compound_Ext  ↳ (already shown)
-            Get_File_Name  ↳ (already shown)
+            Get_Compound_Ext  ⤳ (already shown)
+            Get_File_Name  ⤳ (already shown)
           Get_File_Dir
-      Get_Image_WxH  ↳ (already shown)
+      Get_Image_WxH  ⤳ (already shown)
       Image_Form
-      Exif_Camera_Dir  ↳ (already shown)
-      Exif_Date_Dir  ↳ (already shown)
-      T  ↳ (already shown)
-      Get_Media_WxH  ↳ (already shown)
-      Video_Duration_Tag  ↳ (already shown)
-      Size_Unit_Name  ↳ (already shown)
-      Get_File_Size_Human  ↳ (already shown)
+      Exif_Camera_Dir  ⤳ (already shown)
+      Exif_Date_Dir  ⤳ (already shown)
+      T  ⤳ (already shown)
+      Get_Media_Info
+        Deps_Ensure  ⤳ (already shown)
+        Duration_Tag_From_Seconds  ⤳ (already shown)
+      Get_File_Size  ⤳ (already shown)
+      Size_Unit_From_Bytes  ⤳ (already shown)
+      Human_From_Bytes  ⤳ (already shown)
       Build_Name
-        Main  ↳ (already shown)
-        Sanitize_Name  ↳ (already shown)
-        Title_Name  ↳ (already shown)
-        Resolve_Segment  ↳ (already shown)
-        Get_Base_Name  ↳ (already shown)
+        Main  ⤳ (already shown)
+        Sanitize_Name  ⤳ (already shown)
+        Title_Name  ⤳ (already shown)
+        Resolve_Segment  ⤳ (already shown)
+        Get_Base_Name  ⤳ (already shown)
       Build_Extension
-        Get_Compound_Ext  ↳ (already shown)
-        Get_File_Ext  ↳ (already shown)
-        Resolve_Segment  ↳ (already shown)
-      Print_Ok  ↳ (already shown)
-      Log_Action  ↳ (already shown)
+        Get_Compound_Ext  ⤳ (already shown)
+        Get_File_Ext  ⤳ (already shown)
+        Resolve_Segment  ⤳ (already shown)
+      Print_Ok  ⤳ (already shown)
+      Log_Action  ⤳ (already shown)
       Undo_Action
       Strip_Target
         EXIF_Strip
-        Print_Info  ↳ (already shown)
-        Tf  ↳ (already shown)
-        Print_Warning  ↳ (already shown)
-      Print_Warning  ↳ (already shown)
-      Deps_Ensure  ↳ (already shown)
-      Print_Message  ↳ (already shown)
-    Print_Header  ↳ (already shown)
-    T  ↳ (already shown)
-    Print_Message  ↳ (already shown)
-    Tf  ↳ (already shown)
-    Print_Ok  ↳ (already shown)
-    Print_Error  ↳ (already shown)
+        Print_Info  ⤳ (already shown)
+        Tf  ⤳ (already shown)
+        Print_Warning  ⤳ (already shown)
+      Print_Warning  ⤳ (already shown)
+      Deps_Ensure  ⤳ (already shown)
+      Print_Message  ⤳ (already shown)
+    Print_Header  ⤳ (already shown)
+    T  ⤳ (already shown)
+    Print_Message  ⤳ (already shown)
+    Tf  ⤳ (already shown)
+    Print_Ok  ⤳ (already shown)
+    Print_Error  ⤳ (already shown)
 ```
 
 ## Full call graph, grouped by module
@@ -414,6 +453,7 @@ flowchart TD
         F_Get_File_Ext["Get_File_Ext"]
         F_Get_File_Dir["Get_File_Dir"]
         F_Get_File_Size["Get_File_Size"]
+        F_Human_From_Bytes["Human_From_Bytes"]
         F_Get_File_Size_Human["Get_File_Size_Human"]
         F_Get_File_Block_Size["Get_File_Block_Size"] :::lib
         F_Get_File_Line_Count["Get_File_Line_Count"] :::lib
@@ -522,6 +562,7 @@ flowchart TD
         F__Probe["_Probe"]
         F__Probe_Stream["_Probe_Stream"] :::lib
         F_Get_Media_WxH["Get_Media_WxH"]
+        F_Get_Media_Info["Get_Media_Info"]
         F_Get_Video_Codec["Get_Video_Codec"] :::lib
         F_Get_Audio_Codec["Get_Audio_Codec"] :::lib
         F_Get_Container["Get_Container"] :::lib
@@ -533,7 +574,7 @@ flowchart TD
         F_Get_Sample_Rate["Get_Sample_Rate"] :::lib
         F_Get_Media_Title["Get_Media_Title"]
         F_Get_Media_Artist["Get_Media_Artist"]
-        F_Get_Media_Album["Get_Media_Album"]
+        F_Get_Media_Album["Get_Media_Album"] :::lib
         F_Get_Media_Genre["Get_Media_Genre"] :::lib
         F_Get_Media_Track["Get_Media_Track"] :::lib
         F_Get_Media_Date["Get_Media_Date"] :::lib
@@ -574,7 +615,24 @@ flowchart TD
         F_EXIF_Set["EXIF_Set"] :::lib
         F_EXIF_Copy["EXIF_Copy"] :::lib
     end
-    subgraph M10 ["COMPRESSION"]
+    subgraph M10 ["TAGS"]
+        F_Id3v1_Present["Id3v1_Present"]
+        F_Id3v1_Genre_Name["Id3v1_Genre_Name"]
+        F_Id3v1_Field["Id3v1_Field"]
+        F_Id3v2_Present["Id3v2_Present"]
+        F_Id3v2_Major["Id3v2_Major"]
+        F_Id3v2_Tag_Size["Id3v2_Tag_Size"]
+        F_Id3v2_Field["Id3v2_Field"]
+        F_Id3_Field["Id3_Field"]
+        F_Get_Audio_Title["Get_Audio_Title"]
+        F_Get_Audio_Artist["Get_Audio_Artist"]
+        F_Get_Audio_Album["Get_Audio_Album"]
+        F_Get_Audio_Year["Get_Audio_Year"]
+        F_Get_Audio_Genre["Get_Audio_Genre"] :::lib
+        F_Get_Audio_Track["Get_Audio_Track"] :::lib
+        F_Get_Audio_Tags_Dir["Get_Audio_Tags_Dir"]
+    end
+    subgraph M11 ["COMPRESSION"]
         F__Comp_Have["_Comp_Have"]
         F__Comp_Norm["_Comp_Norm"]
         F__Comp_Is_Tar_Suffix["_Comp_Is_Tar_Suffix"]
@@ -592,10 +650,10 @@ flowchart TD
         F_Compress_Zstd["Compress_Zstd"] :::lib
         F_Archive_Create["Archive_Create"] :::lib
     end
-    subgraph M11 ["DOCS"]
+    subgraph M12 ["DOCS"]
         F_Get_Doc_Title["Get_Doc_Title"]
     end
-    subgraph M12 ["DRIVER - defaults, parsing, the dynamic-value engine and the thread pool"]
+    subgraph M13 ["DRIVER - defaults, parsing, the dynamic-value engine and the thread pool"]
         F_T["T"]
         F_Tf["Tf"]
         F_Lang_Name["Lang_Name"]
@@ -608,10 +666,13 @@ flowchart TD
         F_Sanitize_Name["Sanitize_Name"]
         F_Media_Tier["Media_Tier"]
         F_Media_Orient["Media_Orient"]
+        F_Size_Unit_From_Bytes["Size_Unit_From_Bytes"]
         F_Size_Unit_Name["Size_Unit_Name"]
         F_Exif_Date_Dir["Exif_Date_Dir"]
         F_Exif_Camera_Dir["Exif_Camera_Dir"]
         F_Title_Name["Title_Name"]
+        F_Get_File_Timestamps["Get_File_Timestamps"]
+        F_Get_Cached_Date["Get_Cached_Date"]
         F_Resolve_Segment["Resolve_Segment"]
         F_Build_Segments["Build_Segments"]
         F_Build_Name["Build_Name"]
@@ -623,6 +684,7 @@ flowchart TD
         F_Undo_Action["Undo_Action"]
         F_Strip_Target["Strip_Target"]
         F_Image_Form["Image_Form"]
+        F_Duration_Tag_From_Seconds["Duration_Tag_From_Seconds"]
         F_Video_Duration_Tag["Video_Duration_Tag"]
         F_Process_Archive["Process_Archive"]
         F_Process_File["Process_File"]
@@ -658,8 +720,11 @@ flowchart TD
     F_Deps_Init --> F_Tf
     F_Deps_Init --> F__Deps_Propose_Install
     F_Deps_Init --> F_Deps_Missing
-    F_Get_MIME_Main --> F_Get_MIME
-    F_Get_MIME_Sub --> F_Get_MIME
+    F_Get_MIME_Main --> F_Get_MIME_Type
+    F_Get_MIME_Sub --> F_Get_MIME_Type
+    F_Human_From_Bytes --> F_T
+    F_Get_File_Size_Human --> F_Get_File_Size
+    F_Get_File_Size_Human --> F_Human_From_Bytes
     F_Get_File_Age --> F_Get_File_Modified_Epoch
     F_Get_Date_Part --> F_Get_File_Birth
     F_File_Is_Text --> F_Get_File_Encoding
@@ -678,7 +743,6 @@ flowchart TD
     F_Get_MIME_Best_Extension --> F_Main
     F_Get_MIME_Best_Extension --> F_Get_MIME_Type
     F_Get_MIME_Best_Extension --> F__MIME_Lookup_Ext
-    F_Get_MIME_Best_Extension --> F_Get_File_Ext
     F_Get_MIME_Best_Extension --> F_Get_Extension_MIME
     F_Get_Name_MIME --> F_Get_Extension_MIME
     F_MIME_Match --> F_Get_MIME_Type
@@ -731,6 +795,8 @@ flowchart TD
     F__Probe_Stream --> F__FF_Have
     F__Probe_Stream --> F__FF_Run
     F_Get_Media_WxH --> F_Deps_Ensure
+    F_Get_Media_Info --> F_Deps_Ensure
+    F_Get_Media_Info --> F_Duration_Tag_From_Seconds
     F_Get_Video_Codec --> F__Probe_Stream
     F_Get_Audio_Codec --> F__Probe_Stream
     F_Get_Container --> F__Probe
@@ -782,6 +848,32 @@ flowchart TD
     F_Get_EXIF_Copyright --> F__Exif_Read
     F_EXIF_Set --> F__Exif_Have
     F_EXIF_Copy --> F__Exif_Have
+    F_Id3v1_Field --> F_Id3v1_Present
+    F_Id3v1_Field --> F_Id3v1_Genre_Name
+    F_Id3v2_Major --> F_Id3v2_Present
+    F_Id3v2_Tag_Size --> F_Id3v2_Present
+    F_Id3v2_Field --> F_Id3v2_Present
+    F_Id3v2_Field --> F_Id3v2_Major
+    F_Id3v2_Field --> F_Id3v2_Tag_Size
+    F_Id3_Field --> F_Id3v2_Field
+    F_Id3_Field --> F_Id3v1_Field
+    F_Id3_Field --> F_Id3v1_Genre_Name
+    F_Get_Audio_Title --> F_T
+    F_Get_Audio_Title --> F_Id3_Field
+    F_Get_Audio_Artist --> F_T
+    F_Get_Audio_Artist --> F_Id3_Field
+    F_Get_Audio_Album --> F_T
+    F_Get_Audio_Album --> F_Id3_Field
+    F_Get_Audio_Year --> F_T
+    F_Get_Audio_Year --> F_Id3_Field
+    F_Get_Audio_Genre --> F_T
+    F_Get_Audio_Genre --> F_Id3_Field
+    F_Get_Audio_Track --> F_T
+    F_Get_Audio_Track --> F_Id3_Field
+    F_Get_Audio_Tags_Dir --> F_Get_Audio_Artist
+    F_Get_Audio_Tags_Dir --> F_Get_Audio_Year
+    F_Get_Audio_Tags_Dir --> F_Get_Audio_Album
+    F_Get_Audio_Tags_Dir --> F_Sanitize_Name
     F__Comp_Have --> F_Deps_Ensure
     F_Get_Archive_Type --> F__Comp_Magic
     F_Archive_Is --> F_Get_Archive_Type
@@ -800,11 +892,8 @@ flowchart TD
     F_Archive_Main_Name --> F_Archive_List
     F_Compress_File --> F__Comp_Have
     F_Compress_Gzip --> F_Compress_File
-    F_Compress_Gzip --> F_Compress_Bzip2
     F_Compress_Bzip2 --> F_Compress_File
-    F_Compress_Bzip2 --> F_Compress_Xz
     F_Compress_Xz --> F_Compress_File
-    F_Compress_Xz --> F_Compress_Zstd
     F_Compress_Zstd --> F_Compress_File
     F_Archive_Create --> F__Comp_Norm
     F_Archive_Create --> F__Comp_Have
@@ -833,6 +922,7 @@ flowchart TD
     F_Collect_Files --> F_Tf
     F_Collect_Files --> F_Print_Info
     F_Size_Unit_Name --> F_Get_File_Size
+    F_Size_Unit_Name --> F_Size_Unit_From_Bytes
     F_Exif_Date_Dir --> F_Get_EXIF_Date
     F_Exif_Camera_Dir --> F_Get_EXIF_Camera
     F_Exif_Camera_Dir --> F_Sanitize_Name
@@ -841,11 +931,15 @@ flowchart TD
     F_Title_Name --> F_Get_Doc_Title
     F_Title_Name --> F_Exif_Date_Dir
     F_Title_Name --> F_Get_File_Name
+    F_Title_Name --> F_Get_Audio_Artist
+    F_Title_Name --> F_Get_Audio_Album
+    F_Title_Name --> F_Get_Audio_Title
     F_Title_Name --> F_Get_Media_Artist
-    F_Title_Name --> F_Get_Media_Album
     F_Title_Name --> F_Get_Media_Title
     F_Resolve_Segment --> F_Main
     F_Resolve_Segment --> F_T
+    F_Resolve_Segment --> F_Get_File_Timestamps
+    F_Resolve_Segment --> F_Get_Cached_Date
     F_Resolve_Segment --> F_Get_Compound_Ext
     F_Resolve_Segment --> F_Get_File_Ext
     F_Resolve_Segment --> F_Archive_Main_Name
@@ -869,6 +963,9 @@ flowchart TD
     F_Resolve_Segment --> F_Exif_Camera_Dir
     F_Resolve_Segment --> F_Exif_Date_Dir
     F_Resolve_Segment --> F_Title_Name
+    F_Resolve_Segment --> F_Get_Audio_Tags_Dir
+    F_Resolve_Segment --> F_Sanitize_Name
+    F_Resolve_Segment --> F_Id3_Field
     F_Resolve_Segment --> F_Get_File_Base
     F_Resolve_Segment --> F_Get_Base_Name
     F_Resolve_Segment --> F_Get_File_Dir
@@ -889,6 +986,7 @@ flowchart TD
     F_Strip_Target --> F_Tf
     F_Strip_Target --> F_Print_Warning
     F_Video_Duration_Tag --> F_Get_Duration
+    F_Video_Duration_Tag --> F_Duration_Tag_From_Seconds
     F_Process_Archive --> F_Print_Error
     F_Process_Archive --> F_Tf
     F_Process_Archive --> F_Archive_Test
@@ -911,10 +1009,10 @@ flowchart TD
     F_Process_File --> F_Exif_Camera_Dir
     F_Process_File --> F_Exif_Date_Dir
     F_Process_File --> F_T
-    F_Process_File --> F_Get_Media_WxH
-    F_Process_File --> F_Video_Duration_Tag
-    F_Process_File --> F_Size_Unit_Name
-    F_Process_File --> F_Get_File_Size_Human
+    F_Process_File --> F_Get_Media_Info
+    F_Process_File --> F_Get_File_Size
+    F_Process_File --> F_Size_Unit_From_Bytes
+    F_Process_File --> F_Human_From_Bytes
     F_Process_File --> F_Build_Name
     F_Process_File --> F_Build_Extension
     F_Process_File --> F_Print_Ok
@@ -997,7 +1095,8 @@ Every function with the functions it calls (first-use order).
 - **Get_File_Ext** — (leaf)
 - **Get_File_Dir** — (leaf)
 - **Get_File_Size** — (leaf)
-- **Get_File_Size_Human** — (leaf)
+- **Human_From_Bytes**: `T`
+- **Get_File_Size_Human**: `Get_File_Size`, `Human_From_Bytes`
 - **Get_File_Block_Size** *(library — not on the Main path)* — (leaf)
 - **Get_File_Line_Count** *(library — not on the Main path)* — (leaf)
 - **Get_File_Header_Hex** *(library — not on the Main path)* — (leaf)
@@ -1040,7 +1139,7 @@ Every function with the functions it calls (first-use order).
 - **Get_MIME_By_Magic** *(library — not on the Main path)*: `Get_Magic_Bytes`
 - **_MIME_Lookup_Ext** — (leaf)
 - **Get_MIME_Extension** *(library — not on the Main path)*: `Get_MIME_Type`, `_MIME_Lookup_Ext`
-- **Get_MIME_Best_Extension**: `Main`, `Get_MIME_Type`, `_MIME_Lookup_Ext`, `Get_File_Ext`, `Get_Extension_MIME`
+- **Get_MIME_Best_Extension**: `Main`, `Get_MIME_Type`, `_MIME_Lookup_Ext`, `Get_Extension_MIME`
 - **Get_Extension_MIME** — (leaf)
 - **Get_Name_MIME** *(library — not on the Main path)*: `Get_Extension_MIME`
 - **MIME_Match** *(library — not on the Main path)*: `Get_MIME_Type`
@@ -1109,6 +1208,7 @@ Every function with the functions it calls (first-use order).
 - **_Probe**: `_FF_Have`, `_FF_Run`
 - **_Probe_Stream** *(library — not on the Main path)*: `_FF_Have`, `_FF_Run`
 - **Get_Media_WxH**: `Deps_Ensure`
+- **Get_Media_Info**: `Deps_Ensure`, `Duration_Tag_From_Seconds`
 - **Get_Video_Codec** *(library — not on the Main path)*: `_Probe_Stream`
 - **Get_Audio_Codec** *(library — not on the Main path)*: `_Probe_Stream`
 - **Get_Container** *(library — not on the Main path)*: `_Probe`
@@ -1120,7 +1220,7 @@ Every function with the functions it calls (first-use order).
 - **Get_Sample_Rate** *(library — not on the Main path)*: `_Probe_Stream`
 - **Get_Media_Title**: `_Probe`
 - **Get_Media_Artist**: `_Probe`
-- **Get_Media_Album**: `_Probe`
+- **Get_Media_Album** *(library — not on the Main path)*: `_Probe`
 - **Get_Media_Genre** *(library — not on the Main path)*: `_Probe`
 - **Get_Media_Track** *(library — not on the Main path)*: `_Probe`
 - **Get_Media_Date** *(library — not on the Main path)*: `_Probe`
@@ -1162,6 +1262,24 @@ Every function with the functions it calls (first-use order).
 - **EXIF_Set** *(library — not on the Main path)*: `_Exif_Have`
 - **EXIF_Copy** *(library — not on the Main path)*: `_Exif_Have`
 
+### TAGS
+
+- **Id3v1_Present** — (leaf)
+- **Id3v1_Genre_Name** — (leaf)
+- **Id3v1_Field**: `Id3v1_Present`, `Id3v1_Genre_Name`
+- **Id3v2_Present** — (leaf)
+- **Id3v2_Major**: `Id3v2_Present`
+- **Id3v2_Tag_Size**: `Id3v2_Present`
+- **Id3v2_Field**: `Id3v2_Present`, `Id3v2_Major`, `Id3v2_Tag_Size`
+- **Id3_Field**: `Id3v2_Field`, `Id3v1_Field`, `Id3v1_Genre_Name`
+- **Get_Audio_Title**: `T`, `Id3_Field`
+- **Get_Audio_Artist**: `T`, `Id3_Field`
+- **Get_Audio_Album**: `T`, `Id3_Field`
+- **Get_Audio_Year**: `T`, `Id3_Field`
+- **Get_Audio_Genre** *(library — not on the Main path)*: `T`, `Id3_Field`
+- **Get_Audio_Track** *(library — not on the Main path)*: `T`, `Id3_Field`
+- **Get_Audio_Tags_Dir**: `Get_Audio_Artist`, `Get_Audio_Year`, `Get_Audio_Album`, `Sanitize_Name`
+
 ### COMPRESSION
 
 - **_Comp_Have**: `Deps_Ensure`
@@ -1175,9 +1293,9 @@ Every function with the functions it calls (first-use order).
 - **Archive_Extract**: `_Comp_Norm`, `Get_Archive_Type`, `_Comp_Have`, `_Comp_Is_Tar_Suffix`
 - **Archive_Main_Name**: `Archive_List`
 - **Compress_File** *(library — not on the Main path)*: `_Comp_Have`
-- **Compress_Gzip** *(library — not on the Main path)*: `Compress_File`, `Compress_Bzip2`
-- **Compress_Bzip2** *(library — not on the Main path)*: `Compress_File`, `Compress_Xz`
-- **Compress_Xz** *(library — not on the Main path)*: `Compress_File`, `Compress_Zstd`
+- **Compress_Gzip** *(library — not on the Main path)*: `Compress_File`
+- **Compress_Bzip2** *(library — not on the Main path)*: `Compress_File`
+- **Compress_Xz** *(library — not on the Main path)*: `Compress_File`
 - **Compress_Zstd** *(library — not on the Main path)*: `Compress_File`
 - **Archive_Create** *(library — not on the Main path)*: `_Comp_Norm`, `_Comp_Have`
 
@@ -1199,11 +1317,14 @@ Every function with the functions it calls (first-use order).
 - **Sanitize_Name** — (leaf)
 - **Media_Tier** — (leaf)
 - **Media_Orient** — (leaf)
-- **Size_Unit_Name**: `Get_File_Size`
+- **Size_Unit_From_Bytes** — (leaf)
+- **Size_Unit_Name**: `Get_File_Size`, `Size_Unit_From_Bytes`
 - **Exif_Date_Dir**: `Get_EXIF_Date`
 - **Exif_Camera_Dir**: `Get_EXIF_Camera`, `Sanitize_Name`
-- **Title_Name**: `Main`, `T`, `Get_Doc_Title`, `Exif_Date_Dir`, `Get_File_Name`, `Get_Media_Artist`, `Get_Media_Album`, `Get_Media_Title`
-- **Resolve_Segment**: `Main`, `T`, `Get_Compound_Ext`, `Get_File_Ext`, `Archive_Main_Name`, `Get_File_Name`, `Get_MIME_Best_Extension`, `Get_MD5Sum`, `Get_SHA1Sum`, `Get_SHA224Sum`, `Get_SHA256Sum`, `Get_SHA384Sum`, `Get_SHA512Sum`, `Get_B2Sum`, `Get_CRC32`, `Get_Image_WxH`, `Get_Media_WxH`, `Get_File_Size_Human`, `Media_Tier`, `Media_Orient`, `Size_Unit_Name`, `Video_Duration_Tag`, `Exif_Camera_Dir`, `Exif_Date_Dir`, `Title_Name`, `Get_File_Base`, `Get_Base_Name`, `Get_File_Dir`
+- **Title_Name**: `Main`, `T`, `Get_Doc_Title`, `Exif_Date_Dir`, `Get_File_Name`, `Get_Audio_Artist`, `Get_Audio_Album`, `Get_Audio_Title`, `Get_Media_Artist`, `Get_Media_Title`
+- **Get_File_Timestamps** — (leaf)
+- **Get_Cached_Date** — (leaf)
+- **Resolve_Segment**: `Main`, `T`, `Get_File_Timestamps`, `Get_Cached_Date`, `Get_Compound_Ext`, `Get_File_Ext`, `Archive_Main_Name`, `Get_File_Name`, `Get_MIME_Best_Extension`, `Get_MD5Sum`, `Get_SHA1Sum`, `Get_SHA224Sum`, `Get_SHA256Sum`, `Get_SHA384Sum`, `Get_SHA512Sum`, `Get_B2Sum`, `Get_CRC32`, `Get_Image_WxH`, `Get_Media_WxH`, `Get_File_Size_Human`, `Media_Tier`, `Media_Orient`, `Size_Unit_Name`, `Video_Duration_Tag`, `Exif_Camera_Dir`, `Exif_Date_Dir`, `Title_Name`, `Get_Audio_Tags_Dir`, `Sanitize_Name`, `Id3_Field`, `Get_File_Base`, `Get_Base_Name`, `Get_File_Dir`
 - **Build_Segments**: `Main`, `Resolve_Segment`
 - **Build_Name**: `Main`, `Sanitize_Name`, `Title_Name`, `Resolve_Segment`, `Get_Base_Name`
 - **Get_Base_Name**: `Get_Compound_Ext`, `Get_File_Name`
@@ -1214,9 +1335,9 @@ Every function with the functions it calls (first-use order).
 - **Undo_Action** — (leaf)
 - **Strip_Target**: `EXIF_Strip`, `Print_Info`, `Tf`, `Print_Warning`
 - **Image_Form** — (leaf)
-- **Video_Duration_Tag**: `Get_Duration`
+- **Duration_Tag_From_Seconds** — (leaf)
+- **Video_Duration_Tag**: `Get_Duration`, `Duration_Tag_From_Seconds`
 - **Process_Archive**: `Print_Error`, `Tf`, `Archive_Test`, `Archive_Extract`, `Process_File`, `Print_Message`, `Deps_Ensure`, `Print_Ok`, `Log_Action`
-- **Process_File**: `Main`, `Print_Error`, `Tf`, `Get_MIME_Type`, `Print_Info`, `Archive_Is`, `Process_Archive`, `Build_Segments`, `Get_Image_WxH`, `Image_Form`, `Exif_Camera_Dir`, `Exif_Date_Dir`, `T`, `Get_Media_WxH`, `Video_Duration_Tag`, `Size_Unit_Name`, `Get_File_Size_Human`, `Build_Name`, `Build_Extension`, `Print_Ok`, `Log_Action`, `Undo_Action`, `Strip_Target`, `Print_Warning`, `Deps_Ensure`, `Print_Message`
+- **Process_File**: `Main`, `Print_Error`, `Tf`, `Get_MIME_Type`, `Print_Info`, `Archive_Is`, `Process_Archive`, `Build_Segments`, `Get_Image_WxH`, `Image_Form`, `Exif_Camera_Dir`, `Exif_Date_Dir`, `T`, `Get_Media_Info`, `Get_File_Size`, `Size_Unit_From_Bytes`, `Human_From_Bytes`, `Build_Name`, `Build_Extension`, `Print_Ok`, `Log_Action`, `Undo_Action`, `Strip_Target`, `Print_Warning`, `Deps_Ensure`, `Print_Message`
 - **Run_Threads**: `Process_File`, `Print_Header`, `T`, `Print_Message`, `Tf`, `Print_Ok`, `Print_Error`
 - **Main**: `Usage`, `Parse_Arguments`, `Validate_Options`, `Deps_Init`, `Prepare_Optional_Output`, `Collect_Files`, `Print_Warning`, `Draw_Line`, `Print_Header`, `Tf`, `Run_Threads`
-
