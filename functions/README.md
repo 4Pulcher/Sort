@@ -31,7 +31,7 @@ modules are fully standalone — no main-script globals required.
 | [exif](exif/) | Complete EXIF toolkit — exiftool / ImageMagick fallback | 23 functions: generic tag access, dumps, camera, lens, exposure, GPS, strip/set/copy actions |
 | [deps](deps/) | Init-system for external tools — installer / privilege detection | 8 functions: detection, package mapping, install, ensure, init |
 | [colors](colors/) | Complete color toolkit — ANSI colors / print helpers | 13 functions: `C_*` color variables, Print_Message/Info/Ok/Error/Warning/Log/Debug, headers, separators |
-| [mime](mime/) | Complete MIME toolkit — file(1) / magic bytes / extension maps | 20 functions: type/main/sub/description/charset, magic bytes, magic detection, MIME↔extension maps, pattern match, type predicates |
+| [mime](mime/) | Complete MIME toolkit — file(1) / magic bytes / extension maps | 20 functions: type/main/sub/description/charset, magic bytes, magic detection, database-sourced MIME↔extension maps (911 extensions / 687 types), pattern match, type predicates |
 | [docs](docs/) | Documents (pdftotext / exiftool) | `Get_Doc_Title` |
 | [core](core/) | Organizer core logic | `Resolve_Path_Segment`, `Parse_Arguments`, `Validate_Options`, `Perform_Action`, `Sort`, `Show_Help` |
 

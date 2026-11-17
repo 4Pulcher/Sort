@@ -1,8 +1,10 @@
 # functions/mime
 
-> Complete MIME toolkit - file(1) / magic bytes / extension maps
+> Complete MIME toolkit - file(1) / magic bytes / extension maps (v2.1)
 
 A complete, standalone bag of MIME tools built on file(1): MIME type, main/sub parts, human description, charset, magic bytes (hex and print-string), magic-number detection, bidirectional MIME <-> extension mapping, filename-to-MIME guessing, pattern matching and main-type predicates. Every function takes a path as its first argument, prints its result on stdout and returns non-zero on failure.
+
+Since v2.1 the extension maps are distilled from the user's MIME database: 911 extension -> MIME entries and 687 MIME -> extension entries, plus base-linux supplements (`sh`, `bash`, `xz`, `elf`, `log`) and canonical overrides (`txt`, `jpg`, `mp3`, `bin`).
 
 ## Functions
 
@@ -19,12 +21,12 @@ A complete, standalone bag of MIME tools built on file(1): MIME type, main/sub p
 
 - `Get_Magic_Bytes <file> [count]` — first bytes as space-separated hex (default 16)
 - `Get_Magic_String <file> [count]` — first bytes as printable string (non-printables become `.`)
-- `Get_MIME_By_Magic` — MIME from the magic number alone (JPEG, PNG, GIF, BMP, PDF, ZIP, gzip, bzip2, xz, 7z, RAR, ELF, DOS, WASM, SQLite, MP3, OGG, FLAC, MPEG, Matroska, MP4/ftyp, RIFF→WEBP/WAV); false for unknown magic
+- `Get_MIME_By_Magic` — MIME from the magic number alone (JPEG, PNG, GIF, BMP, PDF, ZIP, gzip, bzip2, xz, 7z, RAR, ELF, DOS, WASM, SQLite, MP3, OGG, FLAC, MPEG, Matroska, MP4/ftyp, RIFF→WEBP/WAV); false for unknown magic. Uses a curated, hand-verified signature set: an external signature database was evaluated and rejected because its signatures turned out corrupted (e.g. PNG listed without the `PNG` bytes, PDF reduced to one stray byte) and riddled with junk 1–2 byte signatures that steal matches.
 
 ### MIME <-> extension mapping
 
-- `Get_MIME_Extension` — canonical extension for the file's MIME type (~50 types)
-- `Get_Extension_MIME <ext>` — MIME for an extension (leading dot and case ignored)
+- `Get_MIME_Extension` — canonical extension for the file's MIME type (687 types, database-sourced)
+- `Get_Extension_MIME <ext>` — MIME for an extension (leading dot and case ignored; 911 extensions, database-sourced)
 - `Get_Name_MIME <name>` — MIME guessed from a filename alone, no file needed
 
 ### Matching and predicates
