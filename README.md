@@ -1,12 +1,26 @@
 # Sort — Sort.sh / Sort.pas
 
-One sentence, five alphabets — the **same English sentence**, rendered phonetically in the five most-used symbol systems (no translations: it still reads "Sort — sort, rename and organize your files. Be careful with this script!").
+One long text — caution, explanation, example and author — written out in the top 5 symbol systems, one after the other. The same English words every time, just in a different alphabet (the example command stays runnable in all of them).
 
-- **English (Latin alphabet):** Sort — sort, rename and organize your files. Be careful with this script!
-- **中文符号 (Han symbols):** 索特 — 索特、雷内姆 安徳 奥根奈兹 尤尔 法伊尔斯。比 凯尔富 威兹 迪斯 斯克里普特！
-- **देवनागरि (Devanagari):** सॉर्ट — सॉर्ट, रिनेम ऍण्ड ऑर्गनाइझ युअर फाइल्स. बी केअरफुल विथ दिस स्क्रिप्ट!
-- **Кириллица (Cyrillic):** Сорт — сорт, ринейм энд органайз ёр файлс. Би кэрефул уиз зис скрипт!
-- **العربية (Arabic):** سورت — سورت، رينيم أند أورغنايز يور فايلز. بي كيرفول ويذ ذيس سكريبت!
+**English (Latin alphabet)**
+
+Sort — sort, rename and organize your files. It reads each file’s type, date, metadata and checksums, then copies, moves or renames it into a tidy directory tree — previewing everything first, nothing moves until you say so. Caution: be careful with this script, understand it before you use it, especially the remove, trash and shred modes. Example: ./Sort.sh --copy --recursive --rename=sha256sum ~/Pictures/2Sort — Author: HEjder
+
+**中文符号 (Han symbols)**
+
+索特 — 索特、雷内姆 安徳 奥根奈兹 尤尔 法伊尔斯。伊特 里兹 伊奇 法伊尔斯 泰普、戴特、迈塔戴塔 安徳 切克萨姆斯，泽恩 科皮斯、穆夫斯 奥 雷内姆斯 伊特 因图 阿 泰迪 达瑞克托里 特里 — 普雷维尤因 埃夫里辛 弗斯特，纳辛 穆夫斯 安提尔 尤 塔 苏。凯申：比 凯尔富 威兹 迪斯 斯克里普特，安德斯坦德 伊特 比福 尤 尤兹 伊特，埃斯佩谢利 泽 雷穆夫、特拉什 安徳 什雷德 穆兹。埃克桑普尔：./Sort.sh --copy --recursive --rename=sha256sum ~/Pictures/2Sort — 奥瑟：海杰德
+
+**देवनागरी (Devanagari)**
+
+सॉर्ट — सॉर्ट, रिनेम ऍण्ड ऑर्गनाइझ युअर फाइल्स. इट रीड्स ईच फ़ाइल्स टाइप, डेट, मेटाडेटा ऍण्ड चेकसम्स, देन कॉपीज़, मूव्स ऑर रिनेम्स इट इनटू अ टाइडी डायरेक्टरी ट्री — प्रिव्यूइंग एवरीथिंग फ़र्स्ट, नदिंग मूव्स अंटिल यू से सो. कॉशन: बी केअरफुल विथ दिस स्क्रिप्ट, अंडरस्टैंड इट बिफोर यू यूज़ इट, एस्पेशियली द रिमूव, ट्रॅश ऍण्ड श्रेड मोड्स. इग्ज़ाम्पल: ./Sort.sh --copy --recursive --rename=sha256sum ~/Pictures/2Sort — ऑथर: हेजडेर
+
+**Кириллица (Cyrillic)**
+
+Сорт — сорт, ринейм энд органайз ёр файлс. Ит ридс ич файлс тайп, дейт, метадата энд чексамс, зен копис, мувс ор ринеймс ит инту э тайди директори три — превьюинг эвриинг фёрст, назинг мувс антил ю сей соу. Кэйшн: би кэрефул уиз зис скрипт, андэстенд ит бифор ю юз ит, эспешали зе римув, трэш энд шред моудс. Экзампл: ./Sort.sh --copy --recursive --rename=sha256sum ~/Pictures/2Sort — Атор: Хейдер
+
+**العربية (Arabic)**
+
+سورت — سورت، رينيم أند أورغنايز يور فايلز. إت ريدز إيتش فايلز تايب، ديت، ميتاداتا أند تشيكسامز، ذين كوبيز، موفز أور رينيمز إت انتو أ تايدي دايركتوري تري — برفيويينغ إفريذينغ فيرست، ناذينغ موفز أنتيل يو ساي سو. كيوشن: بي كيرفول ويذ ذيس سكريبت، أندرستند إت بيفور يو يوز إت، إسبشالي ذا ريموف، تراش أند شرد موودز. إكزامبل: ./Sort.sh --copy --recursive --rename=sha256sum ~/Pictures/2Sort — أوثور: هيدجر
 
 For real translations the script itself speaks 20 UI languages: `--lang=XX` (`en zh hi es fr ar bn pt ru ur id de ja tr ko vi it pl nl fa`, default `en`).
 
