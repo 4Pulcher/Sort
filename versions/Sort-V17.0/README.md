@@ -136,3 +136,12 @@ Python edition of the same version. It makes **no external calls at all**: no
 * Self check: `python3 Sort-VV17.0.py --self-test`
 * Not portable to Python in this edition: nothing - the file is fully
   self-contained (the engine is embedded; no other files are imported).
+
+
+### Update - embedded native metadata keywords
+
+This Python edition now embeds the **native EXIF (JPEG APP1/TIFF) and ID3
+(MP3 v1/v2) parsers** directly (stdlib-only, still zero external calls and
+zero imports): the metadata-template keywords of this era work fully
+standalone - exif-* plus the --rename=title audio/metadata keyword. Example:
+`python3 Sort-V17.0.py --mode=copy --subdirs=exif-date photo.jpg`
