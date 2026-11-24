@@ -1,61 +1,71 @@
-# Sort.py - the Python edition of the Sort lineage
+# Sort.py - the Python line (stdlib only)
 
-A single-file, **standard-library-only** Python implementation of the complete
-Bash `Sort.sh` lineage (V1.0 - V17.3). No `file`, no ImageMagick, no FFmpeg,
-no ExifTool, no pip packages: MIME sniffing, media dimensions, hashing and
-text detection are all native. Runs on Debian with just the `python3` package
-(main repo; nothing needed from contrib/non-free).
+Pure-Python (standard library only) port of the complete Bash `Sort.sh`
+lineage. No external commands are invoked anywhere: no `file`, no
+ImageMagick, no FFmpeg, no ExifTool. Everything runs with Debian's `python3`
+package (main repo) and nothing else.
 
-```bash
-python3 Sort.py --self-test                # built-in test suite (23 checks)
-python3 Sort.py --dirs=mime-main --type=image Downloads/*   # dry run by default
-python3 Sort.py --mode=move --dirs=year+month Videos/
-python3 Sort.py --mode=copy --rename=sha256sum *.jpg
-python3 Sort.py --mode=trash --recursive --type=archive Downloads/
-python3 Sort.py --mode=move --log actions.jsonl ...
-python3 Sort.py --undo actions.jsonl
-```
+## Layout
 
-## Modes
+    python/
+      Sort.py                    main engine (feature union of the lineage)
+      functions/                 native function library (see below)
+        __main__.py              python3 -m functions  -> full self-test
+        editions.py              era model + V-gating for the 13 editions
+      versions/
+        Metadata-driven/  Sort-V1.py .. Sort-V6.py
+        Media-Intelligent/ Sort-V1.py .. Sort-V7.py
+      README.md                  this file
 
-| Mode | Behaviour | Lineage origin |
-|---|---|---|
-| `dummy` (default) | dry run: prints every destination, changes nothing | V9 safe-modes era |
-| `copy` / `move` | organize into the target tree; empty source dirs cleaned | V1.x+, cleanup from V10.2 |
-| `remove` | delete (with empty-dir cleanup) | V9.x |
-| `trash` | freedesktop XDG trash with `.trashinfo` | V14 Safe Transport |
-| `shred` | 3-pass random overwrite then delete | V14 |
+## Main
 
-## Feature map: Bash version -> where it lives in Sort.py
+`Sort.py` is the full engine: magic-byte MIME sniffing, native
+PNG/GIF/BMP/JPEG/WEBP dimensions, hashlib checksum keywords, the template
+language (lower:/upper:/raw: prefixes, a|b|c fallbacks), modes
+dummy/copy/move/remove/trash/shred, --jobs, --log + --undo, i18n, self-test.
 
-| Bash era | Feature | Python location |
-|---|---|---|
-| V1.x-V4.x | organize flow, MIME keywords, template destination paths | `Organizer.run/process`, `TemplateEngine` |
-| V5.x | Media-Intelligent renames: hash/size/format keywords | `hash_file`, `decimal_size_label`, `keyword_value` |
-| V6.x | single-pass mode parsing, type filters | `TYPE_FILTERS`, `matches_filter` |
-| V7-V8 | source/target argument model, per-file templates | CLI `--target`, per-file `resolve` |
-| V9.x | safe copy/move/remove, dry-run default, self-tests | default `dummy` mode, `run_self_test` |
-| V9.3 | path/name/extension context awareness | `TemplateEngine(context=...)` |
-| V9.5 | `Resolve_Value` prefixes & fallbacks | `segment()`: `lower:` `upper:` `raw:`, `k1\|k2` |
-| V10.x | MIME main/sub model, emoji icons, empty-dir cleanup | `sniff_mime`, `ICONS`, `_cleanup_empty` |
-| V11.0 | fully self-contained single-file edition | the whole file |
-| V12.x | threaded worker pool | `--jobs` via `ThreadPoolExecutor` |
-| V13.x | stable, heavily documented generation | docstrings/MANPAGE |
-| V14-V15 | Safe Transport (trash/shred) and undo log | `freedesktop_trash`, `shred_file`, `undo_log` |
-| V16-V17 | template language extensions, slugified names | `slugify`, `segment` |
-| V17.1 | multilingual UI (compact: en, nl, fr, de, tr) | `TRANSLATIONS`, `--lang` |
+    Sort.py --self-test
+    Sort.py --mode=dummy --dirs=mime-main --type=image Downloads/*
 
-## Intentional deltas (stdlib-only constraint)
+## Functions library (Python equivalents of the shell `functions/` modules)
 
-* Deep media tags from the Bash V17 era that required ExifTool/FFmpeg
-  (EXIF camera fields, audio artist/title, video stream data) are **not**
-  ported; only native capabilities are kept: magic-byte MIME sniffing and
-  PNG/GIF/BMP/JPEG/WEBP dimension parsing (orientation/tier labels).
-* The Bash `--pause` option remains but millisecond pacing in threads is
-  cooperative, not wall-clock exact.
-* `remove`/`shred` actions are logged but cannot be undone by design;
-  `undo` reverses `copy`/`move`/`trash`.
+| Shell module   | Python module      | Replacement |
+|----------------|--------------------|-------------|
+| colors.sh      | colors.py          | ANSI styles + icon table |
+| ui.sh          | ui.py              | UI class + translations (engine) |
+| core.sh        | core.py            | engine re-exports |
+| mime.sh        | mime.py            | native magic-byte sniffer |
+| imagemagick.sh | image.py           | native image dimension parser |
+| hash.sh        | hash.py            | hashlib wrappers |
+| file.sh        | file.py            | FileFacts record + timestamp getters |
+| exif.sh        | exif.py            | native JPEG EXIF (APP1/TIFF IFD) parser |
+| tags.sh        | tags.py            | native ID3v1 + ID3v2 MP3 tag parser |
+| compression.sh | compression.py     | zip/tar/gz/bz2/xz/7z/rar inspection |
+| ffmpeg.sh      | (engine dims)      | no deep video metadata; container sniffs only |
+| system.sh      | system.py          | freedesktop trash, shred, undo log |
+| deps.sh        | deps.py            | interpreter + REPLACED_COMMANDS map |
+| docs.sh        | docs.py            | manpage + feature map |
+| testing.sh     | testing.py / __main__.py | self-test suite |
 
-## Requirements
+## Versions (13 eras)
 
-* Python 3.9+ (Debian: `python3`, main repository). No third-party modules.
+Each wrapper calls `functions.editions.run(argv, line, era)`, which restricts
+the engine to the keywords, modes, options and defaults of that historical
+Bash edition (exit code 64 on out-of-era usage):
+
+* `versions/Metadata-driven/Sort-V1..V6.py` - the metadata-driven line:
+  V1 base modes + md5/sha256, V2 full hashes, V3 templates, V4 context,
+  V5 ext-lower/bytes, V6 modifiers + fallbacks + --jobs.
+* `versions/Media-Intelligent/Sort-V1..V7.py` - the media-intelligent line:
+  V1 base|hashes|pixel, V2 empty-dir cleanup, V3 icons, V4 --jobs,
+  V5 stable, V6 --pause/--log, V7 tags (EXIF/ID3 keywords).
+
+Run one:
+
+    python3 python/versions/Media-Intelligent/Sort-V7.py \
+        --dirs=exif-make --mode=copy photo.jpg
+
+## Self-test
+
+    cd python && python3 -m functions      # engine 23 checks + EXIF/ID3/era checks
+    python3 Sort.py --self-test
