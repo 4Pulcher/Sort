@@ -2,15 +2,15 @@
 
 One repository, one branch, one directory per version, four languages + a Qt6 GUI.
 
-## Root - the latest version (V19)
+## Root - the latest version (V20)
 
 | File | What |
 |---|---|
-| `Sort.sh` | latest Bash edition (V19, self-contained, threaded) |
-| `Sort.pas` | latest FreePascal edition (V19 port) |
-| `Sort.py` | latest Python edition (V19 era-gated, with --magic standalone engine, stdlib only) |
-| `Sort.cpp` | latest C++17 edition (V19 port: single file, no dependencies, native magic/dims/hashes/EXIF/ID3) |
-| `Sort-GUI.cpp` | V19 Qt6/QML GUI edition (same engine, all options in the window; see versions/Sort-V19/README.md) |
+| `Sort.sh` | latest Bash edition (V20, self-contained, threaded) |
+| `Sort.pas` | latest FreePascal edition (V20 port) |
+| `Sort.py` | latest Python edition (V20 era-gated, --magic + --scan-raw standalone engines, stdlib only) |
+| `Sort.cpp` | latest C++17 edition (V20 port: single file, no dependencies, native magic/dims/hashes/EXIF/ID3, raw device scan) |
+| `Sort-GUI.cpp` | V20 Qt6/QML GUI edition (same engine, all options + --scan-raw in the window; see versions/Sort-V20/README.md) |
 
 ## versions/ - every version, in order
 
@@ -24,7 +24,7 @@ files (from V19 on: four languages + the Qt6 GUI + README):
 * `Sort-GUI.cpp`         - its Qt6/QML GUI edition (from V19)
 * `README.md`            - what that version is and does
 
-Lineage: V1.0 - V19 (see `other/Sort-Versions.md` for the full
+Lineage: V1.0 - V20 (see `other/Sort-Versions.md` for the full
 chronology and era table).
 
 ### The Python editions

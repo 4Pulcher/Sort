@@ -5,7 +5,7 @@ Sort.py - Media-Intelligent File Organizer (Python edition)
 ===========================================================
 
 A pure-Python (standard library only) implementation of the complete Bash
-`Sort.sh` lineage (V1.0 -> V19), designed to match the feature union of the
+`Sort.sh` lineage (V1.0 -> V20), designed to match the feature union of the
 whole family with ZERO external dependencies:
 
 * no `file`, no ImageMagick, no FFmpeg, no ExifTool, no GNU coreutils calls:
@@ -61,8 +61,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-__version__ = "py-19"          # corresponds to the latest Bash edition
-LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V19 lineage (stdlib only)"
+__version__ = "py-20"          # corresponds to the latest Bash edition
+LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V20 lineage (stdlib only)"
 
 # ===========================================================================
 # 1. UI: COLORS, ICONS, INTERNATIONALIZATION
@@ -903,6 +903,9 @@ def undo_log(logfile: Path) -> int:
             elif a == "copied" and dst and Path(dst).exists():
                 Path(dst).unlink()
                 undone += 1
+            elif a == "carved" and dst and Path(dst).exists():
+                Path(dst).unlink()          # carved fragments never go back
+                undone += 1
             elif a == "trashed":
                 trash_files = Path(os.environ.get(
                     "XDG_DATA_HOME", Path.home() / ".local/share")) / "Trash/files"
@@ -1097,6 +1100,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--jobs", type=int, default=1,
                    help="parallel workers (V12)")
     p.add_argument("--log", default=None, help="JSONL action log (V15)")
+    p.add_argument("--scan-raw", default=None, metavar="DEVICE",
+                   help="scan a raw device/disk image with the 237-signature "
+                        "engine; dummy reports, copy carves to Target/RAW-CARVE (V20)")
     p.add_argument("--undo", default=None,
                    help="revert a JSONL action log (V15)")
     p.add_argument("--no-cleanup", dest="cleanup_empty", action="store_false",
@@ -1119,6 +1125,10 @@ def main(argv: list | None = None) -> int:
         return run_self_test()
     if args.undo:
         return undo_log(Path(args.undo))
+    if args.scan_raw:
+        return run_raw_scan(Path(args.scan_raw), args.mode,
+                            Path(args.target),
+                            Path(args.log) if args.log else None)
     if not args.inputs:
         print(MANPAGE)
         return 0
@@ -1645,22 +1655,203 @@ def magic_report(path) -> str:
             f"extension: {ext}\nverdict: {verdict}")
 
 
+
 # ===========================================================================
-# EDITION GATE - auto-generated for Sort-V19
-# Scope derived mechanically from Sort-V19.sh (era vocabulary).
+# RAW DEVICE SCAN (V20) - --scan-raw: signature walk + optional carving
+# ===========================================================================
+# Scans a raw block device (/dev/sdX, /dev/sdX1) or a disk image file with
+# the same 237-entry magic table used by --magic. Every byte offset is a
+# candidate; hits can be carved out in copy mode (dry-run reports only).
+# The device is only ever opened read-only; --scan-raw refuses
+# remove/trash/shred.
+
+_RAW_BLOCK = 1 << 20
+_RAW_CARRY = 32800            # max entry offset (32769) + max signature
+_RAW_CARVE_MAX = 5 << 20      # fragment cap for formats without an end rule
+
+
+def _raw_patterns():
+    """(off, name, exts, literal_bytes | None, regex | None) per entry."""
+    pats = []
+    for off, sig, name, exts in _MAGIC_TABLE:
+        if len(sig) < 4:
+            continue          # 1-byte signatures are noise on raw media
+        if "?" not in sig:
+            pats.append((off, name, exts, bytes.fromhex(sig), None))
+            continue
+        out = b""
+        ok = True
+        for i in range(0, len(sig), 2):
+            hi, lo = sig[i], sig[i + 1]
+            if hi == "?" and lo == "?":
+                out += b"."
+            elif lo == "?":
+                cls = bytes(range(int(hi, 16) * 16, int(hi, 16) * 16 + 16))
+                out += b"[" + re.escape(cls) + b"]"
+            elif hi == "?":
+                cls = bytes(range(int(lo, 16), 256, 16))
+                out += b"[" + re.escape(cls) + b"]"
+            else:
+                out += re.escape(bytes([int(sig[i:i + 2], 16)]))
+        pats.append((off, name, exts, None, re.compile(out, re.DOTALL)))
+    return pats
+
+
+_RAW_END_RULES = {
+    "PNG image": "png", "JPEG image": "jpeg", "GIF image": "gif",
+    "ZIP archive": "zip", "PDF document": "pdf",
+}
+
+
+def _raw_carve_size(head: bytes, name: str, cap: int):
+    """Estimate the fragment length -> (size, exact). exact=True means the
+    format itself said where it ends; False means the cap was applied."""
+    try:
+        if name.startswith("PNG image"):
+            pos = 8
+            while pos + 12 <= len(head):
+                import struct as _st
+                clen = _st.unpack(">I", head[pos:pos + 4])[0]
+                ctype = head[pos + 4:pos + 8]
+                pos += 12 + clen             # len + type + data + CRC
+                if ctype == b"IEND":
+                    return min(pos, cap), True
+                if clen > len(head):
+                    return min(pos, cap), False
+            return min(len(head), cap), False
+        if name.startswith("JPEG image"):
+            end = head.rfind(b"\xff\xd9")
+            return ((end + 2), True) if end != -1 else (min(len(head), cap), False)
+        if name.startswith("GIF image"):
+            end = head.rfind(b"\x3b", 13)
+            return ((end + 1), True) if end != -1 else (min(len(head), cap), False)
+        if name.startswith("ZIP/") or name.startswith("ZIP archive"):
+            end = head.rfind(b"PK\x05\x06")
+            if end != -1 and end + 22 <= len(head):
+                import struct as _st
+                comment = _st.unpack(">H", head[end + 20:end + 22])[0]
+                return end + 22 + comment, True
+            return min(len(head), cap), False
+        if name.startswith("PDF document"):
+            end = head.rfind(b"%%EOF")
+            return ((end + 5), True) if end != -1 else (min(len(head), cap), False)
+    except Exception:
+        pass
+    return min(len(head), cap), False
+
+
+def scan_raw(path, carve_max: int = _RAW_CARVE_MAX):
+    """Yield (offset, name, exts, size) for every magic hit in the stream."""
+    pats = _raw_patterns()
+    try:
+        f = open(path, "rb", buffering=0)
+        probe = open(path, "rb", buffering=0)
+    except OSError as exc:
+        print(f"RAW-SCAN: cannot open {path}: {exc}")
+        return
+    base = 0
+    carry = b""
+    total = 0
+    next_allowed = 0
+    try:
+        while True:
+            block = f.read(_RAW_BLOCK)
+            if not block:
+                break
+            total += len(block)
+            buf = carry + block if carry else block
+            buf_base = base - len(carry)
+            hits = []
+            for off, name, exts, lit, rx in pats:
+                if lit is not None:
+                    start = 0
+                    while True:
+                        pos = buf.find(lit, start)
+                        if pos == -1:
+                            break
+                        hit = buf_base + pos - off
+                        if hit >= 0:
+                            hits.append((hit, name, exts))
+                        start = pos + 1
+                else:
+                    for m in rx.finditer(buf):
+                        hit = buf_base + m.start() - off
+                        if hit >= 0:
+                            hits.append((hit, name, exts))
+            hits.sort()
+            for hit, name, exts in hits:
+                if hit < next_allowed:
+                    continue
+                probe.seek(hit)
+                head = probe.read(min(carve_max, _RAW_BLOCK))
+                size, exact = _raw_carve_size(head, name, carve_max)
+                # an exact fragment owns its byte range; a capped guess only
+                # suppresses hits at the very same offset
+                next_allowed = (hit + size) if exact else (hit + 1)
+                yield hit, name, exts, size, exact
+            base += len(block)
+            carry = buf[-_RAW_CARRY:]
+    finally:
+        f.close()
+        probe.close()
+
+
+def run_raw_scan(raw_path, mode: str, target, log=None) -> int:
+    """Report (dummy) or carve (copy) the hits found in a raw device/image."""
+    if mode in ("move", "remove", "trash", "shred"):
+        print(f"RAW-SCAN: --scan-raw supports dummy and copy only "
+              f"(mode '{mode}' refused)")
+        return 64
+    ext_of = lambda exts: (exts.split(",")[0] if exts else "bin")
+    count = 0
+    outdir = target / "RAW-CARVE"
+    if mode == "copy":
+        outdir.mkdir(parents=True, exist_ok=True)
+    print(f"RAW-SCAN: {raw_path}")
+    for hit, name, exts, size, exact in scan_raw(raw_path):
+        count += 1
+        print(f"  hit: 0x{hit:012x} {hit} {name} -> {ext_of(exts)} "
+              f"(carve {size} bytes{'' if exact else ', capped'})")
+        if mode == "copy":
+            dest = outdir / (f"{hit:012x}.{ext_of(exts)}")
+            try:
+                with open(raw_path, "rb") as src, open(dest, "wb") as dst:
+                    src.seek(hit)
+                    remaining = size
+                    while remaining > 0:
+                        chunk = src.read(min(1 << 20, remaining))
+                        if not chunk:
+                            break
+                        dst.write(chunk)
+                        remaining -= len(chunk)
+                print(f"  carved: {dest}")
+                if log:
+                    with open(log, "a", encoding="utf-8") as lf:
+                        lf.write(json.dumps({"action": "carved",
+                                             "src": f"{raw_path}@{hit}",
+                                             "dst": str(dest)}) + "\n")
+            except OSError as exc:
+                print(f"  carve failed at 0x{hit:012x}: {exc}")
+    print(f"RAW-SCAN: {count} signatures found")
+    return 0
+
+
+# ===========================================================================
+# EDITION GATE - auto-generated for Sort-V20
+# Scope derived mechanically from Sort-V20.sh (era vocabulary).
 # Run with --self-test to verify this engine, -h for the era usage.
 # ===========================================================================
 
-EDITION = {'version': 'V19', 'modes': ['copy', 'dummy', 'move', 'remove', 'shred', 'trash'], 'flags': ['--dirs', '--extension', '--hidden', '--jobs', '--lang', '--links', '--log', '--magic', '--no-colors', '--pause', '--quiet', '--recursive', '--rename', '--replace', '--subdirs', '--target', '--type', '--undo'], 'keywords': ['accessed', 'created', 'day', 'exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'extension', 'format', 'format+size', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'md5sum', 'mime', 'mime-main', 'mime-sub', 'modified', 'month', 'name', 'random', 'sha1sum', 'sha224sum', 'sha256sum', 'sha384sum', 'sha512sum', 'size', 'size+format', 'title', 'year', 'year+month', 'year+month+day'], 'modifiers': [], 'fallbacks': True, 'stripped': {'--decompress': 'archive decompress (--decompress) - stripped', '--delete': 'delete mode - use --mode=remove', '--exif': 'EXIF rename/strip levels (--exif) - stripped', '--needed': 'dependency listing - stripped', '--noconfirm': 'interactive confirm - stripped', '--non-interactive': 'interactive confirm - stripped', '--stats': 'stats mode (--stats) - stripped', '--strip': 'metadata stripping (--strip) - stripped', '--title': 'metadata title rename (--title) - stripped', '--verbose': 'verbose flag - use default output', '--version': '--version'}}
+EDITION = {'version': 'V20', 'modes': ['copy', 'dummy', 'move', 'remove', 'shred', 'trash'], 'flags': ['--dirs', '--scan-raw', '--extension', '--hidden', '--jobs', '--lang', '--links', '--log', '--magic', '--no-colors', '--pause', '--quiet', '--recursive', '--rename', '--replace', '--subdirs', '--target', '--type', '--undo'], 'keywords': ['accessed', 'created', 'day', 'exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'extension', 'format', 'format+size', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'md5sum', 'mime', 'mime-main', 'mime-sub', 'modified', 'month', 'name', 'random', 'sha1sum', 'sha224sum', 'sha256sum', 'sha384sum', 'sha512sum', 'size', 'size+format', 'title', 'year', 'year+month', 'year+month+day'], 'modifiers': [], 'fallbacks': True, 'stripped': {'--decompress': 'archive decompress (--decompress) - stripped', '--delete': 'delete mode - use --mode=remove', '--exif': 'EXIF rename/strip levels (--exif) - stripped', '--needed': 'dependency listing - stripped', '--noconfirm': 'interactive confirm - stripped', '--non-interactive': 'interactive confirm - stripped', '--stats': 'stats mode (--stats) - stripped', '--strip': 'metadata stripping (--strip) - stripped', '--title': 'metadata title rename (--title) - stripped', '--verbose': 'verbose flag - use default output', '--version': '--version'}}
 
 CANONICAL_KEYWORDS = ["year", "month", "day", "year+month", "year+month+day", "created", "created-date", "created-time", "modified", "modified-date", "modified-time", "accessed", "accessed-date", "accessed-time", "mime", "mime-main", "mime-sub", "type", "extension", "ext", "ext-lower", "ext-upper", "filename", "name", "basename", "stem", "original", "size", "format", "size+format", "format+size", "pixel-size", "resolution", "pixel-format", "md5sum", "sha1sum", "sha224sum", "sha256sum", "sha384sum", "sha512sum", "random"]
 CANONICAL_KEYWORDS = CANONICAL_KEYWORDS + ['exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'title']
 
-_ERA_USAGE = """Sort-V19.py - standalone Python edition of Sort-V19.sh
+_ERA_USAGE = """Sort-V20.py - standalone Python edition of Sort-V20.sh
 (Standard library only; no external commands, no other files required.)
 
 USAGE
-    Sort-V19.py [OPTIONS] FILES...
+    Sort-V20.py [OPTIONS] FILES...
 
 MODES (--mode=...)
     copy, dummy, move, remove, shred, trash
@@ -1668,6 +1859,7 @@ MODES (--mode=...)
 OPTIONS
     --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --subdirs, --target, --type, --undo, inputs
     --magic             print a magic-number detection report (237 signature formats) and exit
+    --scan-raw DEVICE   scan a raw device or disk image (237 signatures); dry-run report, --mode=copy carves fragments
 
 TEMPLATE KEYWORDS (for --dirs / --subdirs/--rename/--extension/--dirs)
     accessed, created, day, exif-date, exif-datetime, exif-make, exif-model, exif-orientation, extension, format, format+size, id3-album, id3-artist, id3-genre, id3-title, id3-track, id3-year, md5sum, mime, mime-main, mime-sub, modified, month, name, random, sha1sum, sha224sum, sha256sum, sha384sum, sha512sum, size, size+format, title, year, year+month, year+month+day
@@ -1684,7 +1876,7 @@ OUT OF SCOPE FOR THIS EDITION (stripped; see README.md)
 
 
 def _era_error(msg):
-    print("Sort-V19 edition error: " + msg)
+    print("Sort-V20 edition error: " + msg)
     print("Allowed here -- modes: " + ", ".join(EDITION["modes"]) +
           " | flags: " + ", ".join(EDITION["flags"]) +
           " | keywords: " + ", ".join(EDITION["keywords"]))
@@ -1741,6 +1933,8 @@ def _era_main(argv):
         if a == "--self-test" or a == "--version" or not a.startswith("-"):
             continue
         name = a.split("=")[0].lower()
+        if name == "--scan-raw":
+            continue
         if name == "--mode":
             val = a.split("=", 1)[1].lower() if "=" in a else ""
             if val and val not in EDITION["modes"]:

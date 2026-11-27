@@ -2,9 +2,9 @@
 {  NB/This code is not tested yet!                                            }
 {                                                                             }
 {                                                                             }
-{  Script  : Sort-V19.pas                                                         }
-{  Version : 19                                                             }
-{  Desc    : Ejder file organizer - FreePascal translation of Sort.sh v19   }
+{  Script  : Sort-V20.pas                                                         }
+{  Version : 20                                                             }
+{  Desc    : Ejder file organizer - FreePascal translation of Sort.sh v20   }
 {  Author  : HEjder                                                           }
 {                                                                             }
 {  Translated to FreePascal 3.2.2 (target: FPC 3.2.2, mode objfpc, H+).       }
@@ -29,10 +29,11 @@
 program Sort;
 
 uses
-    SysUtils, Classes, Math, SyncObjs, MD5, SHA1, Zipper, BaseUnix, Process;
+    SysUtils, Classes, Math, SyncObjs, MD5, SHA1, Zipper, BaseUnix,
+    Process, StrUtils;
 
 const
-    ScriptVersion = '19';
+    ScriptVersion = '20';
     ClosingPhrase = 'Thanks for using HEjder scripts!';
 
     C_Reset  = #27 + '[0m';
@@ -2133,7 +2134,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := '用法: sort [选项] [目录...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := '请尝试 sort --help 查看完整选项列表。'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder 文件整理器 - Sort.sh v19 的 FreePascal 翻译'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder 文件整理器 - Sort.sh v20 的 FreePascal 翻译'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= 的快捷方式'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove 的快捷方式'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= 的快捷方式'
@@ -2193,7 +2194,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'उपयोग: sort [विकल्प] [निर्देशिका...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'पूरी विकल्प सूची के लिए sort --help आज़माएँ।'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder फ़ाइल आयोजक - Sort.sh v19 का FreePascal अनुवाद'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder फ़ाइल आयोजक - Sort.sh v20 का FreePascal अनुवाद'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= के शॉर्टकट'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove का शॉर्टकट'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= के शॉर्टकट'
@@ -2253,7 +2254,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Uso: sort [OPCIONES] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Pruebe sort --help para la lista completa de opciones.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Organizador de archivos Ejder - traducción FreePascal de Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Organizador de archivos Ejder - traducción FreePascal de Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      atajos de --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  atajo de --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    atajos de --mode='
@@ -2313,7 +2314,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Utilisation : sort [OPTIONS] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Essayez ’sort --help’ pour la liste complète des options.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Organiseur de fichiers Ejder - traduction FreePascal de Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Organiseur de fichiers Ejder - traduction FreePascal de Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      raccourcis de --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  raccourci de --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    raccourcis de --mode='
@@ -2373,7 +2374,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'الاستخدام: sort [خيارات] [دليل...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'جرّب sort --help للحصول على قائمة الخيارات الكاملة.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'منظم ملفات Ejder - ترجمة FreePascal لـ Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'منظم ملفات Ejder - ترجمة FreePascal لـ Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      اختصارات لـ --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  اختصار لـ --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    اختصارات لـ --mode='
@@ -2433,7 +2434,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'ব্যবহার: sort [বিকল্প] [ডিরেক্টরি...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'সম্পূর্ণ বিকল্প তালিকার জন্য sort --help দেখুন।'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder ফাইল সংগঠক - Sort.sh v19 এর FreePascal অনুবাদ'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder ফাইল সংগঠক - Sort.sh v20 এর FreePascal অনুবাদ'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= এর সংক্ষিপ্ত রূপ'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove এর সংক্ষিপ্ত রূপ'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= এর সংক্ষিপ্ত রূপ'
@@ -2493,7 +2494,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Uso: sort [OPÇÕES] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Experimente sort --help para a lista completa de opções.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Organizador de arquivos Ejder - tradução FreePascal de Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Organizador de arquivos Ejder - tradução FreePascal de Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      atalhos para --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  atalho para --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    atalhos para --mode='
@@ -2553,7 +2554,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Использование: sort [ОПЦИИ] [КАТАЛОГ...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Попробуйте sort --help для полного списка опций.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Организатор файлов Ejder - перевод Sort.sh v19 на FreePascal'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Организатор файлов Ejder - перевод Sort.sh v20 на FreePascal'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      сокращения для --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  сокращение для --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    сокращения для --mode='
@@ -2613,7 +2614,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'استعمال: sort [اختیارات] [ڈائریکٹری...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'مکمل آپشن فہرست کے لیے sort --help آزمائیں۔'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder فائل منتظم - Sort.sh v19 کا FreePascal ترجمہ'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder فائل منتظم - Sort.sh v20 کا FreePascal ترجمہ'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= کے شارٹ کٹس'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove کا شارٹ کٹ'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= کے شارٹ کٹس'
@@ -2673,7 +2674,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Penggunaan: sort [OPSI] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Coba sort --help untuk daftar opsi lengkap.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Penyusun berkas Ejder - terjemahan FreePascal dari Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Penyusun berkas Ejder - terjemahan FreePascal dari Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      pintasan untuk --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  pintasan untuk --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    pintasan untuk --mode='
@@ -2733,7 +2734,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Aufruf: sort [OPTIONEN] [VERZ...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Versuchen Sie sort --help für die vollständige Optionsliste.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder Datei-Organisator - FreePascal-Übersetzung von Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder Datei-Organisator - FreePascal-Übersetzung von Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      Kurzformen für --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  Kurzform für --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    Kurzformen für --mode='
@@ -2793,7 +2794,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := '使い方: sort [オプション] [ディレクトリ...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := '完全なオプション一覧は sort --help を試してください。'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder ファイル整理ツール - Sort.sh v19 の FreePascal 翻訳'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder ファイル整理ツール - Sort.sh v20 の FreePascal 翻訳'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= の短縮形'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove の短縮形'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= の短縮形'
@@ -2853,7 +2854,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Kullanım: sort [seçenekler] [dizin...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Tüm seçenek listesi için sort --help deneyin.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder Dosya Düzenleyici - Sort.sh v19 FreePascal çevirisi'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder Dosya Düzenleyici - Sort.sh v20 FreePascal çevirisi'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= kısayolu'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove kısayolu'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= kısayolu'
@@ -2913,7 +2914,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := '사용법: sort [옵션] [디렉터리...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := '전체 옵션 목록은 sort --help를 실행해 보십시오.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder 파일 정리 도구 - Sort.sh v19 FreePascal 번역'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder 파일 정리 도구 - Sort.sh v20 FreePascal 번역'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= 의 단축형'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove 의 단축형'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= 의 단축형'
@@ -2973,7 +2974,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Cách dùng: sort [tùy chọn] [thư mục...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Hãy thử sort --help để xem danh sách tùy chọn đầy đủ.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder công cụ sắp xếp tệp - bản dịch FreePascal của Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder công cụ sắp xếp tệp - bản dịch FreePascal của Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      viết tắt của --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  viết tắt của --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    viết tắt của --mode='
@@ -3033,7 +3034,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Uso: sort [opzioni] [directory...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Prova sort --help per l’elenco completo delle opzioni.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder strumento di ordinamento file - traduzione FreePascal di Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder strumento di ordinamento file - traduzione FreePascal di Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      scorciatoia per --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  scorciatoia per --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    scorciatoia per --mode='
@@ -3093,7 +3094,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Użycie: sort [opcje] [katalogi...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Spróbuj sort --help, aby zobaczyć pełną listę opcji.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder narzędzie do porządkowania plików - tłumaczenie FreePascal Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder narzędzie do porządkowania plików - tłumaczenie FreePascal Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      skrót od --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  skrót od --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    skrót od --mode='
@@ -3153,7 +3154,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Gebruik: sort [opties] [mappen...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Probeer sort --help voor de volledige optielijst.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'Ejder bestandsorganisatie-tool - FreePascal-vertaling van Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder bestandsorganisatie-tool - FreePascal-vertaling van Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      sneltoets voor --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  sneltoets voor --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    sneltoets voor --mode='
@@ -3213,7 +3214,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'روش استفاده: sort [گزینه‌ها] [پوشه‌ها...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'برای فهرست کامل گزینه‌ها «sort --help» را امتحان کنید.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v19' then Result := 'ابزار مرتب‌سازی فایل Ejder - ترجمه FreePascal از Sort.sh v19'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'ابزار مرتب‌سازی فایل Ejder - ترجمه FreePascal از Sort.sh v20'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      شکل کوتاه --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  شکل کوتاه --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    شکل کوتاه --mode='
@@ -3641,11 +3642,667 @@ begin
         Magic_Report(Files[I]);
 end;
 
+{ ------------------------------------------------------------------ }
+{ RAW SCAN MODULE (V20) - --scan-raw: raw device signature scan      }
+{ Scans a raw device (/dev/sdX) or a disk image with the same        }
+{ 237 signatures as --magic. Print (default) reports the hits;      }
+{ copy carves fragments into Target_Dir/RAW-CARVE with format-aware }
+{ end detection. The device is opened read-only; move/remove/trash/ }
+{ shred are refused. Pure TFileStream. Zero external calls.          }
+{ ------------------------------------------------------------------ }
+
+const
+    Raw_Block    = 1024 * 1024;
+    Raw_Carry    = 32800;          { max entry offset + max signature }
+    Raw_CarveMax = 5 * 1024 * 1024;
+
+type
+    TRawEntry = record
+        Off: Integer;
+        Sig, Name, Exts: string;
+        AnchorHex: string;         { literal hex located with PosEx }
+        AnchorNibble: Integer;     { nibble index of the anchor }
+    end;
+
+    TRawHit = record
+        Offset: Int64;
+        Entry: Integer;
+        Size: Int64;
+        Exact: Boolean;
+    end;
+
+var
+    RawEntries: array of TRawEntry;
+    RawDevice: string = '';
+    RawPending: Boolean = False;
+
+function Raw_HexVal(const H: string): Int64;
+var
+    I: Integer;
+    D: Int64;
+begin
+    Result := 0;
+    for I := 1 to Length(H) do
+    begin
+        case H[I] of
+            '0'..'9': D := Ord(H[I]) - Ord('0');
+            'a'..'f': D := Ord(H[I]) - Ord('a') + 10;
+        else
+            D := 0;
+        end;
+        Result := Result * 16 + D;
+    end;
+end;
+
+const
+    RawHexChars = '0123456789abcdef';
+
+function Raw_BytesToHex(const B: array of Byte; N: Integer): string;
+var
+    I: Integer;
+begin
+    Result := '';
+    SetLength(Result, N * 2);
+    for I := 0 to N - 1 do
+    begin
+        Result[I * 2 + 1] := RawHexChars[B[I] div 16 + 1];
+        Result[I * 2 + 2] := RawHexChars[B[I] mod 16 + 1];
+    end;
+end;
+
+procedure Raw_Add(Off: Integer; const Sig, Name, Exts: string);
+var
+    N: Integer;
+    BestLen, BestStart, I, J, E2, S: Integer;
+begin
+    N := Length(RawEntries);
+    SetLength(RawEntries, N + 1);
+    RawEntries[N].Off := Off;
+    RawEntries[N].Sig := Sig;
+    RawEntries[N].Name := Name;
+    RawEntries[N].Exts := Exts;
+    if Pos('?', Sig) = 0 then
+    begin
+        RawEntries[N].AnchorHex := Sig;
+        RawEntries[N].AnchorNibble := 0;
+        Exit;
+    end;
+    { longest even-aligned even-length known run (>= 4 hex) }
+    BestLen := 0; BestStart := -1;
+    I := 1;
+    while I <= Length(Sig) do
+    begin
+        if Sig[I] = '?' then
+        begin
+            Inc(I);
+            Continue;
+        end;
+        J := I;
+        while (J <= Length(Sig)) and (Sig[J] <> '?') do
+            Inc(J);
+        for S := I to J - 1 do
+        begin
+            E2 := J - 1;
+            while ((E2 - S + 1) mod 2) <> 0 do
+                Dec(E2);
+            if ((S - 1) mod 2 = 0) and (E2 - S + 1 >= BestLen)
+                and (E2 - S + 1 >= 4) then
+            begin
+                BestLen := E2 - S + 1;
+                BestStart := S;
+            end;
+        end;
+        I := J;
+    end;
+    if BestStart < 0 then
+    begin
+        { cannot anchor: skip by giving it an impossible anchor }
+        RawEntries[N].AnchorHex := '';
+        RawEntries[N].AnchorNibble := 0;
+    end
+    else
+    begin
+        RawEntries[N].AnchorHex := Copy(Sig, BestStart, BestLen);
+        RawEntries[N].AnchorNibble := BestStart - 1;
+    end;
+end;
+
+procedure Raw_Init;
+begin
+    if Length(RawEntries) > 0 then
+        Exit;
+    Raw_Add(64, '3c3c3c3c204f7261636c6520564d2056', 'VirtualBox VDI disk', 'vdi');
+    Raw_Add(4086, '535741505350414345', 'Linux swap area', 'img');
+    Raw_Add(60, '424f4f4b4d4f4249', 'MOBI e-book', 'mobi,prc');
+    Raw_Add(3, '4e54465320202020', 'NTFS filesystem', 'img');
+    Raw_Add(64, '5f42485266535f4d', 'Btrfs filesystem', 'img');
+    Raw_Add(32769, '4344303031', 'ISO 9660 image', 'iso,img');
+    Raw_Add(257, '7573746172', 'TAR archive', 'tar');
+    Raw_Add(1, '2d6c683?2d', 'LHA/LZH archive', 'lzh,lha');
+    Raw_Add(44, '5343524d', 'S3M module', 's3m');
+    Raw_Add(108, '4d214b21', 'Amiga MOD module', 'mod');
+    Raw_Add(108, '46545434', 'Amiga MOD module', 'mod');
+    Raw_Add(108, '46545438', 'Amiga MOD module', 'mod');
+    Raw_Add(108, '3443484e', 'Amiga MOD module', 'mod');
+    Raw_Add(108, '3643484e', 'Amiga MOD module', 'mod');
+    Raw_Add(108, '3843484e', 'Amiga MOD module', 'mod');
+    Raw_Add(8, '2142444e', 'Outlook PST database', 'pst');
+    Raw_Add(108, '4d2e4b', 'Amiga MOD module', 'mod');
+    Raw_Add(1080, '53ef', 'Linux ext2/3/4 filesystem', 'img');
+    Raw_Add(0, '4c0000000114020000000000c0000000', 'Windows shortcut', 'lnk');
+    Raw_Add(0, '457874656e646564204d6f64756c65', 'FastTracker XM module', 'xm');
+    Raw_Add(0, '53514c69746520666f726d61742033', 'SQLite database', 'db,sqlite,sqlite3');
+    Raw_Add(0, '437265617469766520566f696365', 'Creative Voice audio (VOC)', 'voc');
+    Raw_Add(0, '414e44524f4944204241434b5550', 'Android backup', 'ab');
+    Raw_Add(0, '0000000c6a5020200d0a870a', 'JPEG 2000 (JP2)', 'jp2');
+    Raw_Add(0, '3c53746174615f6474613e', 'Stata dataset', 'dta');
+    Raw_Add(0, '64383a616e6e6f756e6365', 'BitTorrent metainfo', 'torrent');
+    Raw_Add(0, '233f52414449414e4345', 'Radiance HDR image', 'hdr');
+    Raw_Add(0, '2d2d2d2d2d424547494e', 'Armored ASCII block (PGP/PEM/SSH)', 'asc,pgp,gpg');
+    Raw_Add(0, '52494646????????57454250', 'WEBP image', 'webp');
+    Raw_Add(0, '52494646????????57415645', 'WAV audio', 'wav');
+    Raw_Add(0, '52494646????????41564920', 'AVI video', 'avi');
+    Raw_Add(0, '52494646????????414d5620', 'AMV video', 'amv');
+    Raw_Add(0, '464f524d????????41494646', 'AIFF audio', 'aiff,aif');
+    Raw_Add(0, '464f524d????????41494643', 'AIFC audio', 'aifc');
+    Raw_Add(0, '????????6674797071742020', 'QuickTime MOV video', 'mov');
+    Raw_Add(0, '????????667479704d344120', 'M4A audio', 'm4a');
+    Raw_Add(0, '????????667479704d345620', 'M4V video', 'm4v');
+    Raw_Add(0, '????????6674797068656963', 'HEIC/HEIF image', 'heic,heif,hif');
+    Raw_Add(0, '????????6674797068656978', 'HEIC/HEIF image', 'heic,heif,hif');
+    Raw_Add(0, '????????6674797068656966', 'HEIC/HEIF image', 'heic,heif,hif');
+    Raw_Add(0, '????????667479706d696631', 'HEIC/HEIF image', 'heic,heif,hif');
+    Raw_Add(0, '????????667479706d736631', 'HEIC/HEIF image', 'heic,heif,hif');
+    Raw_Add(0, '????????6674797061766966', 'AVIF image', 'avif');
+    Raw_Add(0, '????????6674797061766973', 'AVIF image', 'avif');
+    Raw_Add(0, '????????667479706a703220', 'JPEG 2000 (JP2)', 'jp2');
+    Raw_Add(0, '????????6674797033677034', '3GP video', '3gp');
+    Raw_Add(0, '????????6674797033677035', '3GP video', '3gp');
+    Raw_Add(0, '????????6674797033677036', '3GP video', '3gp');
+    Raw_Add(0, '????????6674797033673261', '3G2 video', '3g2');
+    Raw_Add(0, '????????6674797069736f6d', 'MP4 video', 'mp4');
+    Raw_Add(0, '????????6674797069736f32', 'MP4 video', 'mp4');
+    Raw_Add(0, '????????667479706d703431', 'MP4 video', 'mp4');
+    Raw_Add(0, '????????667479706d703432', 'MP4 video', 'mp4');
+    Raw_Add(0, '????????6674797061766331', 'MP4 video', 'mp4');
+    Raw_Add(0, '????????6674797064617368', 'DASH video', 'mpd,m4s,mp4');
+    Raw_Add(0, '????????6674797066347620', 'Flash F4V video', 'f4v');
+    Raw_Add(0, '52494646????????41434f4e', 'Windows animated cursor', 'ani');
+    Raw_Add(0, '464f524d????????494c424d', 'Amiga ILBM image', 'iff,lbm');
+    Raw_Add(0, '464f524d????????38535658', 'Amiga 8SVX audio', 'iff,8svx');
+    Raw_Add(0, '464f524d????????4d415544', 'Amiga MAUD audio', 'maud');
+    Raw_Add(0, '52494646????????524d4944', 'RIFF MIDI (RMID)', 'rmi');
+    Raw_Add(0, '52494646????????7366626b', 'SoundFont SF2', 'sf2');
+    Raw_Add(0, '????????6674797068766331', 'HEVC video', 'hevc,h265');
+    Raw_Add(0, '????????6674797068657631', 'HEVC video', 'hevc,h265');
+    Raw_Add(0, '????????6674797061763031', 'AV1 video', 'av1');
+    Raw_Add(0, '????????6674797044495658', 'DivX video', 'divx');
+    Raw_Add(0, '????????667479704d344220', 'M4B audiobook', 'm4b');
+    Raw_Add(0, '67696d7020786366', 'GIMP XCF image', 'xcf');
+    Raw_Add(0, '3026b2758e66cf11', 'ASF media (WMA/WMV)', 'wma,wmv,asf');
+    Raw_Add(0, 'd0cf11e0a1b11ae1', 'MS Office/OLE compound', 'doc,xls,ppt,msi,cfg');
+    Raw_Add(0, '41542654464f524d', 'DjVu document', 'djvu,djv');
+    Raw_Add(0, '49544f4c49544c53', 'MS Reader LIT e-book', 'lit');
+    Raw_Add(0, '7668647866696c65', 'Hyper-V VHDX disk', 'vhdx');
+    Raw_Add(0, '2321414d522d5742', 'AMR-WB speech audio', 'amr');
+    Raw_Add(0, '50532d5820455845', 'PlayStation executable', 'exe');
+    Raw_Add(0, '414e44524f494421', 'Android boot image', 'img');
+    Raw_Add(0, '5041474544554d50', 'Windows kernel dump', 'dmp');
+    Raw_Add(0, '5041474544553634', 'Windows kernel dump (64-bit)', 'dmp');
+    Raw_Add(0, '52494646????????434452', 'CorelDRAW document', 'cdr');
+    Raw_Add(0, '213c617263683e', 'AR archive (deb/static lib)', 'a,deb');
+    Raw_Add(0, '53747566664974', 'StuffIt archive', 'sit');
+    Raw_Add(0, '49492a00????????4352', 'Canon CR2 raw image', 'cr2');
+    Raw_Add(0, '233f52474245', 'Radiance HDR image', 'hdr');
+    Raw_Add(0, '377abcaf271c', '7-Zip archive', '7z');
+    Raw_Add(0, '526172211a07', 'RAR archive', 'rar');
+    Raw_Add(0, '303730373031', 'CPIO archive (newc)', 'cpio');
+    Raw_Add(0, '303730373037', 'CPIO archive (odc)', 'cpio');
+    Raw_Add(0, '2a2a4143452a', 'ACE archive', 'ace');
+    Raw_Add(0, '7b5c72746631', 'RTF document', 'rtf');
+    Raw_Add(0, '4c554b53babe', 'LUKS encrypted volume', 'luks,img');
+    Raw_Add(0, '53494d504c45', 'FITS astronomy image', 'fits');
+    Raw_Add(0, '4152524f5731', 'Apache Arrow IPC data', 'arrow');
+    Raw_Add(0, '4d41544c4142', 'MATLAB MAT-file', 'mat');
+    Raw_Add(0, '0d0a870a0a', 'JPEG XL container', 'jxl');
+    Raw_Add(0, '3c3f786d6c', 'XML document', 'xml,svg,fb2,rss,xsl,plist');
+    Raw_Add(0, '2321414d52', 'AMR speech audio', 'amr');
+    Raw_Add(0, 'fd377a585a', 'XZ stream', 'xz,txz');
+    Raw_Add(0, '4d5357494d', 'Windows Imaging archive', 'wim');
+    Raw_Add(0, '4e45534d1a', 'NES sound file', 'nsf');
+    Raw_Add(0, '5245444953', 'Redis RDB snapshot', 'rdb');
+    Raw_Add(0, '????????66747970', 'MP4/QuickTime container', 'mp4,m4a,mov,3gp,heic');
+    Raw_Add(0, '89504e47', 'PNG image', 'png');
+    Raw_Add(0, 'ff4fff51', 'JPEG 2000 codestream', 'j2k,jpc');
+    Raw_Add(0, '47494638', 'GIF image', 'gif');
+    Raw_Add(0, '49492a00', 'TIFF image (little-endian)', 'tif,tiff');
+    Raw_Add(0, '4d4d002a', 'TIFF image (big-endian)', 'tif,tiff');
+    Raw_Add(0, '38425053', 'Photoshop PSD image', 'psd,pdd');
+    Raw_Add(0, '44445320', 'DirectDraw Surface texture', 'dds');
+    Raw_Add(0, '762f3101', 'OpenEXR image', 'exr');
+    Raw_Add(0, '00020000', 'Windows cursor', 'cur');
+    Raw_Add(0, '00010000', 'ICO icon / TrueType font', 'ico,ttf,otf');
+    Raw_Add(0, '69636e73', 'Apple ICNS icon', 'icns');
+    Raw_Add(0, '3c737667', 'SVG image', 'svg');
+    Raw_Add(0, '52494646', 'RIFF container', 'wav,avi,webp');
+    Raw_Add(0, '46524d38', 'DSDIFF audio (DFF)', 'dff');
+    Raw_Add(0, '63616666', 'Apple CAF audio', 'caf');
+    Raw_Add(0, '44534420', 'DSD streamfile audio (DSF)', 'dsf');
+    Raw_Add(0, '664c6143', 'FLAC audio', 'flac');
+    Raw_Add(0, '4f676753', 'OGG media', 'ogg,oga,opus,ogv,ogx');
+    Raw_Add(0, '4d546864', 'MIDI music', 'mid,midi,rmi,kar');
+    Raw_Add(0, '2e736e64', 'NeXT/Sun AU audio', 'au,snd');
+    Raw_Add(0, '4d414320', 'Monkey Audio (APE)', 'ape');
+    Raw_Add(0, '7770766b', 'WavPack audio', 'wv');
+    Raw_Add(0, '4d50434b', 'Musepack audio (SV8)', 'mpc');
+    Raw_Add(0, '54544131', 'True Audio (TTA)', 'tta');
+    Raw_Add(0, '616a6b67', 'Shorten audio', 'shn');
+    Raw_Add(0, '494d504d', 'Impulse Tracker module', 'it');
+    Raw_Add(0, '1a45dfa3', 'Matroska/WebM video', 'mkv,webm,mka,mks');
+    Raw_Add(0, '000001ba', 'MPEG program stream', 'mpg,mpeg,vob,ps');
+    Raw_Add(0, '000001b3', 'MPEG elementary video', 'm2v,mpv,mpg');
+    Raw_Add(0, '2e524d46', 'RealMedia video', 'rm,rmvb');
+    Raw_Add(0, '060e2b34', 'MXF video', 'mxf');
+    Raw_Add(0, '504b0304', 'ZIP/Office document', 'zip,docx,xlsx,pptx,odt,jar,apk,epub');
+    Raw_Add(0, '504b0506', 'ZIP archive (empty)', 'zip');
+    Raw_Add(0, '504b0708', 'ZIP archive (spanned)', 'zip');
+    Raw_Add(0, '28b52ffd', 'Zstandard stream', 'zst');
+    Raw_Add(0, '04224d18', 'LZ4 frame', 'lz4');
+    Raw_Add(0, '5d000080', 'LZMA-alone stream', 'lzma');
+    Raw_Add(0, '894c5a4f', 'LZO compressed archive', 'lzo');
+    Raw_Add(0, '4d534346', 'MS Cabinet archive', 'cab');
+    Raw_Add(0, 'edabeedb', 'RPM package', 'rpm');
+    Raw_Add(0, '50415231', 'Apache Parquet data', 'parquet');
+    Raw_Add(0, '25504446', 'PDF document', 'pdf');
+    Raw_Add(0, '25215053', 'PostScript/EPS document', 'ps,eps,ai');
+    Raw_Add(0, '49545346', 'MS Compiled HTML (CHM)', 'chm');
+    Raw_Add(0, '4f54544f', 'OpenType (CFF) font', 'otf');
+    Raw_Add(0, '74746366', 'TrueType collection', 'ttc');
+    Raw_Add(0, '774f4646', 'WOFF font', 'woff');
+    Raw_Add(0, '774f4632', 'WOFF2 font', 'woff2');
+    Raw_Add(0, '7f454c46', 'ELF binary', 'so,bin,elf,o,ko');
+    Raw_Add(0, 'feedface', 'Mach-O binary (32-bit BE)', 'bin');
+    Raw_Add(0, 'cefaedfe', 'Mach-O binary (32-bit LE)', 'bin');
+    Raw_Add(0, 'feedfacf', 'Mach-O binary (64-bit BE)', 'bin');
+    Raw_Add(0, 'cffaedfe', 'Mach-O binary (64-bit LE)', 'bin');
+    Raw_Add(0, 'cafebabe', 'Java class / Mach-O fat binary', 'class,bin');
+    Raw_Add(0, '0061736d', 'WebAssembly module', 'wasm');
+    Raw_Add(0, '6465780a', 'Android DEX bytecode', 'dex,odex');
+    Raw_Add(0, '72656766', 'Windows registry hive', 'dat,hive,reg');
+    Raw_Add(0, 'a1b2c3d4', 'pcap packet capture', 'pcap,cap');
+    Raw_Add(0, 'd4c3b2a1', 'pcap packet capture (swapped)', 'pcap,cap');
+    Raw_Add(0, '0a0d0d0a', 'pcapng packet capture', 'pcapng');
+    Raw_Add(0, '4f626a01', 'Apache Avro object container', 'avro');
+    Raw_Add(0, '43723234', 'Chrome extension (CRX)', 'crx');
+    Raw_Add(0, '514649fb', 'QEMU copy-on-write disk', 'qcow,qcow2');
+    Raw_Add(0, '4b444d56', 'VMware VMDK disk', 'vmdk');
+    Raw_Add(0, '4d4d002b', 'TIFF image (BigTIFF)', 'tif,tiff');
+    Raw_Add(0, '4949524f', 'Olympus ORF raw image', 'orf');
+    Raw_Add(0, '49495500', 'Panasonic RW2 raw image', 'rw2');
+    Raw_Add(0, '4949bc01', 'JPEG XR image', 'jxr,wdp,hdp');
+    Raw_Add(0, '464c4946', 'FLIF image', 'flif');
+    Raw_Add(0, 'ab4b5458', 'KTX/KTX2 texture', 'ktx,ktx2');
+    Raw_Add(0, '716f6966', 'QOI image', 'qoi');
+    Raw_Add(0, '4f465220', 'OptimFROG audio', 'ofr');
+    Raw_Add(0, '7fff8001', 'DTS audio', 'dts');
+    Raw_Add(0, '50534944', 'Commodore SID tune', 'sid');
+    Raw_Add(0, '56676d20', 'Video Game Music tune', 'vgm');
+    Raw_Add(0, '6e75742f', 'NUT video', 'nut');
+    Raw_Add(0, '78617221', 'XAR archive', 'xar');
+    Raw_Add(0, '5041434b', 'Git packfile / Quake PAK', 'pack,pak');
+    Raw_Add(0, '4d50511a', 'Blizzard MPQ archive', 'mpq');
+    Raw_Add(0, '49574144', 'Doom IWAD game archive', 'wad');
+    Raw_Add(0, '50574144', 'Doom PWAD game archive', 'wad');
+    Raw_Add(0, '444d5321', 'Amiga DMS archive', 'dms');
+    Raw_Add(0, '4e45531a', 'NES ROM image', 'nes');
+    Raw_Add(0, '80371240', 'Nintendo 64 ROM', 'n64,z64');
+    Raw_Add(0, '37804012', 'Nintendo 64 ROM (swapped)', 'n64,v64');
+    Raw_Add(0, '53454741', 'SEGA Mega Drive ROM', 'md,gen');
+    Raw_Add(0, '3f5f0300', 'Windows Help file', 'hlp');
+    Raw_Add(0, '504e5264', 'eReader PDB e-book', 'pdb');
+    Raw_Add(0, '3c3f7068', 'PHP script', 'php');
+    Raw_Add(0, '4d444d50', 'Windows minidump', 'dmp');
+    Raw_Add(0, 'aced0005', 'Java serialized object', 'ser');
+    Raw_Add(0, 'feedfeed', 'Java keystore', 'jks');
+    Raw_Add(0, '58465342', 'XFS filesystem', 'img');
+    Raw_Add(0, '89484446', 'HDF5 dataset', 'h5,hdf5');
+    Raw_Add(0, '43444601', 'NetCDF classic dataset', 'nc');
+    Raw_Add(0, '43444602', 'NetCDF 64-bit dataset', 'nc');
+    Raw_Add(0, '52445832', 'R binary data', 'rdata,rds');
+    Raw_Add(0, '42414d01', 'BAM sequence data', 'bam');
+    Raw_Add(0, '4352414d', 'CRAM sequence data', 'cram');
+    Raw_Add(0, '44495243', 'Git index', 'index');
+    Raw_Add(0, '4d4d443?', 'Amiga MED module', 'med');
+    Raw_Add(0, 'ffd8ff', 'JPEG image', 'jpg,jpeg,jfif');
+    Raw_Add(0, '0a0000', 'PCX image', 'pcx');
+    Raw_Add(0, '0a0200', 'PCX image', 'pcx');
+    Raw_Add(0, '0a0300', 'PCX image', 'pcx');
+    Raw_Add(0, '0a0500', 'PCX image', 'pcx');
+    Raw_Add(0, '494433', 'MP3 audio (ID3v2 tag)', 'mp3');
+    Raw_Add(0, '4d502b', 'Musepack audio', 'mpc');
+    Raw_Add(0, '464c56', 'Flash video (FLV)', 'flv');
+    Raw_Add(0, '42494b', 'Bink video', 'bik,bk2');
+    Raw_Add(0, '425a68', 'BZIP2 stream', 'bz2,tbz2');
+    Raw_Add(0, '1f9d8d', 'compress (.Z) archive', 'z');
+    Raw_Add(0, '5a4f4f', 'ZOO archive', 'zoo');
+    Raw_Add(0, '435753', 'Shockwave Flash (compressed)', 'swf');
+    Raw_Add(0, '465753', 'Shockwave Flash', 'swf');
+    Raw_Add(0, '5a5753', 'Shockwave Flash (LZMA)', 'swf');
+    Raw_Add(0, '50370a', 'PAM image', 'pam');
+    Raw_Add(0, '4d544d', 'Multitracker module', 'mtm');
+    Raw_Add(0, '800106', 'Type 1 font (PFB)', 'pfb');
+    Raw_Add(0, '4f5243', 'Apache ORC data', 'orc');
+    Raw_Add(0, 'ff0a', 'JPEG XL codestream', 'jxl');
+    Raw_Add(0, '424d', 'BMP image', 'bmp,dib');
+    Raw_Add(0, '5034', 'PBM image', 'pbm');
+    Raw_Add(0, '5035', 'PGM image', 'pgm');
+    Raw_Add(0, '5036', 'PPM image', 'ppm');
+    Raw_Add(0, 'fffb', 'MP3 audio (MPEG-1)', 'mp3');
+    Raw_Add(0, 'fff3', 'MP3 audio (MPEG-2)', 'mp3');
+    Raw_Add(0, 'fff2', 'MP3 audio (MPEG-2.5)', 'mp3');
+    Raw_Add(0, 'ffe3', 'MP3 audio (MPEG-2.5 LSF)', 'mp3');
+    Raw_Add(0, 'fff1', 'AAC audio (ADTS)', 'aac,adts');
+    Raw_Add(0, 'fff9', 'AAC audio (ADTS)', 'aac,adts');
+    Raw_Add(0, '1f8b', 'GZIP stream', 'gz,tgz');
+    Raw_Add(0, '60ea', 'ARJ archive', 'arj');
+    Raw_Add(0, '7ffe', 'Bourne shell archive', 'shar');
+    Raw_Add(0, '4d5a', 'DOS/PE executable', 'exe,dll,sys,ocx,scr');
+    Raw_Add(0, '2321', 'Script (#!)', 'sh,py,pl,rb,el,js,ts');
+end;
+
+function Raw_SigMatch(const H: string; Pos1: Integer; E: Integer): Boolean;
+var
+    I: Integer;
+begin
+    Result := False;
+    if Length(H) < Pos1 + Length(RawEntries[E].Sig) - 1 then
+        Exit;
+    for I := 1 to Length(RawEntries[E].Sig) do
+        if (RawEntries[E].Sig[I] <> '?')
+            and (H[Pos1 + I - 1] <> RawEntries[E].Sig[I]) then
+            Exit;
+    Result := True;
+end;
+
+function Raw_LastPos(const H, Sub: string; From: Integer): Integer;
+var
+    P, Last: Integer;
+begin
+    Last := 0;
+    P := PosEx(Sub, H, From);
+    while P > 0 do
+    begin
+        if (P - 1) mod 2 = 0 then
+            Last := P;
+        P := PosEx(Sub, H, P + 1);
+    end;
+    Result := Last;
+end;
+
+procedure Raw_CarveSize(const H: string; const Name: string;
+    out Size: Int64; out Exact: Boolean);
+var
+    Pos1, P, EndPos: Integer;
+    Clen: Int64;
+    CType: string;
+begin
+    Size := Length(H) div 2;
+    Exact := False;
+    if Size > Raw_CarveMax then
+        Size := Raw_CarveMax;
+    if Copy(Name, 1, 9) = 'PNG image' then
+    begin
+        Pos1 := 8;
+        while Pos1 * 2 + 24 <= Length(H) do
+        begin
+            Clen := Raw_HexVal(Copy(H, Pos1 * 2 + 1, 8));
+            CType := Copy(H, Pos1 * 2 + 9, 8);
+            Pos1 := Pos1 + 12 + Clen;   { len + type + data + CRC }
+            if CType = '49454e44' then
+            begin
+                Size := Pos1;
+                Exact := True;
+                Break;
+            end;
+            if Clen > Length(H) div 2 then
+            begin
+                Size := Pos1;
+                Break;
+            end;
+        end;
+    end
+    else if Copy(Name, 1, 10) = 'JPEG image' then
+    begin
+        P := Raw_LastPos(H, 'ffd9', 1);
+        if P > 0 then
+        begin
+            Size := (P - 1) div 2 + 2;
+            Exact := True;
+        end;
+    end
+    else if Copy(Name, 1, 9) = 'GIF image' then
+    begin
+        P := Raw_LastPos(H, '3b', 27);
+        if P > 0 then
+        begin
+            Size := (P - 1) div 2 + 1;
+            Exact := True;
+        end;
+    end
+    else if (Copy(Name, 1, 4) = 'ZIP/') or (Copy(Name, 1, 11) = 'ZIP archive') then
+    begin
+        P := Raw_LastPos(H, '504b0506', 1);
+        if P > 0 then
+        begin
+            EndPos := (P - 1) div 2;
+            if EndPos + 22 <= Length(H) div 2 then
+            begin
+                Size := EndPos + 22
+                    + Raw_HexVal(Copy(H, EndPos * 2 + 41, 2))
+                    + Raw_HexVal(Copy(H, EndPos * 2 + 43, 2)) * 256;
+                Exact := True;
+            end;
+        end;
+    end
+    else if Copy(Name, 1, 12) = 'PDF document' then
+    begin
+        P := Raw_LastPos(H, '2525454f46', 1);
+        if P > 0 then
+        begin
+            Size := (P - 1) div 2 + 5;
+            Exact := True;
+        end;
+    end;
+    if Size > Raw_CarveMax then
+        Size := Raw_CarveMax;
+end;
+
+function Raw_FirstExt(const Exts: string): string;
+var
+    P: Integer;
+begin
+    P := Pos(',', Exts);
+    if (Exts = '') or (P = 1) then
+        Result := 'bin'
+    else if P = 0 then
+        Result := Exts
+    else
+        Result := Copy(Exts, 1, P - 1);
+end;
+
+procedure Raw_Scan_Main;
+var
+    Stream, Probe, Dest: TFileStream;
+    Block, Head, Carry, Window: array of Byte;
+    Hex, HeadHex, Ext, OutPath: string;
+    NextVal: Int64;
+    Base, BufBase, N, I, E, P, SigStart: Int64;
+    Hit: Int64;
+    Hits: array of TRawHit;
+    HitCount: Integer;
+    TmpHit: TRawHit;
+    J: Integer;
+    Written: Int64;
+begin
+    if (Modus = 'move') or (Modus = 'remove') or (Modus = 'trash')
+        or (Modus = 'shred') then
+    begin
+        WriteLn('RAW-SCAN: --scan-raw supports dummy and copy only (mode '''
+            + Modus + ''' refused)');
+        Halt(64);
+    end;
+    Raw_Init;
+    Stream := nil; Probe := nil;
+    try
+        try
+            Stream := TFileStream.Create(RawDevice, fmOpenRead or fmShareDenyNone);
+            Probe := TFileStream.Create(RawDevice, fmOpenRead or fmShareDenyNone);
+        except
+            on EStreamError do
+            begin
+                WriteLn('RAW-SCAN: cannot open ' + RawDevice);
+                Halt(1);
+            end;
+        end;
+        SetLength(Block, Raw_Block);
+        SetLength(Head, Raw_Block);
+        SetLength(Carry, 0);
+        Base := 0;
+        WriteLn('RAW-SCAN: ' + RawDevice);
+        if Modus = 'copy' then
+        begin
+            ForceDirectories(TargetDir + '/RAW-CARVE');
+        end;
+        HitCount := 0;
+        SetLength(Hits, 0);
+        while True do
+        begin
+            N := Stream.Read(Block[0], Raw_Block);
+            if N <= 0 then
+                Break;
+            SetLength(Window, Length(Carry) + N);
+            if Length(Carry) > 0 then
+                Move(Carry[0], Window[0], Length(Carry));
+            Move(Block[0], Window[Length(Carry)], N);
+            Hex := Raw_BytesToHex(Window, Length(Window));
+            BufBase := Base - Length(Carry);
+            for E := 0 to Length(RawEntries) - 1 do
+            begin
+                if RawEntries[E].AnchorHex = '' then
+                    Continue;
+                if (Length(RawEntries[E].Sig) < 4) then
+                    Continue;
+                P := PosEx(RawEntries[E].AnchorHex, Hex, 1);
+                while P > 0 do
+                begin
+                    if (P - 1) mod 2 = 0 then
+                    begin
+                        SigStart := (P - 1) - RawEntries[E].AnchorNibble;
+                        if (SigStart mod 2 = 0) and (SigStart >= 0) then
+                        begin
+                            if Raw_SigMatch(Hex, SigStart + 1, E) then
+                            begin
+                                Hit := BufBase + SigStart div 2
+                                    - RawEntries[E].Off;
+                                if Hit >= 0 then
+                                begin
+                                    Inc(HitCount);
+                                    SetLength(Hits, HitCount);
+                                    Hits[HitCount - 1].Offset := Hit;
+                                    Hits[HitCount - 1].Entry := E;
+                                    Hits[HitCount - 1].Size := 0;
+                                    Hits[HitCount - 1].Exact := False;
+                                end;
+                            end;
+                        end;
+                    end;
+                    P := PosEx(RawEntries[E].AnchorHex, Hex, P + 1);
+                end;
+            end;
+            Base := Base + N;
+            if Length(Window) > Raw_Carry then
+            begin
+                SetLength(Carry, Raw_Carry);
+                Move(Window[Length(Window) - Raw_Carry], Carry[0], Raw_Carry);
+            end
+            else
+            begin
+                SetLength(Carry, Length(Window));
+                if Length(Window) > 0 then
+                    Move(Window[0], Carry[0], Length(Window));
+            end;
+        end;
+        { --- second pass: sort hits by offset, carve sizes, report --- }
+        for I := 0 to HitCount - 1 do
+            for J := I + 1 to HitCount - 1 do
+                if Hits[J].Offset < Hits[I].Offset then
+                begin
+                    TmpHit := Hits[I];
+                    Hits[I] := Hits[J];
+                    Hits[J] := TmpHit;
+                end;
+        NextVal := 0;
+        for I := 0 to HitCount - 1 do
+        begin
+            if Hits[I].Offset < NextVal then
+                Continue;
+            E := Hits[I].Entry;
+            Probe.Seek(Hits[I].Offset, soFromBeginning);
+            N := Probe.Read(Head[0], Raw_Block);
+            HeadHex := Raw_BytesToHex(Head, N);
+            Raw_CarveSize(HeadHex, RawEntries[E].Name, Hits[I].Size,
+                Hits[I].Exact);
+            if Hits[I].Exact then
+                NextVal := Hits[I].Offset + Hits[I].Size
+            else
+                NextVal := Hits[I].Offset + 1;
+            Ext := Raw_FirstExt(RawEntries[E].Exts);
+            WriteLn('  hit: 0x' + LowerCase(IntToHex(Hits[I].Offset, 12))
+                + ' ' + IntToStr(Hits[I].Offset) + ' ' + RawEntries[E].Name
+                + ' -> ' + Ext + ' (carve ' + IntToStr(Hits[I].Size)
+                + ' bytes' + IfThen(Hits[I].Exact, '', ', capped') + ')');
+            if Modus = 'copy' then
+            begin
+                OutPath := TargetDir + '/RAW-CARVE/'
+                    + LowerCase(IntToHex(Hits[I].Offset, 12)) + '.' + Ext;
+                Dest := TFileStream.Create(OutPath, fmCreate);
+                try
+                    Stream.Seek(Hits[I].Offset, soFromBeginning);
+                    Written := 0;
+                    while Written < Hits[I].Size do
+                    begin
+                        if Hits[I].Size - Written < Raw_Block then
+                            N := Hits[I].Size - Written
+                        else
+                            N := Raw_Block;
+                        N := Stream.Read(Head[0], N);
+                        if N <= 0 then
+                            Break;
+                        Dest.Write(Head[0], N);
+                        Written := Written + N;
+                    end;
+                finally
+                    Dest.Free;
+                end;
+                WriteLn('  carved: ' + OutPath);
+                if LogFile <> '' then
+                    Out_Log('{"action": "carved", "src": "' + RawDevice
+                        + '@' + IntToStr(Hits[I].Offset) + '", "dst": "'
+                        + OutPath + '"}');
+            end;
+        end;
+        WriteLn('RAW-SCAN: ' + IntToStr(HitCount) + ' signatures found');
+    finally
+        Stream.Free;
+        Probe.Free;
+    end;
+end;
+
 procedure Show_Help;
 begin
     Show_Version;
     WriteLn('');
-    WriteLn(Tr('Ejder file organizer - FreePascal translation of Sort.sh v19'));
+    WriteLn(Tr('Ejder file organizer - FreePascal translation of Sort.sh v20'));
     WriteLn('');
     WriteLn(Tr('MODES:'));
     WriteLn('  --mode=MODE        print (default) / copy / move / remove / trash / shred');
@@ -3678,6 +4335,7 @@ begin
     WriteLn('');
     WriteLn(Tr('EXTRAS:'));
     WriteLn(Tr('  --magic            print a magic-number detection report (237 formats) and exit'));
+    WriteLn(Tr('  --scan-raw=DEVICE  scan raw device/disk image (237 signatures); copy carves'));
     WriteLn(Tr('  --exif             add <Camera>/<Date> levels (needs exiftool)'));
     WriteLn(Tr('  --strip            strip EXIF from processed files (needs exiftool)'));
     WriteLn(Tr('  --replace          overwrite existing targets'));
@@ -3804,6 +4462,13 @@ begin
             begin
                 Magic_Mode := True
             end
+            else if K = '--scan-raw' then
+            begin
+                if Pos('=', A) > 0 then
+                    RawDevice := Opt_Value(A)
+                else
+                    RawPending := True
+            end
             else if K = '--usage' then
             begin
                 Show_Usage;
@@ -3827,7 +4492,15 @@ begin
             end;
         end
         else
-            SourceDir := A;  { positional: start directory }
+        begin
+            if RawPending then
+            begin
+                RawDevice := A;
+                RawPending := False;
+            end
+            else
+                SourceDir := A;  { positional: start directory }
+        end
         I := I + 1;
     end;
 end;
@@ -3886,6 +4559,11 @@ begin
     begin
         Collect_Files;
         Magic_Report_All;
+        Halt(0);
+    end;
+    if RawDevice <> '' then
+    begin
+        Raw_Scan_Main;
         Halt(0);
     end;
     Collect_Files;
