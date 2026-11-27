@@ -2,8 +2,8 @@
 
 ###############################################################################
 #                                                                             #
-# Script  : Sort.sh                                                           #
-# Version : 17.3                                                              #
+# Script  : Sort-V17.3.sh                                                           #
+# Version : 17.4                                                              #
 # Desc    : Self-contained threaded organizer - all lineage features merged    #
 # Author  : HEjder                                                            #
 #                                                                             #
@@ -5188,7 +5188,7 @@ T() {
 		zh)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' 缺失且其包名未知' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - 自包含的多线程文件整理器' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - 自包含的多线程文件整理器' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '用法: Sort.sh [选项] <文件|目录> ...' ;;
 				'Common starts:') printf '%s' '常用启动示例:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' '使用 --help 查看完整选项列表和动态值。' ;;
@@ -5324,7 +5324,7 @@ T() {
 		hi)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' अनुपस्थित है और उसका पैकेज नाम अज्ञात है' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'उपयोग: Sort.sh [विकल्प] <फ़ाइल|निर्देशिका> ...' ;;
 				'Common starts:') printf '%s' 'सामान्य शुरुआत:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'पूर्ण विकल्प सूची और डायनामिक मानों के लिए --help देखें।' ;;
@@ -5460,7 +5460,7 @@ T() {
 		es)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' falta y su nombre de paquete es desconocido' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - organizador con hilos, autónomo' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organizador con hilos, autónomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opciones] <archivo|directorio> ...' ;;
 				'Common starts:') printf '%s' 'Inicios comunes:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para la lista completa de opciones y valores dinámicos.' ;;
@@ -5596,7 +5596,7 @@ T() {
 		fr)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps : '\''%s'\'' est absent et son nom de paquet est inconnu' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - organisateur multithread autonome' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organisateur multithread autonome' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Utilisation : Sort.sh [options] <fichier|répertoire> ...' ;;
 				'Common starts:') printf '%s' 'Démarrages courants :' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Utilisez --help pour la liste complète des options et des valeurs dynamiques.' ;;
@@ -5732,7 +5732,7 @@ T() {
 		ar)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' مفقود واسم حزمته غير معروف' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'الاستخدام: Sort.sh [الخيارات] <ملف|دليل> ...' ;;
 				'Common starts:') printf '%s' 'بدايات شائعة:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'استخدم --help لقائمة الخيارات الكاملة والقيم الديناميكية.' ;;
@@ -5868,7 +5868,7 @@ T() {
 		bn)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' অনুপস্থিত এবং এর প্যাকেজ নাম অজানা' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'ব্যবহার: Sort.sh [বিকল্প] <ফাইল|ডিরেক্টরি> ...' ;;
 				'Common starts:') printf '%s' 'সাধারণ শুরু:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'সম্পূর্ণ বিকল্প তালিকা ও ডায়নামিক মানের জন্য --help দেখুন।' ;;
@@ -6004,7 +6004,7 @@ T() {
 		pt)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' está ausente e seu nome de pacote é desconhecido' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - organizador com threads, autônomo' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organizador com threads, autônomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opções] <arquivo|diretório> ...' ;;
 				'Common starts:') printf '%s' 'Inícios comuns:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para a lista completa de opções e valores dinâmicos.' ;;
@@ -6140,7 +6140,7 @@ T() {
 		ru)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' отсутствует, и имя его пакета неизвестно' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - автономный многопоточный сортировщик' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - автономный многопоточный сортировщик' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Использование: Sort.sh [параметры] <файл|каталог> ...' ;;
 				'Common starts:') printf '%s' 'Типичные запуски:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Используйте --help для полного списка параметров и динамических значений.' ;;
@@ -6276,7 +6276,7 @@ T() {
 		ur)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غائب ہے اور اس کا پیکج نام نامعلوم ہے' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - خود انحصار ملٹی تھریڈ منتظم' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - خود انحصار ملٹی تھریڈ منتظم' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استعمال: Sort.sh [اختیارات] <فائل|ڈائریکٹری> ...' ;;
 				'Common starts:') printf '%s' 'عام آغاز:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'مکمل آپشن فہرست اور متحرک اقدار کے لیے --help استعمال کریں۔' ;;
@@ -6412,7 +6412,7 @@ T() {
 		id)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' hilang dan nama paketnya tidak diketahui' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - penyusun berkas multithread mandiri' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - penyusun berkas multithread mandiri' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Penggunaan: Sort.sh [opsi] <berkas|direktori> ...' ;;
 				'Common starts:') printf '%s' 'Awalan umum:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Gunakan --help untuk daftar opsi lengkap dan nilai dinamis.' ;;
@@ -6548,7 +6548,7 @@ T() {
 		de)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' fehlt und sein Paketname ist unbekannt' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - eigenständiger Sortierer mit Threads' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - eigenständiger Sortierer mit Threads' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Aufruf: Sort.sh [Optionen] <Datei|Verzeichnis> ...' ;;
 				'Common starts:') printf '%s' 'Häufige Aufrufe:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Verwenden Sie --help für die vollständige Optionsliste und dynamische Werte.' ;;
@@ -6684,7 +6684,7 @@ T() {
 		ja)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' が不足しており、そのパッケージ名は不明です' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - 自己完結型マルチスレッド整理ツール' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - 自己完結型マルチスレッド整理ツール' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '使い方: Sort.sh [オプション] <ファイル|ディレクトリ> ...' ;;
 				'Common starts:') printf '%s' 'よく使う起動例:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'オプション一覧と動的な値は --help をご利用ください。' ;;
@@ -6820,7 +6820,7 @@ T() {
 		tr)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' eksik ve paket adı bilinmiyor' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Kullanım: Sort.sh [seçenekler] <dosya|dizin> ...' ;;
 				'Common starts:') printf '%s' 'Sık kullanılan başlangıçlar:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Tam seçenek listesi ve dinamik değerler için --help kullanın.' ;;
@@ -6956,7 +6956,7 @@ T() {
 		ko)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\''이(가) 없으며 패키지 이름을 알 수 없습니다' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '사용법: Sort.sh [옵션] <파일|디렉터리> ...' ;;
 				'Common starts:') printf '%s' '자주 쓰는 시작 예:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' '전체 옵션 목록과 동적 값은 --help를 사용하세요.' ;;
@@ -7092,7 +7092,7 @@ T() {
 		vi)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' bị thiếu và tên gói của nó không rõ' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - công cụ sắp xếp đa luồng tự chứa' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - công cụ sắp xếp đa luồng tự chứa' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Cách dùng: Sort.sh [tùy chọn] <tệp|thư mục> ...' ;;
 				'Common starts:') printf '%s' 'Khởi động thường dùng:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Dùng --help để xem đầy đủ danh sách tùy chọn và giá trị động.' ;;
@@ -7228,7 +7228,7 @@ T() {
 		it)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' manca e il nome del suo pacchetto è sconosciuto' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - organizzatore multithread autonomo' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organizzatore multithread autonomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opzioni] <file|directory> ...' ;;
 				'Common starts:') printf '%s' 'Avvii comuni:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Usa --help per l'\''elenco completo delle opzioni e i valori dinamici.' ;;
@@ -7364,7 +7364,7 @@ T() {
 		pl)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' jest brakujące, a nazwa pakietu jest nieznana' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - samodzielny wielowątkowy organizator plików' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - samodzielny wielowątkowy organizator plików' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Użycie: Sort.sh [opcje] <plik|katalog> ...' ;;
 				'Common starts:') printf '%s' 'Częste starty:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Użyj --help, aby zobaczyć pełną listę opcji i wartości dynamiczne.' ;;
@@ -7500,7 +7500,7 @@ T() {
 		nl)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' ontbreekt en de pakketnaam is onbekend' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - zelfstandige multithread bestandsorganisator' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - zelfstandige multithread bestandsorganisator' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Gebruik: Sort.sh [opties] <bestand|map> ...' ;;
 				'Common starts:') printf '%s' 'Veelgebruikte starts:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Gebruik --help voor de volledige optielijst en dynamische waarden.' ;;
@@ -7636,7 +7636,7 @@ T() {
 		fa)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غایب است و نام بسته آن نامعلوم است' ;;
-				'Sort 17.3 - self-contained threaded organizer') printf '%s' 'Sort 17.3 - سازمان‌دهنده چندنخستی خودکفا' ;;
+				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - سازمان‌دهنده چندنخستی خودکفا' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استفاده: Sort.sh [گزینه‌ها] <فایل|پوشه> ...' ;;
 				'Common starts:') printf '%s' 'شروع‌های رایج:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'برای فهرست کامل گزینه‌ها و مقادیر پویا از --help استفاده کنید.' ;;
@@ -7820,7 +7820,7 @@ Lang_List() {
 
 
 Usage() {
-	Print_Header "$(T 'Sort 17.3 - self-contained threaded organizer')"
+	Print_Header "$(T 'Sort 17.4 - self-contained threaded organizer + magic detection')"
 	Print_Message 'Usage: Sort.sh [options] <file|directory> ...'
 	printf '\n'
 	Print_Message 'Common starts:'
@@ -7839,7 +7839,7 @@ Usage() {
 # ---------------------------------------------------------------------------
 
 Help() {
-	Print_Header "$(T 'Sort 17.3 - self-contained threaded organizer')"
+	Print_Header "$(T 'Sort 17.4 - self-contained threaded organizer + magic detection')"
 	Print_Message 'Sorts files into a dynamic directory tree built from MIME, dates,'
 	Print_Message 'sizes, media dimensions, checksums and metadata titles.'
 	printf '\n'
@@ -7850,6 +7850,7 @@ Help() {
 	printf '\t%s\n' "$(T '--remove           Remove the file at the calculated TARGET path')"
 	printf '\t%s\n' "$(T '--delete           Alias for --remove')"
 	printf '\t%s\n' "$(T '--trash            Send the calculated target to the desktop trash')"
+	printf '\t%s\n' "$(T '--magic            Print a magic-number detection report and exit')"
 	printf '\t%s\n' "$(T '--shred            Run shred -u -n 1 on the calculated target')"
 	printf '\t%s\n' "$(T '--mode=VALUE       Long form of any mode above (copy/move/...)')"
 	printf '\n'
@@ -8060,6 +8061,9 @@ Parse_Arguments() {
 			Max_Jobs=${Item#--jobs=}
 			[ "$Max_Jobs" -ge 1 ] 2>/dev/null || Max_Jobs=1
 			;;
+		--magic)
+			Magic_Mode=1
+			;;
 		--usage)
 			Usage
 			exit 0
@@ -8069,7 +8073,7 @@ Parse_Arguments() {
 			exit 0
 			;;
 		--version)
-			printf 'Sort 17.3\n'
+			printf 'Sort 17.4\n'
 			exit 0
 			;;
 		--lang=*)
@@ -9128,6 +9132,80 @@ Run_Threads() {
 	[ "$Done_Failed" -eq 0 ]
 }
 
+# ===========================================================================
+# MAGIC MODULE (V17.4) - --magic: magic-number detection report
+# Reads the first bytes of each input file, matches them against the
+# embedded signature table and prints a per-file report. Pure bash + od.
+# ===========================================================================
+
+# Magic_Nibbles <file> <count> : first bytes as one lowercase hex string
+Magic_Nibbles() {
+	head -c "$2" -- "$1" 2>/dev/null | od -An -tx1 | tr -d ' \n\t'
+}
+
+# Magic_Detect <hex> : prints "Format|ext,ext" from the signature table
+Magic_Detect() {
+	local H=${1,,}
+	case "$H" in
+	25504446*)                         printf 'PDF|pdf' ;;
+	89504e47*)                         printf 'PNG|png' ;;
+	ffd8ff*)                           printf 'JPEG|jpg,jpeg,jfif' ;;
+	47494638*)                         printf 'GIF|gif' ;;
+	424d*)                             printf 'BMP|bmp' ;;
+	52494646*5745425?*)                printf 'WEBP|webp' ;;
+	52494646*57415645*)                printf 'WAV|wav' ;;
+	1a45dfa3*)                         printf 'MKV/WEBM|mkv,webm,mka' ;;
+	????????66747970*)                 printf 'MP4/MOV|mp4,mov,m4a,3gp' ;;
+	494433*)                           printf 'MP3 (ID3)|mp3' ;;
+	fffb*|fff3*|fff2*|ffe3*)           printf 'MP3 (MPEG)|mp3' ;;
+	4f676753*)                         printf 'OGG|ogg,oga,opus' ;;
+	664c6143*)                         printf 'FLAC|flac' ;;
+	504b0304*|504b0506*|504b0708*)     printf 'ZIP/Office|zip,docx,xlsx,pptx,odt,jar,apk,epub' ;;
+	377abcaf271c*)                     printf '7-Zip|7z' ;;
+	5261727?1a*)                       printf 'RAR|rar' ;;
+	1f8b*)                             printf 'GZIP|gz,tgz' ;;
+	425a68*)                           printf 'BZIP2|bz2,tbz2' ;;
+	fd377a585a*)                       printf 'XZ|xz,txz' ;;
+	28b52ffd*)                         printf 'ZSTD|zst' ;;
+	7f454c46*)                         printf 'ELF binary|so,bin' ;;
+	53514c69746520666f726d61742033*)  printf 'SQLite|db,sqlite' ;;
+	cafebabe*)                         printf 'Java class|class' ;;
+	2321*)                             printf 'Script (#!)|sh,py,pl,rb' ;;
+	7ffe*)                             printf 'Bourne shell archive|shar' ;;
+	*)                                 return 1 ;;
+	esac
+}
+
+# Magic_Report <file> : one report line for a single file
+Magic_Report() {
+	local F=$1 H Detected Name Exts Ext Verdict
+	H=$(Magic_Nibbles "$F" 16)
+	[ -n "$H" ] || H='(empty)'
+	Detected=$(Magic_Detect "$H") && Name=${Detected%%|*} Exts=${Detected#*|} || Name='?' Exts=''
+	Ext=${F##*.}
+	if [ "$Ext" = "${F##*/}" ]; then Ext='(none)'; else Ext=${Ext,,}; fi
+	if [ "$Name" = '?' ]; then
+		Verdict='UNKNOWN'
+	elif [ "$Ext" = '(none)' ]; then
+		Verdict='NO-EXT'
+	elif case ",$Exts," in *",$Ext,"*) true ;; *) false ;; esac; then
+		Verdict='MATCH'
+	else
+		Verdict='MISMATCH'
+	fi
+	printf '%s\n\tmagic: %s\n\tdetected: %s\n\textension: %s\n\tverdict: %s\n' \
+		"$F" "$H" "${Name:-UNKNOWN}" "$Ext" "$Verdict"
+}
+
+# Magic_Report_All : report every collected target
+Magic_Report_All() {
+	local F
+	for F in "${Targets[@]}"; do
+		Magic_Report "$F"
+	done
+	return 0
+}
+
 # ---------------------------------------------------------------------------
 # Interrupt handling - the system helpers wait for the running jobs,
 # restore IFS and exit 130
@@ -9152,6 +9230,22 @@ Main() {
 
 	# The --title sugar doubles as --rename=title when no rename was given
 	Validate_Options || return 1
+
+	# --magic (V17.4): magic-number detection report, then exit
+	if [ "${Magic_Mode:-0}" -eq 1 ]; then
+		Collect_Files
+		if [ "${#Targets[@]}" -eq 0 ]; then
+			Print_Warning 'Nothing to inspect.'
+			return 1
+		fi
+		if [ "$Quiet" -eq 0 ]; then
+			Draw_Line '='
+			Print_Header "Magic-number report (${#Targets[@]} file(s))"
+			Draw_Line '='
+		fi
+		Magic_Report_All
+		return 0
+	fi
 
 	# Init-system: one batch install proposal for the optional tools
 	# (exiftool joins when EXIF or metadata-title features are requested)

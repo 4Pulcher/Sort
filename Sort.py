@@ -5,7 +5,7 @@ Sort.py - Media-Intelligent File Organizer (Python edition)
 ===========================================================
 
 A pure-Python (standard library only) implementation of the complete Bash
-`Sort.sh` lineage (V1.0 -> V17.3), designed to match the feature union of the
+`Sort.sh` lineage (V1.0 -> V17.4), designed to match the feature union of the
 whole family with ZERO external dependencies:
 
 * no `file`, no ImageMagick, no FFmpeg, no ExifTool, no GNU coreutils calls:
@@ -61,8 +61,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-__version__ = "py-17.3"          # corresponds to the latest Bash edition
-LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V17.3 lineage (stdlib only)"
+__version__ = "py-17.4"          # corresponds to the latest Bash edition
+LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V17.4 lineage (stdlib only)"
 
 # ===========================================================================
 # 1. UI: COLORS, ICONS, INTERNATIONALIZATION
@@ -1135,5 +1135,403 @@ def main(argv: list | None = None) -> int:
     return Organizer(opts).run()
 
 
+# ===========================================================================
+# NATIVE METADATA (V16.1+ ExifTool era) - embedded, stdlib-only
+# JPEG EXIF (APP1/TIFF IFD0) and MP3 ID3v1/ID3v2 parsers + keywords.
+# ===========================================================================
+
+EXIF_TAGS = {
+    0x010F: "make", 0x0110: "model", 0x0112: "orientation",
+    0x0132: "datetime", 0x9003: "dt_original",
+    0x829A: "exposure", 0x829D: "fnumber", 0x8827: "iso",
+}
+
+
+def read_exif(path) -> dict:
+    """Parse EXIF from a JPEG file. Returns {} when absent/unreadable."""
+    try:
+        data = Path_read(path)
+    except OSError:
+        return {}
+    if not data.startswith(b"\xff\xd8\xff"):
+        return {}
+    out: dict = {}
+    pos = 2
+    n = len(data)
+    while pos + 4 < n:
+        if data[pos] != 0xFF:
+            pos += 1
+            continue
+        code = data[pos + 1]
+        if code in (0xD8, 0x01) or 0xD0 <= code <= 0xD7:
+            pos += 2
+            continue
+        if pos + 4 > n:
+            break
+        seglen = int.from_bytes(data[pos + 2:pos + 4], "big")
+        if seglen < 2 or pos + 2 + seglen > n:
+            break
+        if code == 0xE1 and data[pos + 4:pos + 10] == b"Exif\x00\x00":
+            out.update(_parse_tiff(data, pos + 10))
+            break
+        pos += 2 + seglen
+    return out
+
+
+def _parse_tiff(buf: bytes, tiff: int) -> dict:
+    endian = buf[tiff:tiff + 2]
+    if endian == b"II":
+        e = "<"
+    elif endian == b"MM":
+        e = ">"
+    else:
+        return {}
+    if struct.unpack(e + "H", buf[tiff + 2:tiff + 4])[0] != 42:
+        return {}
+    ifd_off = tiff + struct.unpack(e + "I", buf[tiff + 4:tiff + 8])[0]
+    if ifd_off + 2 > len(buf):
+        return {}
+    out: dict = {}
+    try:
+        count = struct.unpack(e + "H", buf[ifd_off:ifd_off + 2])[0]
+        for i in range(min(count, 256)):
+            entry = ifd_off + 2 + i * 12
+            if entry + 12 > len(buf):
+                break
+            tag, typ, cnt = struct.unpack(e + "HHI", buf[entry:entry + 8])
+            if tag not in EXIF_TAGS:
+                continue
+            if typ == 2:                      # ASCII
+                if cnt <= 4:
+                    raw = buf[entry + 8:entry + 8 + cnt]
+                else:
+                    off = struct.unpack(e + "I", buf[entry + 8:entry + 12])[0]
+                    raw = buf[tiff + off:tiff + off + cnt]
+                out[EXIF_TAGS[tag]] = raw.split(b"\x00")[0].decode("utf-8", "replace")
+            elif typ == 3:                    # SHORT (inline)
+                out[EXIF_TAGS[tag]] = struct.unpack(e + "H", buf[entry + 8:entry + 10])[0]
+            elif typ == 4:                    # LONG (inline for count 1)
+                out[EXIF_TAGS[tag]] = struct.unpack(e + "I", buf[entry + 8:entry + 12])[0]
+            elif typ == 10:                   # RATIONAL
+                off = struct.unpack(e + "I", buf[entry + 8:entry + 12])[0]
+                num, den = struct.unpack(e + "II", buf[tiff + off:tiff + off + 8])
+                out[EXIF_TAGS[tag]] = num / den if den else 0
+    except struct.error:
+        pass
+    return out
+
+
+def Path_read(path, limit: int = 2 << 20) -> bytes:
+    with open(path, "rb") as f:
+        return f.read(limit)
+
+
+__all__ = ["read_exif", "EXIF_TAGS"]
+
+
+def _decode_text(enc: int, raw: bytes) -> str:
+    raw = raw.split(b"\x00", 1)[0] if enc in (0, 3) else raw
+    if enc == 0:
+        return raw.decode("latin-1", "replace")
+    if enc == 1:
+        if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+            return raw.decode("utf-16", "replace")
+        return raw.decode("utf-16-le", "replace")
+    if enc == 2:
+        return raw.decode("utf-16-be", "replace")
+    return raw.decode("utf-8", "replace")
+
+
+def _syncsafe(b: bytes) -> int:
+    return (b[0] & 0x7F) << 21 | (b[1] & 0x7F) << 14 | \
+           (b[2] & 0x7F) << 7 | (b[3] & 0x7F)
+
+
+def read_id3(path) -> dict:
+    """Read ID3v2 (header) and ID3v1 (tail) tags from an MP3 file."""
+    out: dict = {}
+    try:
+        with open(path, "rb") as f:
+            head = f.read(1 << 20)
+            f.seek(-128, 2)
+            tail = f.read(128)
+    except OSError:
+        return out
+
+    # ---- ID3v2 ----
+    if head[:3] == b"ID3":
+        ver = head[3]
+        size = _syncsafe(head[6:10])
+        pos = 10
+        end = min(10 + size, len(head))
+        name = {b"TIT2": "title", b"TPE1": "artist", b"TALB": "album",
+                b"TYER": "year", b"TDRC": "year", b"TRCK": "track",
+                b"TCON": "genre"}
+        while pos + 10 <= end:
+            fid = head[pos:pos + 4]
+            if not fid.strip(b"\x00") or fid[0] not in b"ATC":
+                break
+            if ver == 4:
+                fsize = _syncsafe(head[pos + 4:pos + 8])
+            else:
+                fsize = int.from_bytes(head[pos + 4:pos + 8], "big")
+            if fsize <= 0 or pos + 10 + fsize > len(head):
+                break
+            enc = head[pos + 10]
+            value = _decode_text(enc, head[pos + 11:pos + 10 + fsize])
+            if fid in name and value:
+                out[name[fid]] = value
+            pos += 10 + fsize
+
+    # ---- ID3v1 ----
+    if len(tail) == 128 and tail[:3] == b"TAG":
+        def txt(o: int, ln: int) -> str:
+            return tail[o:o + ln].strip(b"\x00 ").decode("latin-1", "replace")
+        v1 = {
+            "title": txt(3, 30), "artist": txt(33, 30), "album": txt(63, 30),
+            "year": txt(93, 4),
+        }
+        if tail[125:126] == b"\x00" and tail[126]:
+            v1["track"] = str(tail[126])
+        for k, v in v1.items():
+            out.setdefault(k, v)
+    return out
+
+
+__all__ = ["read_id3"]
+
+
+def _meta_facts(facts):
+    """Attach exif / id3 dicts lazily (once per file)."""
+    if getattr(facts, "_meta_done", False):
+        return facts
+    facts.exif = {}
+    facts.id3 = {}
+    try:
+        if facts.mime_main == "image" and facts.mime_sub == "jpeg":
+            facts.exif = read_exif(facts.path)
+        if facts.mime_sub == "mpeg" or facts.path.suffix.lower() in (".mp3", ".mpga"):
+            facts.id3 = read_id3(facts.path)
+    except OSError:
+        pass
+    facts._meta_done = True
+    return facts
+
+
+_orig_keyword_value = TemplateEngine.keyword_value
+
+
+def _meta_keyword_value(self, facts, kw):
+    _meta_facts(facts)
+    if kw.startswith("exif-"):
+        field = kw[5:]
+        if field == "make":
+            return str(facts.exif.get("make") or "")
+        if field == "model":
+            return str(facts.exif.get("model") or "")
+        if field == "datetime":
+            return str(facts.exif.get("datetime") or facts.exif.get("dt_original") or "")
+        if field == "date":
+            v = str(facts.exif.get("datetime") or facts.exif.get("dt_original") or "")
+            return v[:10]
+        if field == "orientation":
+            o = facts.exif.get("orientation")
+            return str(o) if o not in ("", None) else ""
+        return ""
+    if kw.startswith("id3-"):
+        return str(facts.id3.get(kw[4:]) or "")
+    if kw == "title":
+        return (facts.id3.get("title") or facts.exif.get("model") or facts.stem or "")
+    return _orig_keyword_value(self, facts, kw)
+
+
+TemplateEngine.keyword_value = _meta_keyword_value
+
+
+# ===========================================================================
+# MAGIC MODULE (V17.4) - --magic: magic-number detection report
+# Native stdlib signature matching, no external calls.
+# ===========================================================================
+
+_MAGIC_PREFIX = [
+    ("25504446", "PDF", "pdf"),
+    ("89504e47", "PNG", "png"),
+    ("ffd8ff", "JPEG", "jpg,jpeg,jfif"),
+    ("47494638", "GIF", "gif"),
+    ("424d", "BMP", "bmp"),
+    ("1a45dfa3", "MKV/WEBM", "mkv,webm,mka"),
+    ("494433", "MP3 (ID3)", "mp3"),
+    ("fff3", "MP3 (MPEG)", "mp3"),
+    ("fffb", "MP3 (MPEG)", "mp3"),
+    ("4f676753", "OGG", "ogg,oga,opus"),
+    ("664c6143", "FLAC", "flac"),
+    ("504b0708", "ZIP/Office", "zip,docx,xlsx,pptx,odt,jar,apk,epub"),
+    ("504b0506", "ZIP/Office", "zip,docx,xlsx,pptx,odt,jar,apk,epub"),
+    ("504b0304", "ZIP/Office", "zip,docx,xlsx,pptx,odt,jar,apk,epub"),
+    ("377abcaf271c", "7-Zip", "7z"),
+    ("5261727", "RAR", "rar"),
+    ("1f8b", "GZIP", "gz,tgz"),
+    ("425a68", "BZIP2", "bz2,tbz2"),
+    ("fd377a585a", "XZ", "xz,txz"),
+    ("28b52ffd", "ZSTD", "zst"),
+    ("7f454c46", "ELF binary", "so,bin"),
+    ("53514c69746520666f726d61742033", "SQLite", "db,sqlite"),
+    ("cafebabe", "Java class", "class"),
+    ("2321", "Script (#!)", "sh,py,pl,rb"),
+]
+
+
+def magic_hex(path) -> str:
+    """First 16 bytes of the file as one lowercase hex string."""
+    try:
+        with open(path, "rb") as fh:
+            return fh.read(16).hex()
+    except OSError:
+        return ""
+
+
+def magic_detect(hexstr: str):
+    """Match a hex signature against the table -> (name, exts) or ('?', '')."""
+    h = hexstr.lower()
+    if len(h) >= 16:
+        if h[:8] == "52494646" and h[16:24] == "57454250":
+            return "WEBP", "webp"
+        if h[:8] == "52494646" and h[16:24] == "57415645":
+            return "WAV", "wav"
+        if h[8:16] == "66747970":
+            return "MP4/MOV", "mp4,mov,m4a,3gp"
+    for sig, name, exts in _MAGIC_PREFIX:
+        if h.startswith(sig):
+            return name, exts
+    return "?", ""
+
+
+def magic_report(path) -> str:
+    """One four-line report block for a single file."""
+    h = magic_hex(path) or "(empty)"
+    name, exts = magic_detect(h)
+    ext = path.suffix.lstrip(".").lower() if path.suffix else "(none)"
+    if name == "?":
+        verdict = "UNKNOWN"
+    elif ext == "(none)":
+        verdict = "NO-EXT"
+    elif ext in exts.split(","):
+        verdict = "MATCH"
+    else:
+        verdict = "MISMATCH"
+    return (f"{path}\nmagic: {h}\ndetected: {name}\n"
+            f"extension: {ext}\nverdict: {verdict}")
+
+
+# ===========================================================================
+# EDITION GATE - auto-generated for Sort-V17.4
+# Scope derived mechanically from Sort-V17.4.sh (era vocabulary).
+# Run with --self-test to verify this engine, -h for the era usage.
+# ===========================================================================
+
+EDITION = {'version': 'V17.4', 'modes': ['copy', 'dummy', 'move', 'remove', 'shred', 'trash'], 'flags': ['--dirs', '--extension', '--hidden', '--jobs', '--lang', '--links', '--log', '--magic', '--no-colors', '--pause', '--quiet', '--recursive', '--rename', '--replace', '--subdirs', '--target', '--type', '--undo'], 'keywords': ['accessed', 'created', 'day', 'exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'extension', 'format', 'format+size', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'md5sum', 'mime', 'mime-main', 'mime-sub', 'modified', 'month', 'name', 'random', 'sha1sum', 'sha224sum', 'sha256sum', 'sha384sum', 'sha512sum', 'size', 'size+format', 'title', 'year', 'year+month', 'year+month+day'], 'modifiers': [], 'fallbacks': True, 'stripped': {'--decompress': 'archive decompress (--decompress) - stripped', '--delete': 'delete mode - use --mode=remove', '--exif': 'EXIF rename/strip levels (--exif) - stripped', '--needed': 'dependency listing - stripped', '--noconfirm': 'interactive confirm - stripped', '--non-interactive': 'interactive confirm - stripped', '--stats': 'stats mode (--stats) - stripped', '--strip': 'metadata stripping (--strip) - stripped', '--title': 'metadata title rename (--title) - stripped', '--verbose': 'verbose flag - use default output', '--version': '--version'}}
+
+CANONICAL_KEYWORDS = ["year", "month", "day", "year+month", "year+month+day", "created", "created-date", "created-time", "modified", "modified-date", "modified-time", "accessed", "accessed-date", "accessed-time", "mime", "mime-main", "mime-sub", "type", "extension", "ext", "ext-lower", "ext-upper", "filename", "name", "basename", "stem", "original", "size", "format", "size+format", "format+size", "pixel-size", "resolution", "pixel-format", "md5sum", "sha1sum", "sha224sum", "sha256sum", "sha384sum", "sha512sum", "random"]
+CANONICAL_KEYWORDS = CANONICAL_KEYWORDS + ['exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'title']
+
+_ERA_USAGE = """Sort-V17.4.py - standalone Python edition of Sort-V17.4.sh
+(Standard library only; no external commands, no other files required.)
+
+USAGE
+    Sort-V17.4.py [OPTIONS] FILES...
+
+MODES (--mode=...)
+    copy, dummy, move, remove, shred, trash
+
+OPTIONS
+    --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --subdirs, --target, --type, --undo, inputs
+    --magic             print a magic-number detection report and exit
+
+TEMPLATE KEYWORDS (for --dirs / --subdirs/--rename/--extension/--dirs)
+    accessed, created, day, exif-date, exif-datetime, exif-make, exif-model, exif-orientation, extension, format, format+size, id3-album, id3-artist, id3-genre, id3-title, id3-track, id3-year, md5sum, mime, mime-main, mime-sub, modified, month, name, random, sha1sum, sha224sum, sha256sum, sha384sum, sha512sum, size, size+format, title, year, year+month, year+month+day
+    (segments join with '/'; unknown words are literal folder text)
+
+ALWAYS AVAILABLE
+    -h / --help          this usage
+    --self-test          engine self test
+    --version            version banner
+
+OUT OF SCOPE FOR THIS EDITION (stripped; see README.md)
+    --decompress: archive decompress (--decompress) - stripped; --delete: delete mode - use --mode=remove; --exif: EXIF rename/strip levels (--exif) - stripped; --needed: dependency listing - stripped; --noconfirm: interactive confirm - stripped; --non-interactive: interactive confirm - stripped; --stats: stats mode (--stats) - stripped; --strip: metadata stripping (--strip) - stripped; --title: metadata title rename (--title) - stripped; --verbose: verbose flag - use default output; --version: --version
+"""
+
+
+def _era_error(msg):
+    print("Sort-V17.4 edition error: " + msg)
+    print("Allowed here -- modes: " + ", ".join(EDITION["modes"]) +
+          " | flags: " + ", ".join(EDITION["flags"]) +
+          " | keywords: " + ", ".join(EDITION["keywords"]))
+    print("Run with -h for the full era usage.")
+    return 64
+
+
+def _check_template(value, arg):
+    for seg in value.split("/"):
+        for cand in seg.split("|"):
+            expr = cand.strip()
+            if not expr:
+                continue
+            while True:
+                low = expr.lower()
+                hit = next((p for p in ("lower:", "upper:", "raw:")
+                            if low.startswith(p) and p[:-1] in EDITION["modifiers"]), None)
+                if hit:
+                    expr = expr[len(hit):]
+                    continue
+                break
+            if "fallbacks" not in EDITION:
+                continue
+            kw = expr.strip().lower()
+            if kw in CANONICAL_KEYWORDS and kw not in EDITION["keywords"]:
+                raise SystemExit(_era_error(
+                    "keyword '%s' is not part of Sort-%s (argument %s)" % (kw, EDITION["version"], arg)))
+
+
+def _era_main(argv):
+    # --magic (V17.4): magic-number detection report, then exit
+    if "--magic" in argv:
+        inputs = [a for a in argv if not a.startswith("-")]
+        if not inputs:
+            print("Nothing to inspect.")
+            return 1
+        for item in inputs:
+            p = Path(item)
+            if p.is_dir():
+                print(f"{p} (directory - use --recursive not needed; listing files)")
+                for child in sorted(p.iterdir()):
+                    if child.is_file():
+                        print(magic_report(child))
+            elif p.exists():
+                print(magic_report(p))
+            else:
+                print(f"{p}: not found")
+        return 0
+    allowed = set(EDITION["flags"]) | {"--self-test", "--version"}
+    for a in argv:
+        if a in ("-h", "--help"):
+            print(_ERA_USAGE)
+            return 0
+        if a == "--self-test" or a == "--version" or not a.startswith("-"):
+            continue
+        name = a.split("=")[0].lower()
+        if name == "--mode":
+            val = a.split("=", 1)[1].lower() if "=" in a else ""
+            if val and val not in EDITION["modes"]:
+                raise SystemExit(_era_error(
+                    "mode '%s' is not part of Sort-%s" % (val, EDITION["version"])))
+            continue
+        if name not in allowed:
+            raise SystemExit(_era_error(
+                "option '%s' is not part of Sort-%s" % (name, EDITION["version"])))
+        if "=" in a and name in ("--dirs", "--subdirs", "--rename", "--extension"):
+            _check_template(a.split("=", 1)[1], name)
+    return main(argv)
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(_era_main(sys.argv[1:]))
