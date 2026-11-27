@@ -2,7 +2,7 @@
 
 ###############################################################################
 #                                                                             #
-# Script  : Sort-V17.3.sh                                                           #
+# Script  : Sort-V17.4.sh                                                           #
 # Version : 17.4                                                              #
 # Desc    : Self-contained threaded organizer - all lineage features merged    #
 # Author  : HEjder                                                            #
