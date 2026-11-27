@@ -2,7 +2,7 @@
 // Sort.cpp - Media-Intelligent File Organizer (C++17 edition)
 // ===========================================================================
 // A pure C++17 (standard library only) port of the complete Sort.sh
-// lineage (V1.0 -> V18), matching the feature union of the family:
+// lineage (V1.0 -> V19), matching the feature union of the family:
 //
 //   * no `file`, no ImageMagick, no FFmpeg, no ExifTool, no OpenSSL:
 //     MIME sniffing, media dimensions, hashing (MD5 + SHA-1/2 family),
@@ -55,9 +55,9 @@
 
 namespace fs = std::filesystem;
 
-static const char* CPP_VERSION = "cpp-18";
+static const char* CPP_VERSION = "cpp-19";
 static const char* LINEAGE_NOTE =
-    "C++17 port of the Sort.sh V1.0-V18 lineage (std library only)";
+    "C++17 port of the Sort.sh V1.0-V19 lineage (std library only)";
 
 // ===========================================================================
 // 1. UI: COLORS, ICONS, INTERNATIONALIZATION
@@ -2173,11 +2173,11 @@ static const std::vector<std::string> CANONICAL_KEYWORDS = {
     "id3-album", "id3-artist", "id3-genre", "id3-title", "id3-track", "id3-year", "title"};
 
 static const char* ERA_USAGE =
-    "Sort-V18.cpp - standalone C++ edition of Sort-V18.sh\n"
+    "Sort-V19.cpp - standalone C++ edition of Sort-V19.sh\n"
     "(C++17 only; no external commands, no dependencies required.)\n"
     "\n"
     "USAGE\n"
-    "    Sort-V18.cpp [OPTIONS] FILES...\n"
+    "    Sort-V19.cpp [OPTIONS] FILES...\n"
     "\n"
     "MODES (--mode=...)\n"
     "    copy, dummy, move, remove, shred, trash\n"
@@ -2199,7 +2199,7 @@ static const char* ERA_USAGE =
     "    --decompress: archive decompress (--decompress) - stripped; --delete: delete mode - use --mode=remove; --exif: EXIF rename/strip levels (--exif) - stripped; --needed: dependency listing - stripped; --noconfirm: interactive confirm - stripped; --non-interactive: interactive confirm - stripped; --stats: stats mode (--stats) - stripped; --strip: metadata stripping (--strip) - stripped; --title: metadata title rename (--title) - stripped; --verbose: verbose flag - use default output; --version: --version\n";
 
 static int era_error(const std::string& msg) {
-    std::cout << "Sort-V18 edition error: " << msg << "\n";
+    std::cout << "Sort-V19 edition error: " << msg << "\n";
     std::cout << "Allowed here -- modes: ";
     for (size_t i = 0; i < EDITION_MODES.size(); ++i)
         std::cout << (i ? ", " : "") << EDITION_MODES[i];
@@ -2231,7 +2231,7 @@ static void check_template(const std::string& value, const std::string& arg) {
                         != CANONICAL_KEYWORDS.end()
                     && std::find(EDITION_KEYWORDS.begin(), EDITION_KEYWORDS.end(), kw)
                         == EDITION_KEYWORDS.end()) {
-                    std::exit(era_error("keyword '" + kw + "' is not part of Sort-V18 (argument "
+                    std::exit(era_error("keyword '" + kw + "' is not part of Sort-V19 (argument "
                                         + arg + ")"));
                 }
             }
@@ -2282,11 +2282,11 @@ static int era_main(const std::vector<std::string>& argv) {
             if (a.find('=') != std::string::npos) val = to_lower(a.substr(a.find('=') + 1));
             if (!val.empty()
                 && std::find(EDITION_MODES.begin(), EDITION_MODES.end(), val) == EDITION_MODES.end())
-                return era_error("mode '" + val + "' is not part of Sort-V18");
+                return era_error("mode '" + val + "' is not part of Sort-V19");
             continue;
         }
         if (std::find(allowed.begin(), allowed.end(), name) == allowed.end())
-            return era_error("option '" + name + "' is not part of Sort-V18");
+            return era_error("option '" + name + "' is not part of Sort-V19");
         if (a.find('=') != std::string::npos
             && (name == "--dirs" || name == "--subdirs" || name == "--rename"
                 || name == "--extension"))
@@ -2346,7 +2346,7 @@ static int real_main(const std::vector<std::string>& argv) {
         else { std::cout << "unknown option: " << name << "\n"; return 64; }
     }
     if (want_version) {
-        std::cout << "Sort.cpp cpp-18 (C++17 port of the Sort.sh V1.0-V18 lineage)\n";
+        std::cout << "Sort.cpp cpp-19 (C++17 port of the Sort.sh V1.0-V19 lineage)\n";
         return 0;
     }
     if (want_self_test) return run_self_test();
