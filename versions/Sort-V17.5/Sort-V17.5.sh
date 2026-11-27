@@ -2,7 +2,7 @@
 
 ###############################################################################
 #                                                                             #
-# Script  : Sort-V17.3.sh                                                           #
+# Script  : Sort-V17.5.sh                                                           #
 # Version : 17.5                                                              #
 # Desc    : Self-contained threaded organizer - all lineage features merged    #
 # Author  : HEjder                                                            #
@@ -7850,7 +7850,7 @@ Help() {
 	printf '\t%s\n' "$(T '--remove           Remove the file at the calculated TARGET path')"
 	printf '\t%s\n' "$(T '--delete           Alias for --remove')"
 	printf '\t%s\n' "$(T '--trash            Send the calculated target to the desktop trash')"
-	printf '\t%s\n' "$(T '--magic            Print a magic-number detection report and exit')"
+	printf '\t%s\n' "$(T '--magic            Print a magic-number detection report (153 signature formats) and exit')"
 	printf '\t%s\n' "$(T '--shred            Run shred -u -n 1 on the calculated target')"
 	printf '\t%s\n' "$(T '--mode=VALUE       Long form of any mode above (copy/move/...)')"
 	printf '\n'
