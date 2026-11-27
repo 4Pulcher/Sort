@@ -9134,199 +9134,232 @@ Run_Threads() {
 
 # ===========================================================================
 # ===========================================================================
-# MAGIC MODULE (V17.5) - --magic: magic-number detection report
-# Comprehensive embedded signature table (153+ formats): images,
-# audio, video, archives, documents, fonts, executables, data and disk
-# formats. Pure bash + od. Zero external calls.
 # ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# MAGIC MODULE (V17.5) - --magic: magic-number detection report
+# One associative array keyed by MIME type/subtype. Value fields:
+#   Name|extensions|hex-pattern[|byte-offset]
+# '?' in a pattern matches any nibble; the main MIME type is the key
+# part before the '/'. Detection scores every matching key (concrete
+# nibbles first, then pattern length) and reports the most specific
+# hit. Pure bash + od. Zero external calls.
+# ===========================================================================
+
+declare -A Magic=(
+	['application/x-iso9660-image']='ISO 9660 image|iso,img|4344303031|32769'
+	['application/x-tar']='TAR archive|tar|7573746172|257'
+	['application/x-mobipocket-ebook']='MOBI e-book|mobi,prc|424f4f4b4d4f4249|60'
+	['audio/s3m']='S3M module|s3m|5343524d|44'
+	['audio/mod']='Amiga MOD module|mod|4d2e4b|108'
+	['audio/xm']='FastTracker XM module|xm|457874656e646564204d6f64756c65'
+	['application/x-sqlite3']='SQLite database|db,sqlite,sqlite3|53514c69746520666f726d61742033'
+	['image/jp2']='JPEG 2000 (JP2)|jp2|0000000c6a5020200d0a870a'
+	['image/vnd.radiance']='Radiance HDR image|hdr|233f52414449414e4345'
+	['image/webp']='WEBP image|webp|52494646????????57454250'
+	['audio/wav']='WAV audio|wav|52494646????????57415645'
+	['video/avi']='AVI video|avi|52494646????????41564920'
+	['video/amv']='AMV video|amv|52494646????????414d5620'
+	['audio/aiff']='AIFF audio|aiff,aif|464f524d????????41494646'
+	['audio/aifc']='AIFC audio|aifc|464f524d????????41494643'
+	['video/quicktime']='QuickTime MOV video|mov|????????6674797071742020'
+	['audio/mp4']='M4A audio|m4a|????????667479704d344120'
+	['video/m4v']='M4V video|m4v|????????667479704d345620'
+	['image/heic']='HEIC/HEIF image|heic,heif,hif|????????6674797068656963'
+	['image/heix']='HEIC/HEIF image|heic,heif,hif|????????6674797068656978'
+	['image/heif']='HEIC/HEIF image|heic,heif,hif|????????6674797068656966'
+	['image/heif-mif1']='HEIC/HEIF image|heic,heif,hif|????????667479706d696631'
+	['image/heif-msf1']='HEIC/HEIF image|heic,heif,hif|????????667479706d736631'
+	['image/avif']='AVIF image|avif|????????6674797061766966'
+	['image/avif-sequence']='AVIF image|avif|????????6674797061766973'
+	['image/jp2-ftyp']='JPEG 2000 (JP2)|jp2|????????667479706a703220'
+	['video/3gpp-4']='3GP video|3gp|????????6674797033677034'
+	['video/3gpp-5']='3GP video|3gp|????????6674797033677035'
+	['video/3gpp-6']='3GP video|3gp|????????6674797033677036'
+	['video/3gpp2']='3G2 video|3g2|????????6674797033673261'
+	['video/mp4']='MP4 video|mp4|????????6674797069736f6d'
+	['video/mp4-iso2']='MP4 video|mp4|????????6674797069736f32'
+	['video/mp4-mp41']='MP4 video|mp4|????????667479706d703431'
+	['video/mp4-mp42']='MP4 video|mp4|????????667479706d703432'
+	['video/mp4-avc1']='MP4 video|mp4|????????6674797061766331'
+	['application/dash+xml']='DASH video|mpd,m4s,mp4|????????6674797064617368'
+	['video/f4v']='Flash F4V video|f4v|????????6674797066347620'
+	['image/x-xcf']='GIMP XCF image|xcf|67696d7020786366'
+	['video/x-ms-asf']='ASF media (WMA/WMV)|wma,wmv,asf|3026b2758e66cf11'
+	['application/x-msoffice-ole']='MS Office/OLE compound|doc,xls,ppt,msi,cfg|d0cf11e0a1b11ae1'
+	['image/vnd.djvu']='DjVu document|djvu,djv|41542654464f524d'
+	['application/x-ms-reader-lit']='MS Reader LIT e-book|lit|49544f4c49544c53'
+	['application/x-vhdx']='Hyper-V VHDX disk|vhdx|7668647866696c65'
+	['application/x-archive-ar']='AR archive (deb/static lib)|a,deb|213c617263683e'
+	['image/vnd.radiance-rgbe']='Radiance HDR image|hdr|233f52474245'
+	['application/x-7z-compressed']='7-Zip archive|7z|377abcaf271c'
+	['application/x-rar-compressed']='RAR archive|rar|526172211a07'
+	['application/x-cpio-newc']='CPIO archive (newc)|cpio|303730373031'
+	['application/x-cpio-odc']='CPIO archive (odc)|cpio|303730373037'
+	['application/x-ace']='ACE archive|ace|2a2a4143452a'
+	['application/rtf']='RTF document|rtf|7b5c72746631'
+	['application/x-luks']='LUKS encrypted volume|luks,img|4c554b53babe'
+	['image/jxl']='JPEG XL container|jxl|0d0a870a0a'
+	['text/xml']='XML document|xml,svg,fb2,rss,xsl,plist|3c3f786d6c'
+	['audio/amr']='AMR speech audio|amr|2321414d52'
+	['application/x-xz']='XZ stream|xz,txz|fd377a585a'
+	['application/x-ms-wim']='Windows Imaging archive|wim|4d5357494d'
+	['video/ftyp-generic']='MP4/QuickTime container|mp4,m4a,mov,3gp,heic|????????66747970'
+	['image/png']='PNG image|png|89504e47'
+	['image/jp2-codestream']='JPEG 2000 codestream|j2k,jpc|ff4fff51'
+	['image/gif']='GIF image|gif|47494638'
+	['image/tiff']='TIFF image (little-endian)|tif,tiff|49492a00'
+	['image/tiff-be']='TIFF image (big-endian)|tif,tiff|4d4d002a'
+	['image/vnd.adobe.photoshop']='Photoshop PSD image|psd,pdd|38425053'
+	['image/x-dds']='DirectDraw Surface texture|dds|44445320'
+	['image/x-exr']='OpenEXR image|exr|762f3101'
+	['image/x-cur']='Windows cursor|cur|00020000'
+	['image/x-icon']='ICO icon / TrueType font|ico,ttf,otf|00010000'
+	['image/x-icns']='Apple ICNS icon|icns|69636e73'
+	['image/svg+xml']='SVG image|svg|3c737667'
+	['application/x-riff']='RIFF container|wav,avi,webp|52494646'
+	['audio/dff']='DSDIFF audio (DFF)|dff|46524d38'
+	['audio/x-caf']='Apple CAF audio|caf|63616666'
+	['audio/dsf']='DSD streamfile audio (DSF)|dsf|44534420'
+	['audio/flac']='FLAC audio|flac|664c6143'
+	['application/ogg']='OGG media|ogg,oga,opus,ogv,ogx|4f676753'
+	['audio/midi']='MIDI music|mid,midi,rmi,kar|4d546864'
+	['audio/basic']='NeXT/Sun AU audio|au,snd|2e736e64'
+	['audio/ape']='Monkey Audio (APE)|ape|4d414320'
+	['audio/wavpack']='WavPack audio|wv|7770766b'
+	['audio/musepack-sv8']='Musepack audio (SV8)|mpc|4d50434b'
+	['audio/tta']='True Audio (TTA)|tta|54544131'
+	['audio/shorten']='Shorten audio|shn|616a6b67'
+	['audio/it']='Impulse Tracker module|it|494d504d'
+	['video/x-matroska']='Matroska/WebM video|mkv,webm,mka,mks|1a45dfa3'
+	['video/mpeg']='MPEG program stream|mpg,mpeg,vob,ps|000001ba'
+	['video/mpeg-elementary']='MPEG elementary video|m2v,mpv,mpg|000001b3'
+	['video/vnd.rn-realmedia']='RealMedia video|rm,rmvb|2e524d46'
+	['application/mxf']='MXF video|mxf|060e2b34'
+	['application/zip']='ZIP/Office document|zip,docx,xlsx,pptx,odt,jar,apk,epub|504b0304'
+	['application/zip-empty']='ZIP archive (empty)|zip|504b0506'
+	['application/zip-spanned']='ZIP archive (spanned)|zip|504b0708'
+	['application/zstd']='Zstandard stream|zst|28b52ffd'
+	['application/x-lz4']='LZ4 frame|lz4|04224d18'
+	['application/x-lzma']='LZMA-alone stream|lzma|5d000080'
+	['application/x-lzop']='LZO compressed archive|lzo|894c5a4f'
+	['application/vnd.ms-cab-compressed']='MS Cabinet archive|cab|4d534346'
+	['application/x-rpm']='RPM package|rpm|edabeedb'
+	['application/parquet']='Apache Parquet data|parquet|50415231'
+	['application/pdf']='PDF document|pdf|25504446'
+	['application/postscript']='PostScript/EPS document|ps,eps,ai|25215053'
+	['application/vnd.ms-htmlhelp']='MS Compiled HTML (CHM)|chm|49545346'
+	['font/otf']='OpenType (CFF) font|otf|4f54544f'
+	['font/collection']='TrueType collection|ttc|74746366'
+	['font/woff']='WOFF font|woff|774f4646'
+	['font/woff2']='WOFF2 font|woff2|774f4632'
+	['application/x-elf']='ELF binary|so,bin,elf,o,ko|7f454c46'
+	['application/x-mach-o-be32']='Mach-O binary (32-bit BE)|bin|feedface'
+	['application/x-mach-o-le32']='Mach-O binary (32-bit LE)|bin|cefaedfe'
+	['application/x-mach-o-be64']='Mach-O binary (64-bit BE)|bin|feedfacf'
+	['application/x-mach-o-le64']='Mach-O binary (64-bit LE)|bin|cffaedfe'
+	['application/x-java-class']='Java class / Mach-O fat binary|class,bin|cafebabe'
+	['application/wasm']='WebAssembly module|wasm|0061736d'
+	['application/x-dex']='Android DEX bytecode|dex,odex|6465780a'
+	['application/x-ms-registry-hive']='Windows registry hive|dat,hive,reg|72656766'
+	['application/vnd.tcpdump-pcap']='pcap packet capture|pcap,cap|a1b2c3d4'
+	['application/vnd.tcpdump-pcap-swapped']='pcap packet capture (swapped)|pcap,cap|d4c3b2a1'
+	['application/vnd.tcpdump-pcapng']='pcapng packet capture|pcapng|0a0d0d0a'
+	['application/avro']='Apache Avro object container|avro|4f626a01'
+	['application/x-chrome-extension']='Chrome extension (CRX)|crx|43723234'
+	['application/x-qcow2']='QEMU copy-on-write disk|qcow,qcow2|514649fb'
+	['application/x-vmdk']='VMware VMDK disk|vmdk|4b444d56'
+	['image/jpeg']='JPEG image|jpg,jpeg,jfif|ffd8ff'
+	['image/x-pcx']='PCX image|pcx|0a0000'
+	['image/x-pcx-2']='PCX image|pcx|0a0200'
+	['image/x-pcx-3']='PCX image|pcx|0a0300'
+	['image/x-pcx-5']='PCX image|pcx|0a0500'
+	['audio/mpeg-id3']='MP3 audio (ID3v2 tag)|mp3|494433'
+	['audio/musepack']='Musepack audio|mpc|4d502b'
+	['video/x-flv']='Flash video (FLV)|flv|464c56'
+	['video/x-bink']='Bink video|bik,bk2|42494b'
+	['application/x-bzip2']='BZIP2 stream|bz2,tbz2|425a68'
+	['application/x-compress']='compress (.Z) archive|z|1f9d8d'
+	['application/x-zoo']='ZOO archive|zoo|5a4f4f'
+	['application/x-shockwave-flash-compressed']='Shockwave Flash (compressed)|swf|435753'
+	['application/x-shockwave-flash']='Shockwave Flash|swf|465753'
+	['application/x-shockwave-flash-lzma']='Shockwave Flash (LZMA)|swf|5a5753'
+	['image/jxl-codestream']='JPEG XL codestream|jxl|ff0a'
+	['image/bmp']='BMP image|bmp,dib|424d'
+	['image/x-portable-bitmap']='PBM image|pbm|5034'
+	['image/x-portable-graymap']='PGM image|pgm|5035'
+	['image/x-portable-pixmap']='PPM image|ppm|5036'
+	['audio/mpeg-raw']='MP3 audio (MPEG-1)|mp3|fffb'
+	['audio/mpeg-raw-2']='MP3 audio (MPEG-2)|mp3|fff3'
+	['audio/mpeg-raw-2-5']='MP3 audio (MPEG-2.5)|mp3|fff2'
+	['audio/mpeg-raw-2-5-lsf']='MP3 audio (MPEG-2.5 LSF)|mp3|ffe3'
+	['audio/aac']='AAC audio (ADTS)|aac,adts|fff1'
+	['audio/aac-latm']='AAC audio (ADTS)|aac,adts|fff9'
+	['application/gzip']='GZIP stream|gz,tgz|1f8b'
+	['application/x-arj']='ARJ archive|arj|60ea'
+	['application/x-shar']='Bourne shell archive|shar|7ffe'
+	['application/x-msdownload']='DOS/PE executable|exe,dll,sys,ocx,scr|4d5a'
+	['text/x-shellscript']='Script (#!)|sh,py,pl,rb,el,js,ts|2321'
+)
 
 # Magic_Nibbles <file> <count> : first bytes as one lowercase hex string
 Magic_Nibbles() {
 	head -c "$2" -- "$1" 2>/dev/null | od -An -v -tx1 | tr -d ' \n\t'
 }
 
-# Magic_Detect <hex> : prints "Format|ext,ext" from the signature table
+# Magic_Match <hex> <offset-bytes> <pattern> : nibble compare, '?' = any
+Magic_Match() {
+	local H=$1 Pos=$(( $2 * 2 )) P=$3 I C
+	[ "${#H}" -lt $(( Pos + ${#P} )) ] && return 1
+	for (( I=0; I<${#P}; I++ )); do
+		C=${P:I:1}
+		if [ "$C" != '?' ] && [ "${H:Pos+I:1}" != "$C" ]; then
+			return 1
+		fi
+	done
+	return 0
+}
+
+# Magic_Detect <hex> : prints "MIME|Name|ext,ext" of the best match
 Magic_Detect() {
-	local H=${1,,}
+	local H=${1,,} Key Val Name Exts Pat Off Concrete Score Best BestScore
 	# MPEG transport stream: 0x47 sync bytes at offsets 0, 188 and 376
 	if [ "${#H}" -ge 754 ] && [ "${H:0:2}" = '47' ] && [ "${H:376:2}" = '47' ] && [ "${H:752:2}" = '47' ]; then
-		printf 'MPEG-TS|ts,m2ts,mts'
+		printf 'video/mp2t|MPEG-TS|ts,m2ts,mts'
 		return 0
 	fi
-	case "${H:65538:10}" in
-	4344303031) printf 'ISO 9660 image|iso,img'; return 0 ;;
-	esac
-	case "${H:514:10}" in
-	7573746172) printf 'TAR archive|tar'; return 0 ;;
-	esac
-	case "${H:120:16}" in
-	424f4f4b4d4f4249) printf 'MOBI e-book|mobi,prc'; return 0 ;;
-	esac
-	case "${H:88:8}" in
-	5343524d) printf 'S3M module|s3m'; return 0 ;;
-	esac
-	case "${H:216:6}" in
-	4d2e4b) printf 'Amiga MOD module|mod'; return 0 ;;
-	esac
-	case "$H" in
-	457874656e646564204d6f64756c65*) printf 'FastTracker XM module|xm'; return 0 ;;
-	53514c69746520666f726d61742033*) printf 'SQLite database|db,sqlite,sqlite3'; return 0 ;;
-	0000000c6a5020200d0a870a*) printf 'JPEG 2000 (JP2)|jp2'; return 0 ;;
-	233f52414449414e4345*) printf 'Radiance HDR image|hdr'; return 0 ;;
-	52494646????????57454250*) printf 'WEBP image|webp'; return 0 ;;
-	52494646????????57415645*) printf 'WAV audio|wav'; return 0 ;;
-	52494646????????41564920*) printf 'AVI video|avi'; return 0 ;;
-	52494646????????414d5620*) printf 'AMV video|amv'; return 0 ;;
-	464f524d????????41494646*) printf 'AIFF audio|aiff,aif'; return 0 ;;
-	464f524d????????41494643*) printf 'AIFC audio|aifc'; return 0 ;;
-	????????6674797071742020*) printf 'QuickTime MOV video|mov'; return 0 ;;
-	????????667479704d344120*) printf 'M4A audio|m4a'; return 0 ;;
-	????????667479704d345620*) printf 'M4V video|m4v'; return 0 ;;
-	????????6674797068656963*) printf 'HEIC/HEIF image|heic,heif,hif'; return 0 ;;
-	????????6674797068656978*) printf 'HEIC/HEIF image|heic,heif,hif'; return 0 ;;
-	????????6674797068656966*) printf 'HEIC/HEIF image|heic,heif,hif'; return 0 ;;
-	????????667479706d696631*) printf 'HEIC/HEIF image|heic,heif,hif'; return 0 ;;
-	????????667479706d736631*) printf 'HEIC/HEIF image|heic,heif,hif'; return 0 ;;
-	????????6674797061766966*) printf 'AVIF image|avif'; return 0 ;;
-	????????6674797061766973*) printf 'AVIF image|avif'; return 0 ;;
-	????????667479706a703220*) printf 'JPEG 2000 (JP2)|jp2'; return 0 ;;
-	????????6674797033677034*) printf '3GP video|3gp'; return 0 ;;
-	????????6674797033677035*) printf '3GP video|3gp'; return 0 ;;
-	????????6674797033677036*) printf '3GP video|3gp'; return 0 ;;
-	????????6674797033673261*) printf '3G2 video|3g2'; return 0 ;;
-	????????6674797069736f6d*) printf 'MP4 video|mp4'; return 0 ;;
-	????????6674797069736f32*) printf 'MP4 video|mp4'; return 0 ;;
-	????????667479706d703431*) printf 'MP4 video|mp4'; return 0 ;;
-	????????667479706d703432*) printf 'MP4 video|mp4'; return 0 ;;
-	????????6674797061766331*) printf 'MP4 video|mp4'; return 0 ;;
-	????????6674797064617368*) printf 'DASH video|mpd,m4s,mp4'; return 0 ;;
-	????????6674797066347620*) printf 'Flash F4V video|f4v'; return 0 ;;
-	67696d7020786366*) printf 'GIMP XCF image|xcf'; return 0 ;;
-	3026b2758e66cf11*) printf 'ASF media (WMA/WMV)|wma,wmv,asf'; return 0 ;;
-	d0cf11e0a1b11ae1*) printf 'MS Office/OLE compound|doc,xls,ppt,msi,cfg'; return 0 ;;
-	41542654464f524d*) printf 'DjVu document|djvu,djv'; return 0 ;;
-	49544f4c49544c53*) printf 'MS Reader LIT e-book|lit'; return 0 ;;
-	7668647866696c65*) printf 'Hyper-V VHDX disk|vhdx'; return 0 ;;
-	213c617263683e*) printf 'AR archive (deb/static lib)|a,deb'; return 0 ;;
-	233f52474245*) printf 'Radiance HDR image|hdr'; return 0 ;;
-	377abcaf271c*) printf '7-Zip archive|7z'; return 0 ;;
-	526172211a07*) printf 'RAR archive|rar'; return 0 ;;
-	303730373031*) printf 'CPIO archive (newc)|cpio'; return 0 ;;
-	303730373037*) printf 'CPIO archive (odc)|cpio'; return 0 ;;
-	2a2a4143452a*) printf 'ACE archive|ace'; return 0 ;;
-	7b5c72746631*) printf 'RTF document|rtf'; return 0 ;;
-	4c554b53babe*) printf 'LUKS encrypted volume|luks,img'; return 0 ;;
-	0d0a870a0a*) printf 'JPEG XL container|jxl'; return 0 ;;
-	3c3f786d6c*) printf 'XML document|xml,svg,fb2,rss,xsl,plist'; return 0 ;;
-	2321414d52*) printf 'AMR speech audio|amr'; return 0 ;;
-	fd377a585a*) printf 'XZ stream|xz,txz'; return 0 ;;
-	4d5357494d*) printf 'Windows Imaging archive|wim'; return 0 ;;
-	????????66747970*) printf 'MP4/QuickTime container|mp4,m4a,mov,3gp,heic'; return 0 ;;
-	89504e47*) printf 'PNG image|png'; return 0 ;;
-	ff4fff51*) printf 'JPEG 2000 codestream|j2k,jpc'; return 0 ;;
-	47494638*) printf 'GIF image|gif'; return 0 ;;
-	49492a00*) printf 'TIFF image (little-endian)|tif,tiff'; return 0 ;;
-	4d4d002a*) printf 'TIFF image (big-endian)|tif,tiff'; return 0 ;;
-	38425053*) printf 'Photoshop PSD image|psd,pdd'; return 0 ;;
-	44445320*) printf 'DirectDraw Surface texture|dds'; return 0 ;;
-	762f3101*) printf 'OpenEXR image|exr'; return 0 ;;
-	00020000*) printf 'Windows cursor|cur'; return 0 ;;
-	00010000*) printf 'ICO icon / TrueType font|ico,ttf,otf'; return 0 ;;
-	69636e73*) printf 'Apple ICNS icon|icns'; return 0 ;;
-	3c737667*) printf 'SVG image|svg'; return 0 ;;
-	52494646*) printf 'RIFF container|wav,avi,webp'; return 0 ;;
-	46524d38*) printf 'DSDIFF audio (DFF)|dff'; return 0 ;;
-	63616666*) printf 'Apple CAF audio|caf'; return 0 ;;
-	44534420*) printf 'DSD streamfile audio (DSF)|dsf'; return 0 ;;
-	664c6143*) printf 'FLAC audio|flac'; return 0 ;;
-	4f676753*) printf 'OGG media|ogg,oga,opus,ogv,ogx'; return 0 ;;
-	4d546864*) printf 'MIDI music|mid,midi,rmi,kar'; return 0 ;;
-	2e736e64*) printf 'NeXT/Sun AU audio|au,snd'; return 0 ;;
-	4d414320*) printf 'Monkey Audio (APE)|ape'; return 0 ;;
-	7770766b*) printf 'WavPack audio|wv'; return 0 ;;
-	4d50434b*) printf 'Musepack audio (SV8)|mpc'; return 0 ;;
-	54544131*) printf 'True Audio (TTA)|tta'; return 0 ;;
-	616a6b67*) printf 'Shorten audio|shn'; return 0 ;;
-	494d504d*) printf 'Impulse Tracker module|it'; return 0 ;;
-	1a45dfa3*) printf 'Matroska/WebM video|mkv,webm,mka,mks'; return 0 ;;
-	000001ba*) printf 'MPEG program stream|mpg,mpeg,vob,ps'; return 0 ;;
-	000001b3*) printf 'MPEG elementary video|m2v,mpv,mpg'; return 0 ;;
-	2e524d46*) printf 'RealMedia video|rm,rmvb'; return 0 ;;
-	060e2b34*) printf 'MXF video|mxf'; return 0 ;;
-	504b0304*) printf 'ZIP/Office document|zip,docx,xlsx,pptx,odt,jar,apk,epub'; return 0 ;;
-	504b0506*) printf 'ZIP archive (empty)|zip'; return 0 ;;
-	504b0708*) printf 'ZIP archive (spanned)|zip'; return 0 ;;
-	28b52ffd*) printf 'Zstandard stream|zst'; return 0 ;;
-	04224d18*) printf 'LZ4 frame|lz4'; return 0 ;;
-	5d000080*) printf 'LZMA-alone stream|lzma'; return 0 ;;
-	894c5a4f*) printf 'LZO compressed archive|lzo'; return 0 ;;
-	4d534346*) printf 'MS Cabinet archive|cab'; return 0 ;;
-	edabeedb*) printf 'RPM package|rpm'; return 0 ;;
-	50415231*) printf 'Apache Parquet data|parquet'; return 0 ;;
-	25504446*) printf 'PDF document|pdf'; return 0 ;;
-	25215053*) printf 'PostScript/EPS document|ps,eps,ai'; return 0 ;;
-	49545346*) printf 'MS Compiled HTML (CHM)|chm'; return 0 ;;
-	4f54544f*) printf 'OpenType (CFF) font|otf'; return 0 ;;
-	74746366*) printf 'TrueType collection|ttc'; return 0 ;;
-	774f4646*) printf 'WOFF font|woff'; return 0 ;;
-	774f4632*) printf 'WOFF2 font|woff2'; return 0 ;;
-	7f454c46*) printf 'ELF binary|so,bin,elf,o,ko'; return 0 ;;
-	feedface*) printf 'Mach-O binary (32-bit BE)|bin'; return 0 ;;
-	cefaedfe*) printf 'Mach-O binary (32-bit LE)|bin'; return 0 ;;
-	feedfacf*) printf 'Mach-O binary (64-bit BE)|bin'; return 0 ;;
-	cffaedfe*) printf 'Mach-O binary (64-bit LE)|bin'; return 0 ;;
-	cafebabe*) printf 'Java class / Mach-O fat binary|class,bin'; return 0 ;;
-	0061736d*) printf 'WebAssembly module|wasm'; return 0 ;;
-	6465780a*) printf 'Android DEX bytecode|dex,odex'; return 0 ;;
-	72656766*) printf 'Windows registry hive|dat,hive,reg'; return 0 ;;
-	a1b2c3d4*) printf 'pcap packet capture|pcap,cap'; return 0 ;;
-	d4c3b2a1*) printf 'pcap packet capture (swapped)|pcap,cap'; return 0 ;;
-	0a0d0d0a*) printf 'pcapng packet capture|pcapng'; return 0 ;;
-	4f626a01*) printf 'Apache Avro object container|avro'; return 0 ;;
-	43723234*) printf 'Chrome extension (CRX)|crx'; return 0 ;;
-	514649fb*) printf 'QEMU copy-on-write disk|qcow,qcow2'; return 0 ;;
-	4b444d56*) printf 'VMware VMDK disk|vmdk'; return 0 ;;
-	ffd8ff*) printf 'JPEG image|jpg,jpeg,jfif'; return 0 ;;
-	0a0000*) printf 'PCX image|pcx'; return 0 ;;
-	0a0200*) printf 'PCX image|pcx'; return 0 ;;
-	0a0300*) printf 'PCX image|pcx'; return 0 ;;
-	0a0500*) printf 'PCX image|pcx'; return 0 ;;
-	494433*) printf 'MP3 audio (ID3v2 tag)|mp3'; return 0 ;;
-	4d502b*) printf 'Musepack audio|mpc'; return 0 ;;
-	464c56*) printf 'Flash video (FLV)|flv'; return 0 ;;
-	42494b*) printf 'Bink video|bik,bk2'; return 0 ;;
-	425a68*) printf 'BZIP2 stream|bz2,tbz2'; return 0 ;;
-	1f9d8d*) printf 'compress (.Z) archive|z'; return 0 ;;
-	5a4f4f*) printf 'ZOO archive|zoo'; return 0 ;;
-	435753*) printf 'Shockwave Flash (compressed)|swf'; return 0 ;;
-	465753*) printf 'Shockwave Flash|swf'; return 0 ;;
-	5a5753*) printf 'Shockwave Flash (LZMA)|swf'; return 0 ;;
-	ff0a*) printf 'JPEG XL codestream|jxl'; return 0 ;;
-	424d*) printf 'BMP image|bmp,dib'; return 0 ;;
-	5034*) printf 'PBM image|pbm'; return 0 ;;
-	5035*) printf 'PGM image|pgm'; return 0 ;;
-	5036*) printf 'PPM image|ppm'; return 0 ;;
-	fffb*) printf 'MP3 audio (MPEG-1)|mp3'; return 0 ;;
-	fff3*) printf 'MP3 audio (MPEG-2)|mp3'; return 0 ;;
-	fff2*) printf 'MP3 audio (MPEG-2.5)|mp3'; return 0 ;;
-	ffe3*) printf 'MP3 audio (MPEG-2.5 LSF)|mp3'; return 0 ;;
-	fff1*) printf 'AAC audio (ADTS)|aac,adts'; return 0 ;;
-	fff9*) printf 'AAC audio (ADTS)|aac,adts'; return 0 ;;
-	1f8b*) printf 'GZIP stream|gz,tgz'; return 0 ;;
-	60ea*) printf 'ARJ archive|arj'; return 0 ;;
-	7ffe*) printf 'Bourne shell archive|shar'; return 0 ;;
-	4d5a*) printf 'DOS/PE executable|exe,dll,sys,ocx,scr'; return 0 ;;
-	2321*) printf 'Script (#!)|sh,py,pl,rb,el,js,ts'; return 0 ;;
-	esac
-	return 1
+	Best='' BestScore=-1
+	for Key in "${!Magic[@]}"; do
+		Val=${Magic[$Key]}
+		IFS='|' read -r Name Exts Pat Off <<< "$Val"
+		Off=${Off:-0}
+		if Magic_Match "$H" "$Off" "$Pat"; then
+			Concrete=${Pat//\?/}
+			Score=$(( ${#Concrete} * 1000 + ${#Pat} ))
+			if [ "$Score" -gt "$BestScore" ]; then
+				BestScore=$Score
+				Best="$Key|$Name|$Exts"
+			fi
+		fi
+	done
+	[ -n "$Best" ] || return 1
+	printf '%s' "$Best"
 }
 
 # Magic_Report <file> : one report line for a single file
 Magic_Report() {
-	local F=$1 H Detected Name Exts Ext Verdict
+	local F=$1 H Detected Key Rest Name Exts Ext Verdict
 	H=$(Magic_Nibbles "$F" 32774)
 	[ -n "$H" ] || H='(empty)'
-	Detected=$(Magic_Detect "$H") && Name=${Detected%%|*} Exts=${Detected#*|} || Name='?' Exts=''
+	if Detected=$(Magic_Detect "$H"); then
+		Key=${Detected%%|*}
+		Rest=${Detected#*|}
+		Name=${Rest%%|*}
+		Exts=${Rest#*|}
+	else
+		Key='' Name='?' Exts=''
+	fi
 	Ext=${F##*.}
 	if [ "$Ext" = "${F##*/}" ]; then Ext='(none)'; else Ext=${Ext,,}; fi
 	if [ "$Name" = '?' ]; then
