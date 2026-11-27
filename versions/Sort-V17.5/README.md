@@ -214,6 +214,20 @@ offset 32769, MOBI's `BOOKMOBI` at offset 60, S3M's `SCRM` at offset
 44, MOD's `M.K` at offset 108, and MPEG-TS 0x47 sync bytes at offsets
 0, 188 and 376. Verdicts unchanged: MATCH, MISMATCH, NO-EXT, UNKNOWN.
 
+In the Bash edition the whole table lives in one `declare -A Magic`
+associative array keyed by MIME type/subtype, one entry per format:
+
+    declare -A Magic=(
+        ['image/png']='PNG image|png|89504e47'
+        ['application/x-tar']='TAR archive|tar|7573746172|257'
+        ['image/webp']='WEBP image|webp|52494646????????57454250'
+    )
+
+Value fields: `Name|extensions|hex-pattern[|byte-offset]`; `?` matches
+any nibble and the main MIME type is the key part before the `/`.
+Detection scores every matching key (concrete nibbles first, then
+pattern length) and reports the most specific hit.
+
 Works in all three languages: `Sort-V17.5.sh --magic *`,
 `Sort-V17.5.pas --magic *` (FreePascal, native TFileStream) and
 `python3 Sort-V17.5.py --magic *`. Still zero external calls; the
