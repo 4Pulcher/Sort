@@ -192,9 +192,9 @@ standalone - exif-*, id3-title/artist/album/year/genre/track and title (audio/EX
 `python3 Sort-V17.5.py --mode=copy --subdirs=exif-date photo.jpg`
 
 
-### New in V17.5 - --magic goes comprehensive (153 signatures)
+### New in V17.5 - --magic goes comprehensive (237 signatures)
 
-The V17.4 signature table grew from 24 to 153 entries, covering the
+The V17.4 signature table grew from 24 to 237 entries, covering the
 standard magic-number universe: images (PNG, JPEG, JPEG 2000, JPEG XL,
 GIF, BMP, TIFF, PSD, XCF, DDS, EXR, HDR, ICO/CUR, ICNS, PCX, PNM, SVG),
 audio (MP3, AAC, FLAC, OGG, WAV, AIFF, M4A, MIDI, AU, AMR, WMA, APE,
@@ -213,6 +213,19 @@ payload types, TAR's `ustar` at offset 257, ISO 9660's `CD001` at
 offset 32769, MOBI's `BOOKMOBI` at offset 60, S3M's `SCRM` at offset
 44, MOD's `M.K` at offset 108, and MPEG-TS 0x47 sync bytes at offsets
 0, 188 and 376. Verdicts unchanged: MATCH, MISMATCH, NO-EXT, UNKNOWN.
+
+The V17.5 table was expanded again in place, from 153 to 237
+entries: raw photos (ORF, RW2, CR2, BigTIFF), JPEG XR, FLIF, FITS,
+KTX, ANI, ILBM, QOI, PAM, CorelDRAW; audio (8SVX, MAUD, RMID, SF2,
+VOC, OptimFROG, DTS, AMR-WB, MTM, six more MOD ids, MED, SID, NSF,
+VGM); video brands (HEVC hvc1/hev1, AV1, DivX, M4B, NUT); archives
+(XAR, LHA, Git packfile / Quake PAK, MPQ, IWAD/PWAD, StuffIt, DMS);
+ROM images (NES, N64 both endian, Mega Drive, PSX exe, Android boot);
+documents (HLP, PDB, PST, LNK, PHP, armored ASCII, PFB); dumps and
+keys (minidump, kernel dumps, Java serialized, JKS, Android backup);
+filesystems (ext2/3/4 at offset 1080, NTFS at 3, XFS, Btrfs at 64,
+VDI at 64, swap at 4086); and data formats (ORC, Arrow, HDF5, NetCDF,
+MATLAB, Stata, RData, Redis, torrent, BAM, CRAM, Git index).
 
 In the Bash edition the whole table lives in one `declare -A Magic`
 associative array keyed by MIME type/subtype, one entry per format:
