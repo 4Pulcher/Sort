@@ -1,26 +1,28 @@
 # Sort - unified repository
 
-One repository, one branch, one directory per version, three languages each.
+One repository, one branch, one directory per version, four languages each.
 
-## Root - the latest version (V17.5)
+## Root - the latest version (V18)
 
 | File | What |
 |---|---|
-| `Sort.sh` | latest Bash edition (V17.5, self-contained, threaded) |
-| `Sort.pas` | latest FreePascal edition (V17.5 port) |
-| `Sort.py` | latest Python edition (V17.5 era-gated, with --magic standalone engine, stdlib only) |
+| `Sort.sh` | latest Bash edition (V18, self-contained, threaded) |
+| `Sort.pas` | latest FreePascal edition (V18 port) |
+| `Sort.py` | latest Python edition (V18 era-gated, with --magic standalone engine, stdlib only) |
+| `Sort.cpp` | latest C++17 edition (V18 port: single file, no dependencies, native magic/dims/hashes/EXIF/ID3) |
 
 ## versions/ - every version, in order
 
 Each era lives in `versions/Sort-V<version>/` and always contains the same
-four files:
+five files (from V18 on, four languages + README):
 
 * `Sort-V<version>.sh`   - the Bash edition of that era
 * `Sort-V<version>.pas`  - its FreePascal translation
 * `Sort-V<version>.py`   - its standalone Python edition
+* `Sort-V<version>.cpp`  - its standalone C++17 edition (from V18)
 * `README.md`            - what that version is and does
 
-Lineage: V1.0 - V17.5 (see `other/Sort-Versions.md` for the full
+Lineage: V1.0 - V18 (see `other/Sort-Versions.md` for the full
 chronology and era table).
 
 ### The Python editions
@@ -50,5 +52,7 @@ them in seconds.
 ./Sort.sh --help                      # latest (Bash)
 ./Sort.sh --magic Downloads/*          # magic-number detection report
 python3 Sort.py --mode=dummy Downloads
+g++ -std=c++17 -O2 -pthread -o Sort Sort.cpp   # build the C++ edition
+./Sort --version && ./Sort --self-test
 python3 versions/Sort-V9.3/Sort-V9.3.py -h     # any historical era
 ```

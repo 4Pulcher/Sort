@@ -5,7 +5,7 @@ Sort.py - Media-Intelligent File Organizer (Python edition)
 ===========================================================
 
 A pure-Python (standard library only) implementation of the complete Bash
-`Sort.sh` lineage (V1.0 -> V17.5), designed to match the feature union of the
+`Sort.sh` lineage (V1.0 -> V18), designed to match the feature union of the
 whole family with ZERO external dependencies:
 
 * no `file`, no ImageMagick, no FFmpeg, no ExifTool, no GNU coreutils calls:
@@ -61,8 +61,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-__version__ = "py-17.5"          # corresponds to the latest Bash edition
-LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V17.5 lineage (stdlib only)"
+__version__ = "py-18"          # corresponds to the latest Bash edition
+LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V18 lineage (stdlib only)"
 
 # ===========================================================================
 # 1. UI: COLORS, ICONS, INTERNATIONALIZATION
@@ -1646,21 +1646,21 @@ def magic_report(path) -> str:
 
 
 # ===========================================================================
-# EDITION GATE - auto-generated for Sort-V17.5
-# Scope derived mechanically from Sort-V17.5.sh (era vocabulary).
+# EDITION GATE - auto-generated for Sort-V18
+# Scope derived mechanically from Sort-V18.sh (era vocabulary).
 # Run with --self-test to verify this engine, -h for the era usage.
 # ===========================================================================
 
-EDITION = {'version': 'V17.5', 'modes': ['copy', 'dummy', 'move', 'remove', 'shred', 'trash'], 'flags': ['--dirs', '--extension', '--hidden', '--jobs', '--lang', '--links', '--log', '--magic', '--no-colors', '--pause', '--quiet', '--recursive', '--rename', '--replace', '--subdirs', '--target', '--type', '--undo'], 'keywords': ['accessed', 'created', 'day', 'exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'extension', 'format', 'format+size', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'md5sum', 'mime', 'mime-main', 'mime-sub', 'modified', 'month', 'name', 'random', 'sha1sum', 'sha224sum', 'sha256sum', 'sha384sum', 'sha512sum', 'size', 'size+format', 'title', 'year', 'year+month', 'year+month+day'], 'modifiers': [], 'fallbacks': True, 'stripped': {'--decompress': 'archive decompress (--decompress) - stripped', '--delete': 'delete mode - use --mode=remove', '--exif': 'EXIF rename/strip levels (--exif) - stripped', '--needed': 'dependency listing - stripped', '--noconfirm': 'interactive confirm - stripped', '--non-interactive': 'interactive confirm - stripped', '--stats': 'stats mode (--stats) - stripped', '--strip': 'metadata stripping (--strip) - stripped', '--title': 'metadata title rename (--title) - stripped', '--verbose': 'verbose flag - use default output', '--version': '--version'}}
+EDITION = {'version': 'V18', 'modes': ['copy', 'dummy', 'move', 'remove', 'shred', 'trash'], 'flags': ['--dirs', '--extension', '--hidden', '--jobs', '--lang', '--links', '--log', '--magic', '--no-colors', '--pause', '--quiet', '--recursive', '--rename', '--replace', '--subdirs', '--target', '--type', '--undo'], 'keywords': ['accessed', 'created', 'day', 'exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'extension', 'format', 'format+size', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'md5sum', 'mime', 'mime-main', 'mime-sub', 'modified', 'month', 'name', 'random', 'sha1sum', 'sha224sum', 'sha256sum', 'sha384sum', 'sha512sum', 'size', 'size+format', 'title', 'year', 'year+month', 'year+month+day'], 'modifiers': [], 'fallbacks': True, 'stripped': {'--decompress': 'archive decompress (--decompress) - stripped', '--delete': 'delete mode - use --mode=remove', '--exif': 'EXIF rename/strip levels (--exif) - stripped', '--needed': 'dependency listing - stripped', '--noconfirm': 'interactive confirm - stripped', '--non-interactive': 'interactive confirm - stripped', '--stats': 'stats mode (--stats) - stripped', '--strip': 'metadata stripping (--strip) - stripped', '--title': 'metadata title rename (--title) - stripped', '--verbose': 'verbose flag - use default output', '--version': '--version'}}
 
 CANONICAL_KEYWORDS = ["year", "month", "day", "year+month", "year+month+day", "created", "created-date", "created-time", "modified", "modified-date", "modified-time", "accessed", "accessed-date", "accessed-time", "mime", "mime-main", "mime-sub", "type", "extension", "ext", "ext-lower", "ext-upper", "filename", "name", "basename", "stem", "original", "size", "format", "size+format", "format+size", "pixel-size", "resolution", "pixel-format", "md5sum", "sha1sum", "sha224sum", "sha256sum", "sha384sum", "sha512sum", "random"]
 CANONICAL_KEYWORDS = CANONICAL_KEYWORDS + ['exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'title']
 
-_ERA_USAGE = """Sort-V17.5.py - standalone Python edition of Sort-V17.5.sh
+_ERA_USAGE = """Sort-V18.py - standalone Python edition of Sort-V18.sh
 (Standard library only; no external commands, no other files required.)
 
 USAGE
-    Sort-V17.5.py [OPTIONS] FILES...
+    Sort-V18.py [OPTIONS] FILES...
 
 MODES (--mode=...)
     copy, dummy, move, remove, shred, trash
@@ -1684,7 +1684,7 @@ OUT OF SCOPE FOR THIS EDITION (stripped; see README.md)
 
 
 def _era_error(msg):
-    print("Sort-V17.5 edition error: " + msg)
+    print("Sort-V18 edition error: " + msg)
     print("Allowed here -- modes: " + ", ".join(EDITION["modes"]) +
           " | flags: " + ", ".join(EDITION["flags"]) +
           " | keywords: " + ", ".join(EDITION["keywords"]))
