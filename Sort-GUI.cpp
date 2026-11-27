@@ -2,7 +2,7 @@
 // Sort-GUI.cpp - Media-Intelligent File Organizer (Qt6/QML edition)
 // ===========================================================================
 // A pure C++17 (standard library only) port of the complete Sort.sh
-// lineage (V1.0 -> V19), matching the feature union of the family:
+// lineage (V1.0 -> V20), matching the feature union of the family:
 //
 //   * no `file`, no ImageMagick, no FFmpeg, no ExifTool, no OpenSSL:
 //     MIME sniffing, media dimensions, hashing (MD5 + SHA-1/2 family),
@@ -14,7 +14,7 @@
 //     to the Bash/Pascal/Python editions)
 //   * V15 undo log (JSONL), V14 freedesktop trash + shred, V12 --jobs
 //
-// Build:  Qt6 + QML; see the build notes at the bottom of this file
+// Build:  g++ -std=c++17 -O2 -pthread -o Sort Sort.cpp
 // (also compiles with clang++ -std=c++17; needs nothing but libstdc++
 // and a POSIX userland for fsync/trash paths - i.e. any Linux/macOS)
 //
@@ -33,7 +33,6 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
-#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -47,6 +46,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <functional>
 #include <unordered_map>
 #include <vector>
 
@@ -56,9 +56,9 @@
 
 namespace fs = std::filesystem;
 
-static const char* CPP_VERSION = "cpp-19";
+static const char* CPP_VERSION = "cpp-20";
 static const char* LINEAGE_NOTE =
-    "C++17 port of the Sort.sh V1.0-V18 lineage (std library only)";
+    "C++17 port of the Sort.sh V1.0-V20 lineage (std library only)";
 
 // ===========================================================================
 // 1. UI: COLORS, ICONS, INTERNATIONALIZATION
@@ -1470,6 +1470,255 @@ static std::string magic_report(const fs::path& path) {
            "\nverdict: " + verdict;
 }
 
+
+// ===========================================================================
+// 6b. RAW DEVICE SCAN (V20) - --scan-raw: signature walk + carving
+// ===========================================================================
+// Scans a raw block device (/dev/sdX) or a disk image file with the same
+// 237-entry table used by --magic. Every byte offset is a candidate; in
+// copy mode hits are carved out (with format-aware end detection); dummy
+// mode reports only. The device is opened read-only and --scan-raw
+// refuses remove/trash/shred.
+
+static const size_t RAW_BLOCK_SZ = 1u << 20;
+static const size_t RAW_CARRY   = 32800;   // max entry offset + max signature
+static const size_t RAW_CARVE_MAX = 5u << 20;
+
+struct RawPat {
+    int off;
+    std::string sig;        // nibble pattern, '?' = any
+    std::string name, exts;
+    std::string anchor;     // literal bytes to search for (hex)
+    int anchor_nibble;      // nibble index inside sig where anchor starts
+};
+static std::vector<RawPat> raw_patterns;
+
+static std::string hex_to_bytes(const std::string& hx) {
+    std::string out;
+    for (size_t i = 0; i + 1 < hx.size(); i += 2)
+        out += (char)strtol(hx.substr(i, 2).c_str(), nullptr, 16);
+    return out;
+}
+
+static void raw_build_patterns() {
+    if (!raw_patterns.empty()) return;
+    for (const auto& e : MAGIC_TABLE) {
+        std::string sig = e.sig;
+        if (sig.size() < 4) continue;        // 1-byte signatures are noise
+        RawPat p;
+        p.off = e.off; p.sig = sig; p.name = e.name; p.exts = e.exts;
+        if (sig.find('?') == std::string::npos) {
+            p.anchor = hex_to_bytes(sig);
+            p.anchor_nibble = 0;
+        } else {
+            // longest even-aligned even-length known run (>= 4 hex)
+            int best_len = 0, best_start = -1;
+            int i = 0;
+            while (i < (int)sig.size()) {
+                if (sig[i] == '?') { ++i; continue; }
+                int j = i;
+                while (j < (int)sig.size() && sig[j] != '?') ++j;
+                for (int s = i; s < j; ++s) {
+                    int e2 = j;
+                    while ((e2 - s) % 2 != 0) --e2;
+                    if (s % 2 == 0 && (e2 - s) >= best_len && (e2 - s) >= 4) {
+                        best_len = e2 - s; best_start = s;
+                    }
+                }
+                i = j;
+            }
+            if (best_start < 0) continue;     // cannot anchor reliably
+            p.anchor = hex_to_bytes(sig.substr(best_start, best_len));
+            p.anchor_nibble = best_start;
+        }
+        raw_patterns.push_back(p);
+    }
+}
+
+static bool raw_sig_match(const std::string& buf, size_t pos, const RawPat& p) {
+    // buf is hex; sig nibbles are matched against buf starting at hex index pos
+    if (buf.size() < pos + p.sig.size()) return false;
+    for (size_t i = 0; i < p.sig.size(); ++i)
+        if (p.sig[i] != '?' && buf[pos + i] != p.sig[i]) return false;
+    return true;
+}
+
+static std::string raw_hex(const std::string& bytes) {
+    static const char* hexd = "0123456789abcdef";
+    std::string out;
+    out.reserve(bytes.size() * 2);
+    for (unsigned char c : bytes) { out += hexd[c >> 4]; out += hexd[c & 15]; }
+    return out;
+}
+
+static std::pair<size_t, bool> raw_carve_size(const std::string& head,
+                                             const std::string& name,
+                                             size_t cap) {
+    auto capped = [&](size_t v) { return std::make_pair(std::min(v, cap), false); };
+    auto exact  = [&](size_t v) { return std::make_pair(std::min(v, cap), true); };
+    auto rd32be = [&](size_t p) -> unsigned {
+        return ((unsigned char)head[p] << 24) | ((unsigned char)head[p+1] << 16) |
+               ((unsigned char)head[p+2] << 8) | (unsigned char)head[p+3];
+    };
+    if (strncmp(name.c_str(), "PNG image", 9) == 0) {
+        size_t pos = 8;
+        while (pos + 12 <= head.size()) {
+            unsigned clen = rd32be(pos);
+            std::string ctype = head.substr(pos + 4, 4);
+            pos += 12 + (size_t)clen;            // len + type + data + CRC
+            if (ctype == "IEND") return exact(pos);
+            if (clen > head.size()) return capped(pos);
+        }
+        return capped(head.size());
+    }
+    if (strncmp(name.c_str(), "JPEG image", 10) == 0) {
+        size_t end = head.rfind("\xff\xd9");
+        if (end != std::string::npos) return exact(end + 2);
+        return capped(head.size());
+    }
+    if (strncmp(name.c_str(), "GIF image", 9) == 0) {
+        size_t end = head.rfind("\x3b");
+        if (end != std::string::npos && end >= 13) return exact(end + 1);
+        return capped(head.size());
+    }
+    if (strncmp(name.c_str(), "ZIP/", 4) == 0 || strncmp(name.c_str(), "ZIP archive", 11) == 0) {
+        size_t end = head.rfind("PK\x05\x06");
+        if (end != std::string::npos && end + 22 <= head.size())
+            return exact(end + 22 + (size_t)head[end + 20] +
+                         (size_t)(unsigned char)head[end + 21] * 256);
+        return capped(head.size());
+    }
+    if (strncmp(name.c_str(), "PDF document", 12) == 0) {
+        size_t end = head.rfind("%%EOF");
+        if (end != std::string::npos) return exact(end + 5);
+        return capped(head.size());
+    }
+    return capped(head.size());
+}
+
+struct RawHit {
+    unsigned long long offset;
+    std::string name, exts;
+    size_t size;
+    bool exact;
+};
+
+static void raw_scan_device(const std::string& dev,
+                            std::vector<RawHit>& out) {
+    raw_build_patterns();
+    std::ifstream f(dev, std::ios::binary);
+    if (!f) { std::cout << "RAW-SCAN: cannot open " << dev << "\n"; return; }
+    std::ifstream probe(dev, std::ios::binary);
+    unsigned long long base = 0, next_allowed = 0;
+    std::string carry;
+    std::vector<char> block(RAW_BLOCK_SZ);
+    std::vector<std::pair<unsigned long long, size_t>> anchors;  // hit cand, pat idx
+    while (true) {
+        f.read(block.data(), block.size());
+        std::streamsize got = f.gcount();
+        if (got <= 0) break;
+        std::string buf = carry + std::string(block.data(), (size_t)got);
+        std::string hexbuf = raw_hex(buf);
+        unsigned long long buf_base = base - carry.size();
+        anchors.clear();
+        for (size_t pi = 0; pi < raw_patterns.size(); ++pi) {
+            const RawPat& p = raw_patterns[pi];
+            size_t apos = 0;
+            while (true) {
+                size_t hit = hexbuf.find(raw_hex(p.anchor), apos);
+                if (hit == std::string::npos) break;
+                apos = hit + 1;
+                if (hit % 2 != 0) continue;             // byte alignment
+                size_t sig_start = hit - (size_t)p.anchor_nibble;
+                if (sig_start % 2 != 0) continue;
+                if (raw_sig_match(hexbuf, sig_start, p))
+                    anchors.push_back({buf_base + sig_start / 2 - (unsigned long long)p.off, pi});
+            }
+        }
+        std::sort(anchors.begin(), anchors.end());
+        for (auto& [hit, pi] : anchors) {
+            if (hit < next_allowed) continue;
+            const RawPat& p = raw_patterns[pi];
+            probe.clear();
+            probe.seekg((std::streamoff)hit);
+            std::string head(std::min(RAW_CARVE_MAX, RAW_BLOCK_SZ), '\0');
+            probe.read(head.data(), head.size());
+            head.resize(probe.gcount());
+            auto [size, exact] = raw_carve_size(head, p.name, RAW_CARVE_MAX);
+            next_allowed = exact ? (hit + size) : (hit + 1);
+            out.push_back({hit, p.name, p.exts, size, exact});
+        }
+        base += (unsigned long long)got;
+        carry = buf.size() > RAW_CARRY ? buf.substr(buf.size() - RAW_CARRY) : buf;
+    }
+}
+
+static std::string raw_json_quote(const std::string& s) {
+    std::string out = "\"";
+    for (char c : s) {
+        if (c == '"' || c == '\\') out += '\\';
+        if ((unsigned char)c < 0x20) { char b[8]; std::snprintf(b, 8, "\\u%04x", (unsigned)c); out += b; }
+        else out += c;
+    }
+    return out + "\"";
+}
+
+static std::string raw_first_ext(const std::string& exts) {
+    if (exts.empty()) return "bin";
+    size_t c = exts.find(',');
+    return c == std::string::npos ? exts : exts.substr(0, c);
+}
+
+static int run_raw_scan(const std::string& dev, const std::string& mode,
+                        const fs::path& target, const std::optional<fs::path>& log) {
+    if (mode == "move" || mode == "remove" || mode == "trash" || mode == "shred") {
+        std::cout << "RAW-SCAN: --scan-raw supports dummy and copy only "
+                     "(mode '" << mode << "' refused)\n";
+        return 64;
+    }
+    std::vector<RawHit> hits;
+    raw_scan_device(dev, hits);
+    std::cout << "RAW-SCAN: " << dev << "\n";
+    fs::path outdir = target / "RAW-CARVE";
+    if (mode == "copy") fs::create_directories(outdir);
+    std::ifstream src(dev, std::ios::binary);
+    for (const auto& h : hits) {
+        std::string ext = raw_first_ext(h.exts);
+        char offhex[32];
+        std::snprintf(offhex, sizeof offhex, "0x%012llx %llu",
+                      (unsigned long long)h.offset, (unsigned long long)h.offset);
+        std::cout << "  hit: " << offhex << " " << h.name << " -> " << ext
+                  << " (carve " << h.size << " bytes" << (h.exact ? "" : ", capped") << ")\n";
+        if (mode != "copy" || !src) continue;
+        char name[32];
+        std::snprintf(name, sizeof name, "%012llx",
+                      (unsigned long long)h.offset);
+        fs::path dest = outdir / (std::string(name) + "." + ext);
+        std::ofstream dst(dest, std::ios::binary);
+        src.clear();
+        src.seekg((std::streamoff)h.offset);
+        size_t remaining = h.size;
+        char buf[1 << 20];
+        while (remaining > 0) {
+            size_t want = std::min(remaining, sizeof buf);
+            src.read(buf, (std::streamsize)want);
+            std::streamsize got = src.gcount();
+            if (got <= 0) break;
+            dst.write(buf, got);
+            remaining -= (size_t)got;
+        }
+        dst.close();
+        std::cout << "  carved: " << dest.string() << "\n";
+        if (log) {
+            std::ofstream lf(*log, std::ios::app);
+            lf << "{\"action\": \"carved\", \"src\": " << raw_json_quote(dev + "@" + std::to_string(h.offset))
+               << ", \"dst\": " << raw_json_quote(dest.string()) << "}\n";
+        }
+    }
+    std::cout << "RAW-SCAN: " << hits.size() << " signatures found\n";
+    return 0;
+}
+
 // ===========================================================================
 // 7. MODES: DUMMY / COPY / MOVE / REMOVE / TRASH / SHRED (V14 Safe Transport)
 // ===========================================================================
@@ -1982,6 +2231,9 @@ static int undo_log(const fs::path& logfile) {
             } else if (a == "copied" && !dst.empty() && fs::exists(dst)) {
                 fs::remove(dst);
                 ++undone;
+            } else if (a == "carved" && !dst.empty() && fs::exists(dst)) {
+                fs::remove(dst);           // carved fragments never go back
+                ++undone;
             } else if (a == "trashed") {
                 fs::path cand = fs::path(xdg_data_home()) / "Trash/files" /
                                 fs::path(src).filename();
@@ -2159,7 +2411,7 @@ static const std::vector<std::string> EDITION_MODES = {
 static const std::vector<std::string> EDITION_FLAGS = {
     "--dirs", "--extension", "--hidden", "--jobs", "--lang", "--links", "--log",
     "--magic", "--no-colors", "--pause", "--quiet", "--recursive", "--rename",
-    "--replace", "--subdirs", "--target", "--type", "--undo"};
+    "--replace", "--scan-raw", "--subdirs", "--target", "--type", "--undo"};
 static const std::vector<std::string> EDITION_KEYWORDS = {
     "accessed", "created", "day", "exif-date", "exif-datetime", "exif-make",
     "exif-model", "exif-orientation", "extension", "format", "format+size",
@@ -2179,18 +2431,18 @@ static const std::vector<std::string> CANONICAL_KEYWORDS = {
     "id3-album", "id3-artist", "id3-genre", "id3-title", "id3-track", "id3-year", "title"};
 
 static const char* ERA_USAGE =
-    "Sort-V19.cpp - standalone C++ edition of Sort-V19.sh\n"
+    "Sort-V20.cpp - standalone C++ edition of Sort-V20.sh\n"
     "(C++17 only; no external commands, no dependencies required.)\n"
     "\n"
     "USAGE\n"
-    "    Sort-V19.cpp [OPTIONS] FILES...\n"
+    "    Sort-V20.cpp [OPTIONS] FILES...\n"
     "\n"
     "MODES (--mode=...)\n"
     "    copy, dummy, move, remove, shred, trash\n"
     "\n"
     "OPTIONS\n"
-    "    --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --subdirs, --target, --type, --undo, inputs\n"
-    "    --magic             print a magic-number detection report (237 signature formats) and exit\n"
+    "    --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --scan-raw, --subdirs, --target, --type, --undo, inputs\n"
+    "    --magic             print a magic-number detection report (237 signature formats) and exit\n    --scan-raw DEVICE   scan a raw device or disk image (237 signatures); dry-run report, --mode=copy carves fragments\n"
     "\n"
     "TEMPLATE KEYWORDS (for --dirs / --subdirs/--rename/--extension/--dirs)\n"
     "    accessed, created, day, exif-date, exif-datetime, exif-make, exif-model, exif-orientation, extension, format, format+size, id3-album, id3-artist, id3-genre, id3-title, id3-track, id3-year, md5sum, mime, mime-main, mime-sub, modified, month, name, random, sha1sum, sha224sum, sha256sum, sha384sum, sha512sum, size, size+format, title, year, year+month, year+month+day\n"
@@ -2205,7 +2457,7 @@ static const char* ERA_USAGE =
     "    --decompress: archive decompress (--decompress) - stripped; --delete: delete mode - use --mode=remove; --exif: EXIF rename/strip levels (--exif) - stripped; --needed: dependency listing - stripped; --noconfirm: interactive confirm - stripped; --non-interactive: interactive confirm - stripped; --stats: stats mode (--stats) - stripped; --strip: metadata stripping (--strip) - stripped; --title: metadata title rename (--title) - stripped; --verbose: verbose flag - use default output; --version: --version\n";
 
 static int era_error(const std::string& msg) {
-    std::cout << "Sort-V19 edition error: " << msg << "\n";
+    std::cout << "Sort-V20 edition error: " << msg << "\n";
     std::cout << "Allowed here -- modes: ";
     for (size_t i = 0; i < EDITION_MODES.size(); ++i)
         std::cout << (i ? ", " : "") << EDITION_MODES[i];
@@ -2237,7 +2489,7 @@ static void check_template(const std::string& value, const std::string& arg) {
                         != CANONICAL_KEYWORDS.end()
                     && std::find(EDITION_KEYWORDS.begin(), EDITION_KEYWORDS.end(), kw)
                         == EDITION_KEYWORDS.end()) {
-                    std::exit(era_error("keyword '" + kw + "' is not part of Sort-V19 (argument "
+                    std::exit(era_error("keyword '" + kw + "' is not part of Sort-V20 (argument "
                                         + arg + ")"));
                 }
             }
@@ -2283,16 +2535,17 @@ static int era_main(const std::vector<std::string>& argv) {
         if (a == "--self-test" || a == "--version" || a.empty() || a[0] != '-') continue;
         std::string name = a.substr(0, a.find('='));
         for (auto& c : name) c = (char)std::tolower((unsigned char)c);
+        if (name == "--scan-raw") continue;
         if (name == "--mode") {
             std::string val;
             if (a.find('=') != std::string::npos) val = to_lower(a.substr(a.find('=') + 1));
             if (!val.empty()
                 && std::find(EDITION_MODES.begin(), EDITION_MODES.end(), val) == EDITION_MODES.end())
-                return era_error("mode '" + val + "' is not part of Sort-V19");
+                return era_error("mode '" + val + "' is not part of Sort-V20");
             continue;
         }
         if (std::find(allowed.begin(), allowed.end(), name) == allowed.end())
-            return era_error("option '" + name + "' is not part of Sort-V19");
+            return era_error("option '" + name + "' is not part of Sort-V20");
         if (a.find('=') != std::string::npos
             && (name == "--dirs" || name == "--subdirs" || name == "--rename"
                 || name == "--extension"))
@@ -2306,6 +2559,7 @@ static int era_main(const std::vector<std::string>& argv) {
 static int real_main(const std::vector<std::string>& argv) {
     Options opts;
     fs::path undo;
+    std::string scan_raw;
     bool want_self_test = false, want_version = false, want_help = false;
     auto need_val = [&](const std::vector<std::string>& a, size_t& i,
                         const std::string& inline_val) -> std::string {
@@ -2344,6 +2598,7 @@ static int real_main(const std::vector<std::string>& argv) {
         else if (name == "--jobs") opts.jobs = std::max(1, std::stoi(need_val(argv, i, inline_val)));
         else if (name == "--log") opts.log = need_val(argv, i, inline_val);
         else if (name == "--undo") undo = need_val(argv, i, inline_val);
+        else if (name == "--scan-raw") scan_raw = need_val(argv, i, inline_val);
         else if (name == "--no-cleanup") opts.cleanup_empty = false;
         else if (name == "--no-colors") opts.colors = false;
         else if (name == "--no-icons") opts.icons = false;
@@ -2352,12 +2607,14 @@ static int real_main(const std::vector<std::string>& argv) {
         else { std::cout << "unknown option: " << name << "\n"; return 64; }
     }
     if (want_version) {
-        std::cout << "Sort.cpp cpp-19 (C++17 port of the Sort.sh V1.0-V18 lineage)\n";
+        std::cout << "Sort.cpp cpp-20 (C++17 port of the Sort.sh V1.0-V20 lineage)\n";
         return 0;
     }
     if (want_self_test) return run_self_test();
     if (want_help) { std::cout << ERA_USAGE; return 0; }
     if (!undo.empty()) return undo_log(undo);
+    if (!scan_raw.empty())
+        return run_raw_scan(scan_raw, opts.mode, opts.target, opts.log);
     if (opts.inputs.empty()) { std::cout << ERA_USAGE; return 0; }
     return Organizer(opts).run();
 }
@@ -2372,8 +2629,7 @@ int sort_cli_main(int argc, char** argv) {
     }
 }
 
-// ===========================================================================
-// 12. Qt6 / QML GUI LAYER (V19)
+// 12. Qt6 / QML GUI LAYER (V20: adds --scan-raw device scan)
 // ===========================================================================
 // The engine above is pure C++17; this layer is a thin QObject bridge that
 // exposes EVERY option of the CLI to QML, plus a worker thread that runs
@@ -2454,7 +2710,8 @@ public:
     bool colors() const { return colors_; }            void setColors(bool v) { if (v != colors_) { colors_ = v; emit colorsChanged(); } }
     bool icons() const { return icons_; }              void setIcons(bool v) { if (v != icons_) { icons_ = v; emit iconsChanged(); } }
     bool running() const { return running_; }
-    QString version() const { return QStringLiteral("gui-19 (Qt6/QML front-end, engine cpp-19)"); }
+    QString version() const { return QStringLiteral("gui-20 (Qt6/QML front-end, engine cpp-20)"); }
+    QString scanRaw() const { return scanRaw_; }     void setScanRaw(const QString& v) { if (v != scanRaw_) { scanRaw_ = v; emit scanRawChanged(); } }
 
     // --- actions ---
     Q_INVOKABLE void preview() { start_run(true); }
@@ -2466,6 +2723,20 @@ public:
     }
     Q_INVOKABLE QString magicReport(const QString& path) {
         return QString::fromStdString(magic_report(fs::path(path.toStdString())));
+    }
+    Q_INVOKABLE void scanRawRun() {
+        if (scanRaw_.isEmpty()) { emit logLine(QStringLiteral("RAW-SCAN: set a device/image path first")); return; }
+        std::thread([this] {
+            setRunning(true);
+            g_log_hook = [&](const std::string& line) { emit logLine(QString::fromStdString(line)); };
+            std::optional<fs::path> log;
+            if (!logPath_.isEmpty()) log = fs::path(logPath_.toStdString());
+            int rc = run_raw_scan(scanRaw_.toStdString(), mode_.toStdString(),
+                                  fs::path(target_.toStdString()), log);
+            g_log_hook = nullptr;
+            emit logLine(QStringLiteral("RAW-SCAN finished, rc=") + QString::number(rc));
+            setRunning(false);
+        }).detach();
     }
     Q_INVOKABLE void selfTest() {
         std::thread([this] {
@@ -2494,6 +2765,7 @@ signals:
     void pauseChanged();
     void jobsChanged();
     void logPathChanged();
+    void scanRawChanged();
     void cleanupEmptyChanged();
     void langChanged();
     void colorsChanged();
@@ -2560,6 +2832,7 @@ private:
     double pause_ = 0.0;
     int jobs_ = 1;
     QString logPath_;
+    QString scanRaw_;
     bool cleanupEmpty_ = true;
     QString lang_ = QStringLiteral("en");
     bool colors_ = true, icons_ = true;
@@ -2578,7 +2851,7 @@ import QtQuick.Dialogs
 ApplicationWindow {
     id: root
     width: 980; height: 720; visible: true
-    title: "Sort V19 - Media-Intelligent File Organizer"
+    title: "Sort V20 - Media-Intelligent File Organizer"
 
     Connections {
         target: Sort
@@ -2592,7 +2865,7 @@ ApplicationWindow {
     header: ToolBar {
         RowLayout {
             anchors.fill: parent; anchors.margins: 6
-            Label { text: "Sort V19"; font.bold: true; font.pixelSize: 18 }
+            Label { text: "Sort V20"; font.bold: true; font.pixelSize: 18 }
             Label { text: Sort.version; color: "gray" }
             Item { Layout.fillWidth: true }
             Label { id: status; text: Sort.running ? "Running..." : "Ready" }
@@ -2670,6 +2943,19 @@ ApplicationWindow {
                 onActivated: Sort.replace = (currentText === "ask (skip in GUI)") ? "ask" : currentText
                 Component.onCompleted: Sort.replace = "ask"
             }
+        }
+
+        // ---- Raw device scan (--scan-raw, V20) ----
+        GridLayout {
+            Layout.fillWidth: true
+            columns: 3; columnSpacing: 10; rowSpacing: 6
+            Label { text: "--scan-raw:" }
+            TextField {
+                Layout.fillWidth: true; placeholderText: "e.g. /dev/sdb or disk.img (report; mode=copy carves)"
+                text: Sort.scanRaw
+                onTextChanged: if (text !== Sort.scanRaw) Sort.scanRaw = text
+            }
+            Button { text: "Scan raw"; onClicked: Sort.scanRawRun() }
         }
 
         // ---- Templates ----
