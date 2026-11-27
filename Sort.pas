@@ -2,7 +2,7 @@
 {  NB/This code is not tested yet!                                            }
 {                                                                             }
 {                                                                             }
-{  Script  : Sort-V21.pas                                                         }
+{  Script  : Sort-V22.pas                                                         }
 {  Version : 21                                                             }
 {  Desc    : Ejder file organizer - FreePascal translation of Sort.sh v21   }
 {  Author  : HEjder                                                           }
@@ -33,7 +33,7 @@ uses
     Process, StrUtils;
 
 const
-    ScriptVersion = '21';
+    ScriptVersion = '22';
     ClosingPhrase = 'Thanks for using HEjder scripts!';
 
     C_Reset  = #27 + '[0m';
@@ -3316,7 +3316,7 @@ end;
 { Show_Help: print the full option help }
 { ------------------------------------------------------------------ }
 { MAGIC MODULE (V17.5) - --magic: magic-number detection report       }
-{ Comprehensive embedded signature table (237 formats): images,   }
+{ Comprehensive embedded signature table (260 formats): images,   }
 { audio, video, archives, documents, fonts, executables, data and disk }
 { formats. Pure TFileStream + hex comparison. Zero external calls.      }
 { ------------------------------------------------------------------ }
@@ -3645,7 +3645,7 @@ end;
 { ------------------------------------------------------------------ }
 { RAW SCAN MODULE (V20) - --scan-raw: raw device signature scan      }
 { Scans a raw device (/dev/sdX) or a disk image with the same        }
-{ 237 signatures as --magic. Print (default) reports the hits;      }
+{ 260 signatures as --magic. Print (default) reports the hits;      }
 { copy carves fragments into Target_Dir/RAW-CARVE with format-aware }
 { end detection. The device is opened read-only; move/remove/trash/ }
 { shred are refused. Pure TFileStream. Zero external calls.          }
@@ -3801,6 +3801,29 @@ begin
     Raw_Add(0, '3c53746174615f6474613e', 'Stata dataset', 'dta');
     Raw_Add(0, '64383a616e6e6f756e6365', 'BitTorrent metainfo', 'torrent');
     Raw_Add(0, '233f52414449414e4345', 'Radiance HDR image', 'hdr');
+    Raw_Add(0, '7801730d626260', 'Apple DMG disk image', 'dmg');
+    Raw_Add(0, '636f6e6563746978', 'Virtual PC VHD disk image', 'vhd');
+    Raw_Add(0, '4349534f', 'Compressed ISO image (CSO)', 'cso');
+    Raw_Add(0, '445644', 'DVD IFO navigation file', 'ifo');
+    Raw_Add(0, '02647373', 'Digital Speech Standard audio', 'dss');
+    Raw_Add(0, '23204469736b2044', 'VMware VMDK descriptor', 'vmdk');
+    Raw_Add(0, '7472756500', 'TrueType font (Mac)', 'ttf');
+    Raw_Add(0, '425047fb', 'Better Portable Graphics image', 'bpg');
+    Raw_Add(0, '424547494e3a5643', 'vCard contact file', 'vcf');
+    Raw_Add(0, 'd7cdc69a', 'Windows metafile graphics', 'wmf');
+    Raw_Add(0, 'c5d0d3c6', 'Encapsulated PostScript (binary)', 'eps');
+    Raw_Add(0, 'cfad12fe', 'Outlook Express mail store (DBX)', 'dbx');
+    Raw_Add(0, '49491a0000004845', 'Canon CRW raw photo', 'crw');
+    Raw_Add(0, 'e4525c7b8cd8a74d', 'OneNote notebook', 'one');
+    Raw_Add(0, '0a166f72672e626974636f696e2e7072', 'MultiBit Bitcoin wallet', 'wallet');
+    Raw_Add(0, '4f50434c444154', '1Password cloud keychain', 'opvault');
+    Raw_Add(0, '455646090d0aff00', 'EnCase evidence file (E01)', 'e01');
+    Raw_Add(0, '0606edf5d81d46e5bd31efe7fe74b71d', 'InDesign document', 'indd');
+    Raw_Add(0, '6c33336c', 'Skype user database', 'dbb');
+    Raw_Add(0, '7e424b00', 'Paint Shop Pro image', 'psp');
+    Raw_Add(0, '300000004c664c65', 'Windows event log (EVT)', 'evt');
+    Raw_Add(0, '456c6646696c6500', 'Windows event log (EVTX)', 'evtx');
+    Raw_Add(0, '434f5744', 'VMware COWD sparse disk', 'vmdk');
     Raw_Add(0, '2d2d2d2d2d424547494e', 'Armored ASCII block (PGP/PEM/SSH)', 'asc,pgp,gpg');
     Raw_Add(0, '52494646????????57454250', 'WEBP image', 'webp');
     Raw_Add(0, '52494646????????57415645', 'WAV audio', 'wav');
@@ -4337,8 +4360,8 @@ begin
     WriteLn(Tr('  --rename=compressed  rename archive to its main inner directory/file'));
     WriteLn('');
     WriteLn(Tr('EXTRAS:'));
-    WriteLn(Tr('  --magic            print a magic-number detection report (237 formats) and exit'));
-    WriteLn(Tr('  --scan-raw=DEVICE  scan raw device/disk image (237 signatures); copy carves'));
+    WriteLn(Tr('  --magic            print a magic-number detection report (260 formats) and exit'));
+    WriteLn(Tr('  --scan-raw=DEVICE  scan raw device/disk image (260 signatures); copy carves'));
     WriteLn(Tr('  --scan=FSFORMAT    scan a raw device or image for partitions (listed + lost), then the selected filesystems for files/lost data; FORMATS: all,ntfs,exfat,fat12,fat16,fat32,ext,btrfs,xfs,reiserfs,hfs,swap,luks; copy carves'));
     WriteLn(Tr('  --exif             add <Camera>/<Date> levels (needs exiftool)'));
     WriteLn(Tr('  --strip            strip EXIF from processed files (needs exiftool)'));

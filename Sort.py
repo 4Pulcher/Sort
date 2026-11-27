@@ -5,7 +5,7 @@ Sort.py - Media-Intelligent File Organizer (Python edition)
 ===========================================================
 
 A pure-Python (standard library only) implementation of the complete Bash
-`Sort.sh` lineage (V1.0 -> V21), designed to match the feature union of the
+`Sort.sh` lineage (V1.0 -> V22), designed to match the feature union of the
 whole family with ZERO external dependencies:
 
 * no `file`, no ImageMagick, no FFmpeg, no ExifTool, no GNU coreutils calls:
@@ -61,8 +61,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-__version__ = "py-21"          # corresponds to the latest Bash edition
-LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V21 lineage (stdlib only)"
+__version__ = "py-22"          # corresponds to the latest Bash edition
+LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V22 lineage (stdlib only)"
 
 # ===========================================================================
 # 1. UI: COLORS, ICONS, INTERNATIONALIZATION
@@ -1105,7 +1105,7 @@ def build_parser() -> argparse.ArgumentParser:
                         "image path is given as the positional input; "
                         "dummy reports, copy carves to Target/FS-CARVE (V21)")
     p.add_argument("--scan-raw", default=None, metavar="DEVICE",
-                   help="scan a raw device/disk image with the 237-signature "
+                   help="scan a raw device/disk image with the 260-signature "
                         "engine; dummy reports, copy carves to Target/RAW-CARVE (V20)")
     p.add_argument("--undo", default=None,
                    help="revert a JSONL action log (V15)")
@@ -1371,7 +1371,7 @@ TemplateEngine.keyword_value = _meta_keyword_value
 
 # ===========================================================================
 # MAGIC MODULE (V17.5) - --magic: magic-number detection report
-# Comprehensive embedded signature table (237 formats). Pure
+# Comprehensive embedded signature table (260 formats). Pure
 # standard library; no external commands.
 _MAGIC_SPAN = 32774
 
@@ -1403,6 +1403,29 @@ _MAGIC_TABLE = [
     (0, "3c53746174615f6474613e", "Stata dataset", "dta"),
     (0, "64383a616e6e6f756e6365", "BitTorrent metainfo", "torrent"),
     (0, "233f52414449414e4345", "Radiance HDR image", "hdr"),
+    (0, "7801730d626260", "Apple DMG disk image", "dmg"),
+    (0, "636f6e6563746978", "Virtual PC VHD disk image", "vhd"),
+    (0, "4349534f", "Compressed ISO image (CSO)", "cso"),
+    (0, "445644", "DVD IFO navigation file", "ifo"),
+    (0, "02647373", "Digital Speech Standard audio", "dss"),
+    (0, "23204469736b2044", "VMware VMDK descriptor", "vmdk"),
+    (0, "7472756500", "TrueType font (Mac)", "ttf"),
+    (0, "425047fb", "Better Portable Graphics image", "bpg"),
+    (0, "424547494e3a5643", "vCard contact file", "vcf"),
+    (0, "d7cdc69a", "Windows metafile graphics", "wmf"),
+    (0, "c5d0d3c6", "Encapsulated PostScript (binary)", "eps"),
+    (0, "cfad12fe", "Outlook Express mail store (DBX)", "dbx"),
+    (0, "49491a0000004845", "Canon CRW raw photo", "crw"),
+    (0, "e4525c7b8cd8a74d", "OneNote notebook", "one"),
+    (0, "0a166f72672e626974636f696e2e7072", "MultiBit Bitcoin wallet", "wallet"),
+    (0, "4f50434c444154", "1Password cloud keychain", "opvault"),
+    (0, "455646090d0aff00", "EnCase evidence file (E01)", "e01"),
+    (0, "0606edf5d81d46e5bd31efe7fe74b71d", "InDesign document", "indd"),
+    (0, "6c33336c", "Skype user database", "dbb"),
+    (0, "7e424b00", "Paint Shop Pro image", "psp"),
+    (0, "300000004c664c65", "Windows event log (EVT)", "evt"),
+    (0, "456c6646696c6500", "Windows event log (EVTX)", "evtx"),
+    (0, "434f5744", "VMware COWD sparse disk", "vmdk"),
     (0, "2d2d2d2d2d424547494e", "Armored ASCII block (PGP/PEM/SSH)", "asc,pgp,gpg"),
     (0, "52494646????????57454250", "WEBP image", "webp"),
     (0, "52494646????????57415645", "WAV audio", "wav"),
@@ -1671,7 +1694,7 @@ def magic_report(path) -> str:
 # RAW DEVICE SCAN (V20) - --scan-raw: signature walk + optional carving
 # ===========================================================================
 # Scans a raw block device (/dev/sdX, /dev/sdX1) or a disk image file with
-# the same 237-entry magic table used by --magic. Every byte offset is a
+# the same 260-entry magic table used by --magic. Every byte offset is a
 # candidate; hits can be carved out in copy mode (dry-run reports only).
 # The device is only ever opened read-only; --scan-raw refuses
 # remove/trash/shred.
@@ -1853,7 +1876,7 @@ def run_raw_scan(raw_path, mode: str, target, log=None) -> int:
 # Scans a raw device or disk image in two phases:
 #   1. partition discovery: MBR + GPT entries, plus a 512-byte-aligned
 #      filesystem-signature probe that finds deleted/lost partitions
-#   2. per selected partition: the V20 signature engine (237 formats)
+#   2. per selected partition: the V20 signature engine (260 formats)
 #      runs inside the partition range; fragments that cross the partition
 #      end or overlap another partition are marked "broken" (overwritten)
 # Modes: dummy (report only, default) and copy (carve to Target/FS-CARVE).
@@ -2198,8 +2221,8 @@ def run_fs_scan(fs_path, formats, mode, target, log=None) -> int:
 
 
 # ===========================================================================
-# EDITION GATE - auto-generated for Sort-V21
-# Scope derived mechanically from Sort-V21.sh (era vocabulary).
+# EDITION GATE - auto-generated for Sort-V22
+# Scope derived mechanically from Sort-V22.sh (era vocabulary).
 # Run with --self-test to verify this engine, -h for the era usage.
 # ===========================================================================
 
@@ -2208,19 +2231,19 @@ EDITION = {'version': 'V21', 'modes': ['copy', 'dummy', 'move', 'remove', 'shred
 CANONICAL_KEYWORDS = ["year", "month", "day", "year+month", "year+month+day", "created", "created-date", "created-time", "modified", "modified-date", "modified-time", "accessed", "accessed-date", "accessed-time", "mime", "mime-main", "mime-sub", "type", "extension", "ext", "ext-lower", "ext-upper", "filename", "name", "basename", "stem", "original", "size", "format", "size+format", "format+size", "pixel-size", "resolution", "pixel-format", "md5sum", "sha1sum", "sha224sum", "sha256sum", "sha384sum", "sha512sum", "random"]
 CANONICAL_KEYWORDS = CANONICAL_KEYWORDS + ['exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'title']
 
-_ERA_USAGE = """Sort-V21.py - standalone Python edition of Sort-V21.sh
+_ERA_USAGE = """Sort-V22.py - standalone Python edition of Sort-V22.sh
 (Standard library only; no external commands, no other files required.)
 
 USAGE
-    Sort-V21.py [OPTIONS] FILES...
+    Sort-V22.py [OPTIONS] FILES...
 
 MODES (--mode=...)
     copy, dummy, move, remove, shred, trash
 
 OPTIONS
     --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --scan, --scan-raw, --subdirs, --target, --type, --undo, inputs
-    --magic             print a magic-number detection report (237 signature formats) and exit
-    --scan-raw DEVICE   scan a raw device or disk image (237 signatures); dry-run report, --mode=copy carves fragments
+    --magic             print a magic-number detection report (260 signature formats) and exit
+    --scan-raw DEVICE   scan a raw device or disk image (260 signatures); dry-run report, --mode=copy carves fragments
     --scan FSFORMAT     scan a raw device/image for partitions (MBR/GPT + lost via filesystem signatures), then scan the selected filesystems for files/lost data; FORMATS: all,ntfs,exfat,fat12,fat16,fat32,ext,btrfs,xfs,reiserfs,hfs,swap,luks; dummy reports, copy carves to Target/FS-CARVE (V21)
 
 TEMPLATE KEYWORDS (for --dirs / --subdirs/--rename/--extension/--dirs)
@@ -2238,7 +2261,7 @@ OUT OF SCOPE FOR THIS EDITION (stripped; see README.md)
 
 
 def _era_error(msg):
-    print("Sort-V21 edition error: " + msg)
+    print("Sort-V22 edition error: " + msg)
     print("Allowed here -- modes: " + ", ".join(EDITION["modes"]) +
           " | flags: " + ", ".join(EDITION["flags"]) +
           " | keywords: " + ", ".join(EDITION["keywords"]))
