@@ -1,28 +1,30 @@
 # Sort - unified repository
 
-One repository, one branch, one directory per version, four languages each.
+One repository, one branch, one directory per version, four languages + a Qt6 GUI.
 
-## Root - the latest version (V18)
+## Root - the latest version (V19)
 
 | File | What |
 |---|---|
-| `Sort.sh` | latest Bash edition (V18, self-contained, threaded) |
-| `Sort.pas` | latest FreePascal edition (V18 port) |
-| `Sort.py` | latest Python edition (V18 era-gated, with --magic standalone engine, stdlib only) |
-| `Sort.cpp` | latest C++17 edition (V18 port: single file, no dependencies, native magic/dims/hashes/EXIF/ID3) |
+| `Sort.sh` | latest Bash edition (V19, self-contained, threaded) |
+| `Sort.pas` | latest FreePascal edition (V19 port) |
+| `Sort.py` | latest Python edition (V19 era-gated, with --magic standalone engine, stdlib only) |
+| `Sort.cpp` | latest C++17 edition (V19 port: single file, no dependencies, native magic/dims/hashes/EXIF/ID3) |
+| `Sort-GUI.cpp` | V19 Qt6/QML GUI edition (same engine, all options in the window; see versions/Sort-V19/README.md) |
 
 ## versions/ - every version, in order
 
 Each era lives in `versions/Sort-V<version>/` and always contains the same
-five files (from V18 on, four languages + README):
+files (from V19 on: four languages + the Qt6 GUI + README):
 
 * `Sort-V<version>.sh`   - the Bash edition of that era
 * `Sort-V<version>.pas`  - its FreePascal translation
 * `Sort-V<version>.py`   - its standalone Python edition
 * `Sort-V<version>.cpp`  - its standalone C++17 edition (from V18)
+* `Sort-GUI.cpp`         - its Qt6/QML GUI edition (from V19)
 * `README.md`            - what that version is and does
 
-Lineage: V1.0 - V18 (see `other/Sort-Versions.md` for the full
+Lineage: V1.0 - V19 (see `other/Sort-Versions.md` for the full
 chronology and era table).
 
 ### The Python editions
