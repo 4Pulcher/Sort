@@ -1583,7 +1583,7 @@ MODES (--mode=...)
 
 OPTIONS
     --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --subdirs, --target, --type, --undo, inputs
-    --magic             print a magic-number detection report and exit
+    --magic             print a magic-number detection report (153 signature formats) and exit
 
 TEMPLATE KEYWORDS (for --dirs / --subdirs/--rename/--extension/--dirs)
     accessed, created, day, exif-date, exif-datetime, exif-make, exif-model, exif-orientation, extension, format, format+size, id3-album, id3-artist, id3-genre, id3-title, id3-track, id3-year, md5sum, mime, mime-main, mime-sub, modified, month, name, random, sha1sum, sha224sum, sha256sum, sha384sum, sha512sum, size, size+format, title, year, year+month, year+month+day
