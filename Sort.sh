@@ -3,7 +3,7 @@
 ###############################################################################
 #                                                                             #
 # Script  : Sort-V17.3.sh                                                           #
-# Version : 17.4                                                              #
+# Version : 17.5                                                              #
 # Desc    : Self-contained threaded organizer - all lineage features merged    #
 # Author  : HEjder                                                            #
 #                                                                             #
@@ -5188,7 +5188,7 @@ T() {
 		zh)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' 缺失且其包名未知' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - 自包含的多线程文件整理器' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - 自包含的多线程文件整理器' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '用法: Sort.sh [选项] <文件|目录> ...' ;;
 				'Common starts:') printf '%s' '常用启动示例:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' '使用 --help 查看完整选项列表和动态值。' ;;
@@ -5324,7 +5324,7 @@ T() {
 		hi)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' अनुपस्थित है और उसका पैकेज नाम अज्ञात है' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'उपयोग: Sort.sh [विकल्प] <फ़ाइल|निर्देशिका> ...' ;;
 				'Common starts:') printf '%s' 'सामान्य शुरुआत:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'पूर्ण विकल्प सूची और डायनामिक मानों के लिए --help देखें।' ;;
@@ -5460,7 +5460,7 @@ T() {
 		es)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' falta y su nombre de paquete es desconocido' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organizador con hilos, autónomo' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organizador con hilos, autónomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opciones] <archivo|directorio> ...' ;;
 				'Common starts:') printf '%s' 'Inicios comunes:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para la lista completa de opciones y valores dinámicos.' ;;
@@ -5596,7 +5596,7 @@ T() {
 		fr)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps : '\''%s'\'' est absent et son nom de paquet est inconnu' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organisateur multithread autonome' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organisateur multithread autonome' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Utilisation : Sort.sh [options] <fichier|répertoire> ...' ;;
 				'Common starts:') printf '%s' 'Démarrages courants :' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Utilisez --help pour la liste complète des options et des valeurs dynamiques.' ;;
@@ -5732,7 +5732,7 @@ T() {
 		ar)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' مفقود واسم حزمته غير معروف' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'الاستخدام: Sort.sh [الخيارات] <ملف|دليل> ...' ;;
 				'Common starts:') printf '%s' 'بدايات شائعة:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'استخدم --help لقائمة الخيارات الكاملة والقيم الديناميكية.' ;;
@@ -5868,7 +5868,7 @@ T() {
 		bn)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' অনুপস্থিত এবং এর প্যাকেজ নাম অজানা' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'ব্যবহার: Sort.sh [বিকল্প] <ফাইল|ডিরেক্টরি> ...' ;;
 				'Common starts:') printf '%s' 'সাধারণ শুরু:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'সম্পূর্ণ বিকল্প তালিকা ও ডায়নামিক মানের জন্য --help দেখুন।' ;;
@@ -6004,7 +6004,7 @@ T() {
 		pt)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' está ausente e seu nome de pacote é desconhecido' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organizador com threads, autônomo' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organizador com threads, autônomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opções] <arquivo|diretório> ...' ;;
 				'Common starts:') printf '%s' 'Inícios comuns:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para a lista completa de opções e valores dinâmicos.' ;;
@@ -6140,7 +6140,7 @@ T() {
 		ru)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' отсутствует, и имя его пакета неизвестно' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - автономный многопоточный сортировщик' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - автономный многопоточный сортировщик' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Использование: Sort.sh [параметры] <файл|каталог> ...' ;;
 				'Common starts:') printf '%s' 'Типичные запуски:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Используйте --help для полного списка параметров и динамических значений.' ;;
@@ -6276,7 +6276,7 @@ T() {
 		ur)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غائب ہے اور اس کا پیکج نام نامعلوم ہے' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - خود انحصار ملٹی تھریڈ منتظم' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - خود انحصار ملٹی تھریڈ منتظم' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استعمال: Sort.sh [اختیارات] <فائل|ڈائریکٹری> ...' ;;
 				'Common starts:') printf '%s' 'عام آغاز:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'مکمل آپشن فہرست اور متحرک اقدار کے لیے --help استعمال کریں۔' ;;
@@ -6412,7 +6412,7 @@ T() {
 		id)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' hilang dan nama paketnya tidak diketahui' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - penyusun berkas multithread mandiri' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - penyusun berkas multithread mandiri' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Penggunaan: Sort.sh [opsi] <berkas|direktori> ...' ;;
 				'Common starts:') printf '%s' 'Awalan umum:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Gunakan --help untuk daftar opsi lengkap dan nilai dinamis.' ;;
@@ -6548,7 +6548,7 @@ T() {
 		de)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' fehlt und sein Paketname ist unbekannt' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - eigenständiger Sortierer mit Threads' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - eigenständiger Sortierer mit Threads' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Aufruf: Sort.sh [Optionen] <Datei|Verzeichnis> ...' ;;
 				'Common starts:') printf '%s' 'Häufige Aufrufe:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Verwenden Sie --help für die vollständige Optionsliste und dynamische Werte.' ;;
@@ -6684,7 +6684,7 @@ T() {
 		ja)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' が不足しており、そのパッケージ名は不明です' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - 自己完結型マルチスレッド整理ツール' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - 自己完結型マルチスレッド整理ツール' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '使い方: Sort.sh [オプション] <ファイル|ディレクトリ> ...' ;;
 				'Common starts:') printf '%s' 'よく使う起動例:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'オプション一覧と動的な値は --help をご利用ください。' ;;
@@ -6820,7 +6820,7 @@ T() {
 		tr)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' eksik ve paket adı bilinmiyor' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Kullanım: Sort.sh [seçenekler] <dosya|dizin> ...' ;;
 				'Common starts:') printf '%s' 'Sık kullanılan başlangıçlar:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Tam seçenek listesi ve dinamik değerler için --help kullanın.' ;;
@@ -6956,7 +6956,7 @@ T() {
 		ko)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\''이(가) 없으며 패키지 이름을 알 수 없습니다' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '사용법: Sort.sh [옵션] <파일|디렉터리> ...' ;;
 				'Common starts:') printf '%s' '자주 쓰는 시작 예:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' '전체 옵션 목록과 동적 값은 --help를 사용하세요.' ;;
@@ -7092,7 +7092,7 @@ T() {
 		vi)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' bị thiếu và tên gói của nó không rõ' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - công cụ sắp xếp đa luồng tự chứa' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - công cụ sắp xếp đa luồng tự chứa' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Cách dùng: Sort.sh [tùy chọn] <tệp|thư mục> ...' ;;
 				'Common starts:') printf '%s' 'Khởi động thường dùng:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Dùng --help để xem đầy đủ danh sách tùy chọn và giá trị động.' ;;
@@ -7228,7 +7228,7 @@ T() {
 		it)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' manca e il nome del suo pacchetto è sconosciuto' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organizzatore multithread autonomo' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - organizzatore multithread autonomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opzioni] <file|directory> ...' ;;
 				'Common starts:') printf '%s' 'Avvii comuni:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Usa --help per l'\''elenco completo delle opzioni e i valori dinamici.' ;;
@@ -7364,7 +7364,7 @@ T() {
 		pl)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' jest brakujące, a nazwa pakietu jest nieznana' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - samodzielny wielowątkowy organizator plików' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - samodzielny wielowątkowy organizator plików' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Użycie: Sort.sh [opcje] <plik|katalog> ...' ;;
 				'Common starts:') printf '%s' 'Częste starty:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Użyj --help, aby zobaczyć pełną listę opcji i wartości dynamiczne.' ;;
@@ -7500,7 +7500,7 @@ T() {
 		nl)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' ontbreekt en de pakketnaam is onbekend' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - zelfstandige multithread bestandsorganisator' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - zelfstandige multithread bestandsorganisator' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Gebruik: Sort.sh [opties] <bestand|map> ...' ;;
 				'Common starts:') printf '%s' 'Veelgebruikte starts:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Gebruik --help voor de volledige optielijst en dynamische waarden.' ;;
@@ -7636,7 +7636,7 @@ T() {
 		fa)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غایب است و نام بسته آن نامعلوم است' ;;
-				'Sort 17.4 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - سازمان‌دهنده چندنخستی خودکفا' ;;
+				'Sort 17.5 - self-contained threaded organizer + magic detection') printf '%s' 'Sort 17.3 - سازمان‌دهنده چندنخستی خودکفا' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استفاده: Sort.sh [گزینه‌ها] <فایل|پوشه> ...' ;;
 				'Common starts:') printf '%s' 'شروع‌های رایج:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'برای فهرست کامل گزینه‌ها و مقادیر پویا از --help استفاده کنید.' ;;
@@ -7820,7 +7820,7 @@ Lang_List() {
 
 
 Usage() {
-	Print_Header "$(T 'Sort 17.4 - self-contained threaded organizer + magic detection')"
+	Print_Header "$(T 'Sort 17.5 - self-contained threaded organizer + magic detection')"
 	Print_Message 'Usage: Sort.sh [options] <file|directory> ...'
 	printf '\n'
 	Print_Message 'Common starts:'
@@ -7839,7 +7839,7 @@ Usage() {
 # ---------------------------------------------------------------------------
 
 Help() {
-	Print_Header "$(T 'Sort 17.4 - self-contained threaded organizer + magic detection')"
+	Print_Header "$(T 'Sort 17.5 - self-contained threaded organizer + magic detection')"
 	Print_Message 'Sorts files into a dynamic directory tree built from MIME, dates,'
 	Print_Message 'sizes, media dimensions, checksums and metadata titles.'
 	printf '\n'
@@ -8073,7 +8073,7 @@ Parse_Arguments() {
 			exit 0
 			;;
 		--version)
-			printf 'Sort 17.4\n'
+			printf 'Sort 17.5\n'
 			exit 0
 			;;
 		--lang=*)
@@ -9133,53 +9133,198 @@ Run_Threads() {
 }
 
 # ===========================================================================
-# MAGIC MODULE (V17.4) - --magic: magic-number detection report
-# Reads the first bytes of each input file, matches them against the
-# embedded signature table and prints a per-file report. Pure bash + od.
+# ===========================================================================
+# MAGIC MODULE (V17.5) - --magic: magic-number detection report
+# Comprehensive embedded signature table (153+ formats): images,
+# audio, video, archives, documents, fonts, executables, data and disk
+# formats. Pure bash + od. Zero external calls.
 # ===========================================================================
 
 # Magic_Nibbles <file> <count> : first bytes as one lowercase hex string
 Magic_Nibbles() {
-	head -c "$2" -- "$1" 2>/dev/null | od -An -tx1 | tr -d ' \n\t'
+	head -c "$2" -- "$1" 2>/dev/null | od -An -v -tx1 | tr -d ' \n\t'
 }
 
 # Magic_Detect <hex> : prints "Format|ext,ext" from the signature table
 Magic_Detect() {
 	local H=${1,,}
-	case "$H" in
-	25504446*)                         printf 'PDF|pdf' ;;
-	89504e47*)                         printf 'PNG|png' ;;
-	ffd8ff*)                           printf 'JPEG|jpg,jpeg,jfif' ;;
-	47494638*)                         printf 'GIF|gif' ;;
-	424d*)                             printf 'BMP|bmp' ;;
-	52494646*5745425?*)                printf 'WEBP|webp' ;;
-	52494646*57415645*)                printf 'WAV|wav' ;;
-	1a45dfa3*)                         printf 'MKV/WEBM|mkv,webm,mka' ;;
-	????????66747970*)                 printf 'MP4/MOV|mp4,mov,m4a,3gp' ;;
-	494433*)                           printf 'MP3 (ID3)|mp3' ;;
-	fffb*|fff3*|fff2*|ffe3*)           printf 'MP3 (MPEG)|mp3' ;;
-	4f676753*)                         printf 'OGG|ogg,oga,opus' ;;
-	664c6143*)                         printf 'FLAC|flac' ;;
-	504b0304*|504b0506*|504b0708*)     printf 'ZIP/Office|zip,docx,xlsx,pptx,odt,jar,apk,epub' ;;
-	377abcaf271c*)                     printf '7-Zip|7z' ;;
-	5261727?1a*)                       printf 'RAR|rar' ;;
-	1f8b*)                             printf 'GZIP|gz,tgz' ;;
-	425a68*)                           printf 'BZIP2|bz2,tbz2' ;;
-	fd377a585a*)                       printf 'XZ|xz,txz' ;;
-	28b52ffd*)                         printf 'ZSTD|zst' ;;
-	7f454c46*)                         printf 'ELF binary|so,bin' ;;
-	53514c69746520666f726d61742033*)  printf 'SQLite|db,sqlite' ;;
-	cafebabe*)                         printf 'Java class|class' ;;
-	2321*)                             printf 'Script (#!)|sh,py,pl,rb' ;;
-	7ffe*)                             printf 'Bourne shell archive|shar' ;;
-	*)                                 return 1 ;;
+	# MPEG transport stream: 0x47 sync bytes at offsets 0, 188 and 376
+	if [ "${#H}" -ge 754 ] && [ "${H:0:2}" = '47' ] && [ "${H:376:2}" = '47' ] && [ "${H:752:2}" = '47' ]; then
+		printf 'MPEG-TS|ts,m2ts,mts'
+		return 0
+	fi
+	case "${H:65538:10}" in
+	4344303031) printf 'ISO 9660 image|iso,img'; return 0 ;;
 	esac
+	case "${H:514:10}" in
+	7573746172) printf 'TAR archive|tar'; return 0 ;;
+	esac
+	case "${H:120:16}" in
+	424f4f4b4d4f4249) printf 'MOBI e-book|mobi,prc'; return 0 ;;
+	esac
+	case "${H:88:8}" in
+	5343524d) printf 'S3M module|s3m'; return 0 ;;
+	esac
+	case "${H:216:6}" in
+	4d2e4b) printf 'Amiga MOD module|mod'; return 0 ;;
+	esac
+	case "$H" in
+	457874656e646564204d6f64756c65*) printf 'FastTracker XM module|xm'; return 0 ;;
+	53514c69746520666f726d61742033*) printf 'SQLite database|db,sqlite,sqlite3'; return 0 ;;
+	0000000c6a5020200d0a870a*) printf 'JPEG 2000 (JP2)|jp2'; return 0 ;;
+	233f52414449414e4345*) printf 'Radiance HDR image|hdr'; return 0 ;;
+	52494646????????57454250*) printf 'WEBP image|webp'; return 0 ;;
+	52494646????????57415645*) printf 'WAV audio|wav'; return 0 ;;
+	52494646????????41564920*) printf 'AVI video|avi'; return 0 ;;
+	52494646????????414d5620*) printf 'AMV video|amv'; return 0 ;;
+	464f524d????????41494646*) printf 'AIFF audio|aiff,aif'; return 0 ;;
+	464f524d????????41494643*) printf 'AIFC audio|aifc'; return 0 ;;
+	????????6674797071742020*) printf 'QuickTime MOV video|mov'; return 0 ;;
+	????????667479704d344120*) printf 'M4A audio|m4a'; return 0 ;;
+	????????667479704d345620*) printf 'M4V video|m4v'; return 0 ;;
+	????????6674797068656963*) printf 'HEIC/HEIF image|heic,heif,hif'; return 0 ;;
+	????????6674797068656978*) printf 'HEIC/HEIF image|heic,heif,hif'; return 0 ;;
+	????????6674797068656966*) printf 'HEIC/HEIF image|heic,heif,hif'; return 0 ;;
+	????????667479706d696631*) printf 'HEIC/HEIF image|heic,heif,hif'; return 0 ;;
+	????????667479706d736631*) printf 'HEIC/HEIF image|heic,heif,hif'; return 0 ;;
+	????????6674797061766966*) printf 'AVIF image|avif'; return 0 ;;
+	????????6674797061766973*) printf 'AVIF image|avif'; return 0 ;;
+	????????667479706a703220*) printf 'JPEG 2000 (JP2)|jp2'; return 0 ;;
+	????????6674797033677034*) printf '3GP video|3gp'; return 0 ;;
+	????????6674797033677035*) printf '3GP video|3gp'; return 0 ;;
+	????????6674797033677036*) printf '3GP video|3gp'; return 0 ;;
+	????????6674797033673261*) printf '3G2 video|3g2'; return 0 ;;
+	????????6674797069736f6d*) printf 'MP4 video|mp4'; return 0 ;;
+	????????6674797069736f32*) printf 'MP4 video|mp4'; return 0 ;;
+	????????667479706d703431*) printf 'MP4 video|mp4'; return 0 ;;
+	????????667479706d703432*) printf 'MP4 video|mp4'; return 0 ;;
+	????????6674797061766331*) printf 'MP4 video|mp4'; return 0 ;;
+	????????6674797064617368*) printf 'DASH video|mpd,m4s,mp4'; return 0 ;;
+	????????6674797066347620*) printf 'Flash F4V video|f4v'; return 0 ;;
+	67696d7020786366*) printf 'GIMP XCF image|xcf'; return 0 ;;
+	3026b2758e66cf11*) printf 'ASF media (WMA/WMV)|wma,wmv,asf'; return 0 ;;
+	d0cf11e0a1b11ae1*) printf 'MS Office/OLE compound|doc,xls,ppt,msi,cfg'; return 0 ;;
+	41542654464f524d*) printf 'DjVu document|djvu,djv'; return 0 ;;
+	49544f4c49544c53*) printf 'MS Reader LIT e-book|lit'; return 0 ;;
+	7668647866696c65*) printf 'Hyper-V VHDX disk|vhdx'; return 0 ;;
+	213c617263683e*) printf 'AR archive (deb/static lib)|a,deb'; return 0 ;;
+	233f52474245*) printf 'Radiance HDR image|hdr'; return 0 ;;
+	377abcaf271c*) printf '7-Zip archive|7z'; return 0 ;;
+	526172211a07*) printf 'RAR archive|rar'; return 0 ;;
+	303730373031*) printf 'CPIO archive (newc)|cpio'; return 0 ;;
+	303730373037*) printf 'CPIO archive (odc)|cpio'; return 0 ;;
+	2a2a4143452a*) printf 'ACE archive|ace'; return 0 ;;
+	7b5c72746631*) printf 'RTF document|rtf'; return 0 ;;
+	4c554b53babe*) printf 'LUKS encrypted volume|luks,img'; return 0 ;;
+	0d0a870a0a*) printf 'JPEG XL container|jxl'; return 0 ;;
+	3c3f786d6c*) printf 'XML document|xml,svg,fb2,rss,xsl,plist'; return 0 ;;
+	2321414d52*) printf 'AMR speech audio|amr'; return 0 ;;
+	fd377a585a*) printf 'XZ stream|xz,txz'; return 0 ;;
+	4d5357494d*) printf 'Windows Imaging archive|wim'; return 0 ;;
+	????????66747970*) printf 'MP4/QuickTime container|mp4,m4a,mov,3gp,heic'; return 0 ;;
+	89504e47*) printf 'PNG image|png'; return 0 ;;
+	ff4fff51*) printf 'JPEG 2000 codestream|j2k,jpc'; return 0 ;;
+	47494638*) printf 'GIF image|gif'; return 0 ;;
+	49492a00*) printf 'TIFF image (little-endian)|tif,tiff'; return 0 ;;
+	4d4d002a*) printf 'TIFF image (big-endian)|tif,tiff'; return 0 ;;
+	38425053*) printf 'Photoshop PSD image|psd,pdd'; return 0 ;;
+	44445320*) printf 'DirectDraw Surface texture|dds'; return 0 ;;
+	762f3101*) printf 'OpenEXR image|exr'; return 0 ;;
+	00020000*) printf 'Windows cursor|cur'; return 0 ;;
+	00010000*) printf 'ICO icon / TrueType font|ico,ttf,otf'; return 0 ;;
+	69636e73*) printf 'Apple ICNS icon|icns'; return 0 ;;
+	3c737667*) printf 'SVG image|svg'; return 0 ;;
+	52494646*) printf 'RIFF container|wav,avi,webp'; return 0 ;;
+	46524d38*) printf 'DSDIFF audio (DFF)|dff'; return 0 ;;
+	63616666*) printf 'Apple CAF audio|caf'; return 0 ;;
+	44534420*) printf 'DSD streamfile audio (DSF)|dsf'; return 0 ;;
+	664c6143*) printf 'FLAC audio|flac'; return 0 ;;
+	4f676753*) printf 'OGG media|ogg,oga,opus,ogv,ogx'; return 0 ;;
+	4d546864*) printf 'MIDI music|mid,midi,rmi,kar'; return 0 ;;
+	2e736e64*) printf 'NeXT/Sun AU audio|au,snd'; return 0 ;;
+	4d414320*) printf 'Monkey Audio (APE)|ape'; return 0 ;;
+	7770766b*) printf 'WavPack audio|wv'; return 0 ;;
+	4d50434b*) printf 'Musepack audio (SV8)|mpc'; return 0 ;;
+	54544131*) printf 'True Audio (TTA)|tta'; return 0 ;;
+	616a6b67*) printf 'Shorten audio|shn'; return 0 ;;
+	494d504d*) printf 'Impulse Tracker module|it'; return 0 ;;
+	1a45dfa3*) printf 'Matroska/WebM video|mkv,webm,mka,mks'; return 0 ;;
+	000001ba*) printf 'MPEG program stream|mpg,mpeg,vob,ps'; return 0 ;;
+	000001b3*) printf 'MPEG elementary video|m2v,mpv,mpg'; return 0 ;;
+	2e524d46*) printf 'RealMedia video|rm,rmvb'; return 0 ;;
+	060e2b34*) printf 'MXF video|mxf'; return 0 ;;
+	504b0304*) printf 'ZIP/Office document|zip,docx,xlsx,pptx,odt,jar,apk,epub'; return 0 ;;
+	504b0506*) printf 'ZIP archive (empty)|zip'; return 0 ;;
+	504b0708*) printf 'ZIP archive (spanned)|zip'; return 0 ;;
+	28b52ffd*) printf 'Zstandard stream|zst'; return 0 ;;
+	04224d18*) printf 'LZ4 frame|lz4'; return 0 ;;
+	5d000080*) printf 'LZMA-alone stream|lzma'; return 0 ;;
+	894c5a4f*) printf 'LZO compressed archive|lzo'; return 0 ;;
+	4d534346*) printf 'MS Cabinet archive|cab'; return 0 ;;
+	edabeedb*) printf 'RPM package|rpm'; return 0 ;;
+	50415231*) printf 'Apache Parquet data|parquet'; return 0 ;;
+	25504446*) printf 'PDF document|pdf'; return 0 ;;
+	25215053*) printf 'PostScript/EPS document|ps,eps,ai'; return 0 ;;
+	49545346*) printf 'MS Compiled HTML (CHM)|chm'; return 0 ;;
+	4f54544f*) printf 'OpenType (CFF) font|otf'; return 0 ;;
+	74746366*) printf 'TrueType collection|ttc'; return 0 ;;
+	774f4646*) printf 'WOFF font|woff'; return 0 ;;
+	774f4632*) printf 'WOFF2 font|woff2'; return 0 ;;
+	7f454c46*) printf 'ELF binary|so,bin,elf,o,ko'; return 0 ;;
+	feedface*) printf 'Mach-O binary (32-bit BE)|bin'; return 0 ;;
+	cefaedfe*) printf 'Mach-O binary (32-bit LE)|bin'; return 0 ;;
+	feedfacf*) printf 'Mach-O binary (64-bit BE)|bin'; return 0 ;;
+	cffaedfe*) printf 'Mach-O binary (64-bit LE)|bin'; return 0 ;;
+	cafebabe*) printf 'Java class / Mach-O fat binary|class,bin'; return 0 ;;
+	0061736d*) printf 'WebAssembly module|wasm'; return 0 ;;
+	6465780a*) printf 'Android DEX bytecode|dex,odex'; return 0 ;;
+	72656766*) printf 'Windows registry hive|dat,hive,reg'; return 0 ;;
+	a1b2c3d4*) printf 'pcap packet capture|pcap,cap'; return 0 ;;
+	d4c3b2a1*) printf 'pcap packet capture (swapped)|pcap,cap'; return 0 ;;
+	0a0d0d0a*) printf 'pcapng packet capture|pcapng'; return 0 ;;
+	4f626a01*) printf 'Apache Avro object container|avro'; return 0 ;;
+	43723234*) printf 'Chrome extension (CRX)|crx'; return 0 ;;
+	514649fb*) printf 'QEMU copy-on-write disk|qcow,qcow2'; return 0 ;;
+	4b444d56*) printf 'VMware VMDK disk|vmdk'; return 0 ;;
+	ffd8ff*) printf 'JPEG image|jpg,jpeg,jfif'; return 0 ;;
+	0a0000*) printf 'PCX image|pcx'; return 0 ;;
+	0a0200*) printf 'PCX image|pcx'; return 0 ;;
+	0a0300*) printf 'PCX image|pcx'; return 0 ;;
+	0a0500*) printf 'PCX image|pcx'; return 0 ;;
+	494433*) printf 'MP3 audio (ID3v2 tag)|mp3'; return 0 ;;
+	4d502b*) printf 'Musepack audio|mpc'; return 0 ;;
+	464c56*) printf 'Flash video (FLV)|flv'; return 0 ;;
+	42494b*) printf 'Bink video|bik,bk2'; return 0 ;;
+	425a68*) printf 'BZIP2 stream|bz2,tbz2'; return 0 ;;
+	1f9d8d*) printf 'compress (.Z) archive|z'; return 0 ;;
+	5a4f4f*) printf 'ZOO archive|zoo'; return 0 ;;
+	435753*) printf 'Shockwave Flash (compressed)|swf'; return 0 ;;
+	465753*) printf 'Shockwave Flash|swf'; return 0 ;;
+	5a5753*) printf 'Shockwave Flash (LZMA)|swf'; return 0 ;;
+	ff0a*) printf 'JPEG XL codestream|jxl'; return 0 ;;
+	424d*) printf 'BMP image|bmp,dib'; return 0 ;;
+	5034*) printf 'PBM image|pbm'; return 0 ;;
+	5035*) printf 'PGM image|pgm'; return 0 ;;
+	5036*) printf 'PPM image|ppm'; return 0 ;;
+	fffb*) printf 'MP3 audio (MPEG-1)|mp3'; return 0 ;;
+	fff3*) printf 'MP3 audio (MPEG-2)|mp3'; return 0 ;;
+	fff2*) printf 'MP3 audio (MPEG-2.5)|mp3'; return 0 ;;
+	ffe3*) printf 'MP3 audio (MPEG-2.5 LSF)|mp3'; return 0 ;;
+	fff1*) printf 'AAC audio (ADTS)|aac,adts'; return 0 ;;
+	fff9*) printf 'AAC audio (ADTS)|aac,adts'; return 0 ;;
+	1f8b*) printf 'GZIP stream|gz,tgz'; return 0 ;;
+	60ea*) printf 'ARJ archive|arj'; return 0 ;;
+	7ffe*) printf 'Bourne shell archive|shar'; return 0 ;;
+	4d5a*) printf 'DOS/PE executable|exe,dll,sys,ocx,scr'; return 0 ;;
+	2321*) printf 'Script (#!)|sh,py,pl,rb,el,js,ts'; return 0 ;;
+	esac
+	return 1
 }
 
 # Magic_Report <file> : one report line for a single file
 Magic_Report() {
 	local F=$1 H Detected Name Exts Ext Verdict
-	H=$(Magic_Nibbles "$F" 16)
+	H=$(Magic_Nibbles "$F" 32774)
 	[ -n "$H" ] || H='(empty)'
 	Detected=$(Magic_Detect "$H") && Name=${Detected%%|*} Exts=${Detected#*|} || Name='?' Exts=''
 	Ext=${F##*.}
@@ -9194,7 +9339,7 @@ Magic_Report() {
 		Verdict='MISMATCH'
 	fi
 	printf '%s\n\tmagic: %s\n\tdetected: %s\n\textension: %s\n\tverdict: %s\n' \
-		"$F" "$H" "${Name:-UNKNOWN}" "$Ext" "$Verdict"
+		"$F" "${H:0:32}" "${Name:-UNKNOWN}" "$Ext" "$Verdict"
 }
 
 # Magic_Report_All : report every collected target
@@ -9231,7 +9376,7 @@ Main() {
 	# The --title sugar doubles as --rename=title when no rename was given
 	Validate_Options || return 1
 
-	# --magic (V17.4): magic-number detection report, then exit
+	# --magic (V17.5): magic-number detection report, then exit
 	if [ "${Magic_Mode:-0}" -eq 1 ]; then
 		Collect_Files
 		if [ "${#Targets[@]}" -eq 0 ]; then
