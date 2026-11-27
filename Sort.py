@@ -5,7 +5,7 @@ Sort.py - Media-Intelligent File Organizer (Python edition)
 ===========================================================
 
 A pure-Python (standard library only) implementation of the complete Bash
-`Sort.sh` lineage (V1.0 -> V20), designed to match the feature union of the
+`Sort.sh` lineage (V1.0 -> V21), designed to match the feature union of the
 whole family with ZERO external dependencies:
 
 * no `file`, no ImageMagick, no FFmpeg, no ExifTool, no GNU coreutils calls:
@@ -61,8 +61,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-__version__ = "py-20"          # corresponds to the latest Bash edition
-LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V20 lineage (stdlib only)"
+__version__ = "py-21"          # corresponds to the latest Bash edition
+LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V21 lineage (stdlib only)"
 
 # ===========================================================================
 # 1. UI: COLORS, ICONS, INTERNATIONALIZATION
@@ -1100,6 +1100,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--jobs", type=int, default=1,
                    help="parallel workers (V12)")
     p.add_argument("--log", default=None, help="JSONL action log (V15)")
+    p.add_argument("--scan", default=None, metavar="FSFORMAT",
+                   help="format filter (comma list or all); the device or "
+                        "image path is given as the positional input; "
+                        "dummy reports, copy carves to Target/FS-CARVE (V21)")
     p.add_argument("--scan-raw", default=None, metavar="DEVICE",
                    help="scan a raw device/disk image with the 237-signature "
                         "engine; dummy reports, copy carves to Target/RAW-CARVE (V20)")
@@ -1129,6 +1133,13 @@ def main(argv: list | None = None) -> int:
         return run_raw_scan(Path(args.scan_raw), args.mode,
                             Path(args.target),
                             Path(args.log) if args.log else None)
+    if args.scan:
+        if not args.inputs:
+            print("SCAN: --scan needs a device or image path")
+            return 64
+        return run_fs_scan(args.inputs[0], args.scan, args.mode,
+                           Path(args.target),
+                           Path(args.log) if args.log else None)
     if not args.inputs:
         print(MANPAGE)
         return 0
@@ -1837,29 +1848,380 @@ def run_raw_scan(raw_path, mode: str, target, log=None) -> int:
 
 
 # ===========================================================================
-# EDITION GATE - auto-generated for Sort-V20
-# Scope derived mechanically from Sort-V20.sh (era vocabulary).
+# FS SCAN MODULE (V21) - --scan=FSFormat: partition map + per-partition scan
+# ===========================================================================
+# Scans a raw device or disk image in two phases:
+#   1. partition discovery: MBR + GPT entries, plus a 512-byte-aligned
+#      filesystem-signature probe that finds deleted/lost partitions
+#   2. per selected partition: the V20 signature engine (237 formats)
+#      runs inside the partition range; fragments that cross the partition
+#      end or overlap another partition are marked "broken" (overwritten)
+# Modes: dummy (report only, default) and copy (carve to Target/FS-CARVE).
+# The source is only ever opened read-only.
+
+_FS_PROBE_LEN = 1200        # covers ext superblock (1024+56) and swap sig
+_FS_SECTOR = 512
+_FS_FORMATS = ("all", "ntfs", "exfat", "fat12", "fat16", "fat32", "ext",
+               "btrfs", "xfs", "reiserfs", "hfs", "swap", "luks")
+
+
+def _fs_size(f):
+    """True byte size of an open file or block device (best effort)."""
+    try:
+        f.seek(0, 2)
+        n = f.tell()
+        if n > 0:
+            return n
+    except OSError:
+        pass
+    try:                                    # Linux block devices
+        import fcntl
+        import struct as _st
+        buf = fcntl.ioctl(f.fileno(), 0x80081272, _st.pack("Q", 0))  # BLKGETSIZE64
+        return _st.unpack("Q", buf)[0]
+    except Exception:
+        return 0
+
+
+def _fs_probe(b):
+    """Return the filesystem token for a partition-start window, or None."""
+    if len(b) < 64:
+        return None
+    if b[0:6] == b"LUKS\xba\xbe":
+        return "luks"
+    if b[3:11] == b"NTFS    ":
+        return "ntfs"
+    if b[3:8] == b"EXFAT ":
+        return "exfat"
+    if b[54:59] == b"FAT16":
+        return "fat16"
+    if b[54:59] == b"FAT12":
+        return "fat12"
+    if b[82:87] == b"FAT32":
+        return "fat32"
+    if b[64:72] == b"_BHRfS_M":
+        return "btrfs"
+    if b[0:4] == b"XFSB":
+        return "xfs"
+    if b[52:60] in (b"ReIsErFs", b"ReIsEr2Fs", b"ReIsEr3Fs", b"ReIsEr4Fs"):
+        return "reiserfs"
+    if len(b) >= 1026 and b[1024:1026] in (b"H+", b"HX"):
+        return "hfs"
+    if len(b) >= 1082 and b[1080:1082] == b"\x53\xef":     # ext superblock magic
+        return "ext"
+    if len(b) >= 1062 and b[1052:1062] == b"SWAPSPACE2":
+        return "swap"
+    return None
+
+
+def _fs_norm(fmt):
+    """Normalize a user-supplied format token (case/aliases)."""
+    f = fmt.strip().lower()
+    if f in ("ext2", "ext3", "ext4"):
+        f = "ext"
+    if f in ("hfs+", "hfsx", "hfsplus"):
+        f = "hfs"
+    return f
+
+
+def _fs_listed(f, fsize):
+    """MBR + GPT entries -> [(start, size, type_byte_or_None)]."""
+    out = []
+    f.seek(0)
+    mbr = f.read(512)
+    if len(mbr) < 512 or mbr[510:512] != b"\x55\xaa":
+        return out
+    types = [mbr[446 + 16 * i + 4] for i in range(4)]
+    if 0xEE in types:                       # GPT protective MBR
+        f.seek(512)
+        hdr = f.read(512)
+        if hdr[0:8] == b"EFI PART":
+            import struct as _st
+            elba = _st.unpack("<Q", hdr[72:80])[0]
+            nent = _st.unpack("<I", hdr[80:84])[0]
+            esz = _st.unpack("<I", hdr[84:88])[0]
+            if esz >= 128 and nent > 0 and nent * esz <= 4 << 20:
+                f.seek(elba * _FS_SECTOR)
+                blob = f.read(nent * esz)
+                for i in range(nent):
+                    e = blob[i * esz:(i + 1) * esz]
+                    if len(e) < 128 or not any(e[0:16]):
+                        continue
+                    first = _st.unpack("<Q", e[32:40])[0]
+                    last = _st.unpack("<Q", e[40:48])[0]
+                    if last < first:
+                        continue
+                    start = first * _FS_SECTOR
+                    size = (last - first + 1) * _FS_SECTOR
+                    if 0 < size <= fsize:
+                        out.append((start, size, None))
+            return out
+    for i in range(4):                      # classic MBR
+        tb = types[i]
+        if tb in (0x00, 0x05, 0x0F, 0xEE, 0x85):     # empty / extended / GPT
+            continue
+        import struct as _st
+        lba = _st.unpack("<I", mbr[446 + 16 * i + 8:446 + 16 * i + 12])[0]
+        nsec = _st.unpack("<I", mbr[446 + 16 * i + 12:446 + 16 * i + 16])[0]
+        start = lba * _FS_SECTOR
+        size = nsec * _FS_SECTOR
+        if nsec > 0 and start + size <= fsize:
+            out.append((start, size, tb))
+    return out
+
+
+def fs_partitions(path):
+    """[(start, size, fstype, status)] - status 'listed' or 'lost'.
+    fstype may be None when a table entry exists but no filesystem was
+    detected at its start (raw / unknown partition)."""
+    try:
+        f = open(path, "rb", buffering=0)
+    except OSError as exc:
+        print(f"SCAN: cannot open {path}: {exc}")
+        return None
+    with f:
+        fsize = _fs_size(f)
+        parts = []
+        for start, size, tb in _fs_listed(f, fsize):
+            f.seek(start)
+            fst = _fs_probe(f.read(_FS_PROBE_LEN))
+            parts.append([start, size, fst, "listed"])
+        if fsize <= 0:
+            if not parts:
+                print(f"SCAN: cannot determine size of {path}")
+                return None
+            fsize = max(p[0] + p[1] for p in parts)
+        inside = [(p[0], p[0] + p[1]) for p in parts]
+        off = 0
+        while off < fsize:
+            if not any(a <= off < b for a, b in inside):
+                f.seek(off)
+                w = f.read(_FS_PROBE_LEN)
+                fst = _fs_probe(w)
+                if fst:
+                    nxt = fsize
+                    for a, b in inside:
+                        if a > off:
+                            nxt = min(nxt, a)
+                    parts.append([off, nxt - off, fst, "lost"])
+            off += _FS_SECTOR
+        parts.sort(key=lambda p: p[0])
+        # keep 'listed' first in numbering: rebuild index by status then start
+        listed = [p for p in parts if p[3] == "listed"]
+        lost = [p for p in parts if p[3] == "lost"]
+        return fsize, listed + lost
+
+
+def _fs_overlap(parts, pidx, hit, size):
+    """True when the fragment [hit, hit+size) leaves its partition or
+    crosses into another one (overwritten data -> 'broken')."""
+    start, psize = parts[pidx][0], parts[pidx][1]
+    end = start + psize
+    if hit + size > end:
+        return True
+    for i, p in enumerate(parts):
+        if i == pidx:
+            continue
+        if hit < p[0] + p[1] and hit + size > p[0]:
+            return True
+    return False
+
+
+def scan_raw_range(path, lo, hi, carve_max=_RAW_CARVE_MAX):
+    """Like scan_raw() but limited to absolute offsets [lo, hi)."""
+    pats = _raw_patterns()
+    try:
+        f = open(path, "rb", buffering=0)
+        probe = open(path, "rb", buffering=0)
+    except OSError as exc:
+        print(f"SCAN: cannot open {path}: {exc}")
+        return
+    base = 0
+    carry = b""
+    next_allowed = lo
+    try:
+        while base < hi:
+            block = f.read(_RAW_BLOCK)
+            if not block:
+                break
+            buf = carry + block if carry else block
+            buf_base = base - len(carry)
+            hits = []
+            for off, name, exts, lit, rx in pats:
+                if lit is not None:
+                    start = 0
+                    while True:
+                        pos = buf.find(lit, start)
+                        if pos == -1:
+                            break
+                        hit = buf_base + pos - off
+                        if lo <= hit < hi:
+                            hits.append((hit, name, exts))
+                        start = pos + 1
+                else:
+                    for m in rx.finditer(buf):
+                        hit = buf_base + m.start() - off
+                        if lo <= hit < hi:
+                            hits.append((hit, name, exts))
+            hits.sort()
+            for hit, name, exts in hits:
+                if hit < next_allowed:
+                    continue
+                probe.seek(hit)
+                head = probe.read(min(carve_max, _RAW_BLOCK))
+                size, exact = _raw_carve_size(head, name, carve_max)
+                next_allowed = (hit + size) if exact else (hit + 1)
+                yield hit, name, exts, size, exact
+            base += len(block)
+            carry = buf[-_RAW_CARRY:]
+    finally:
+        f.close()
+        probe.close()
+
+
+def _fs_write(srcf, dest, hit, size):
+    """Carve one fragment; return (ok, oos). oos = out of space."""
+    import errno
+    srcf.seek(hit)
+    with open(dest, "wb") as dst:
+        remaining = size
+        while remaining > 0:
+            buf = srcf.read(min(remaining, 1 << 20))
+            if not buf:
+                break
+            try:
+                dst.write(buf)
+            except OSError as exc:
+                return False, exc.errno == errno.ENOSPC
+            remaining -= len(buf)
+    return True, False
+
+
+def run_fs_scan(fs_path, formats, mode, target, log=None) -> int:
+    """Report (dummy) or carve (copy) per-partition signature hits."""
+    if mode in ("move", "remove", "trash", "shred"):
+        print(f"SCAN: --scan supports dummy and copy only "
+              f"(mode '{mode}' refused)")
+        return 64
+    fmts = []
+    for tok in (formats or "all").split(","):
+        tok = _fs_norm(tok)
+        if tok == "":
+            continue
+        if tok not in _FS_FORMATS:
+            print(f"SCAN: unknown filesystem format '{tok}' "
+                  f"(known: {','.join(_FS_FORMATS)})")
+            return 64
+        fmts.append(tok)
+    if not fmts or "all" in fmts:
+        fmts = [f for f in _FS_FORMATS if f != "all"]
+
+    res = fs_partitions(fs_path)
+    if res is None:
+        return 66
+    fsize, parts = res
+    print(f"SCAN: {fs_path}")
+    for i, (start, size, fst, status) in enumerate(parts, 1):
+        sz = f"~{size}" if status == "lost" else f"{size}"
+        print(f"  part {i}: 0x{start:012x} {start} {sz} "
+              f"{fst or 'unknown'} {status}")
+    nlist = sum(1 for p in parts if p[3] == "listed")
+    print(f"SCAN: {len(parts)} partitions found "
+          f"({nlist} listed, {len(parts) - nlist} lost)")
+
+    todo = []
+    for i, (start, size, fst, status) in enumerate(parts):
+        if not fst or fst not in fmts or size <= 0:
+            continue
+        todo.append(i)
+    lf = open(log, "a", encoding="utf-8") if log else None
+    srcf = open(fs_path, "rb", buffering=0)
+    total = 0
+    scanned = 0
+    rc = 0
+    try:
+        for i in todo:
+            start, size, fst, status = parts[i]
+            print(f"SCAN-PART {i + 1} {fst} 0x{start:012x} {size}")
+            nhits = 0
+            for hit, name, exts, hsize, exact in \
+                    scan_raw_range(fs_path, start, start + size):
+                if "filesystem" in name or name == "Linux swap area":
+                    continue      # partition signature, not a file fragment
+                broken = _fs_overlap(parts, i, hit, hsize)
+                total += 1
+                nhits += 1
+                print(f"  hit: 0x{hit:012x} {hit} {name} -> "
+                      f"{exts.split(',')[0]} (carve {hsize} bytes"
+                      f"{'' if exact else ', capped'}"
+                      f"{', broken' if broken else ''})")
+                if mode != "copy":
+                    continue
+                ext = exts.split(",")[0]
+                outdir = (target / "FS-CARVE" /
+                          f"p{i + 1}-{start:012x}")
+                while True:
+                    os.makedirs(outdir, exist_ok=True)
+                    dest = outdir / f"{hit:012x}.{ext}"
+                    ok, oos = _fs_write(srcf, dest, hit, hsize)
+                    if ok:
+                        break
+                    if oos and sys.stdin is not None and \
+                            sys.stdin.isatty():
+                        print(f"SCAN: out of space at {outdir}")
+                        newt = input("SCAN: new target directory "
+                                     "(empty = abort): ").strip()
+                        if not newt:
+                            print("SCAN: copy aborted by user")
+                            return 65
+                        outdir = (Path(newt) / "FS-CARVE" /
+                                  f"p{i + 1}-{start:012x}")
+                        continue
+                    print(f"SCAN: cannot write {dest}")
+                    return 65
+                print(f"  carved: {dest}")
+                if lf:
+                    entry = {"action": "carved",
+                             "src": f"{fs_path}@{hit}",
+                             "dst": str(dest), "part": i + 1}
+                    if broken:
+                        entry["broken"] = True
+                    lf.write(json.dumps(entry) + "\n")
+            scanned += 1
+            print(f"SCAN-PART {i + 1}: {nhits} signatures found")
+    finally:
+        srcf.close()
+        if lf:
+            lf.close()
+    print(f"SCAN: done, {total} signatures in {scanned} partitions")
+    return rc
+
+
+# ===========================================================================
+# EDITION GATE - auto-generated for Sort-V21
+# Scope derived mechanically from Sort-V21.sh (era vocabulary).
 # Run with --self-test to verify this engine, -h for the era usage.
 # ===========================================================================
 
-EDITION = {'version': 'V20', 'modes': ['copy', 'dummy', 'move', 'remove', 'shred', 'trash'], 'flags': ['--dirs', '--scan-raw', '--extension', '--hidden', '--jobs', '--lang', '--links', '--log', '--magic', '--no-colors', '--pause', '--quiet', '--recursive', '--rename', '--replace', '--subdirs', '--target', '--type', '--undo'], 'keywords': ['accessed', 'created', 'day', 'exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'extension', 'format', 'format+size', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'md5sum', 'mime', 'mime-main', 'mime-sub', 'modified', 'month', 'name', 'random', 'sha1sum', 'sha224sum', 'sha256sum', 'sha384sum', 'sha512sum', 'size', 'size+format', 'title', 'year', 'year+month', 'year+month+day'], 'modifiers': [], 'fallbacks': True, 'stripped': {'--decompress': 'archive decompress (--decompress) - stripped', '--delete': 'delete mode - use --mode=remove', '--exif': 'EXIF rename/strip levels (--exif) - stripped', '--needed': 'dependency listing - stripped', '--noconfirm': 'interactive confirm - stripped', '--non-interactive': 'interactive confirm - stripped', '--stats': 'stats mode (--stats) - stripped', '--strip': 'metadata stripping (--strip) - stripped', '--title': 'metadata title rename (--title) - stripped', '--verbose': 'verbose flag - use default output', '--version': '--version'}}
+EDITION = {'version': 'V21', 'modes': ['copy', 'dummy', 'move', 'remove', 'shred', 'trash'], 'flags': ['--dirs', '--scan', '--scan-raw', '--extension', '--hidden', '--jobs', '--lang', '--links', '--log', '--magic', '--no-colors', '--pause', '--quiet', '--recursive', '--rename', '--replace', '--subdirs', '--target', '--type', '--undo'], 'keywords': ['accessed', 'created', 'day', 'exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'extension', 'format', 'format+size', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'md5sum', 'mime', 'mime-main', 'mime-sub', 'modified', 'month', 'name', 'random', 'sha1sum', 'sha224sum', 'sha256sum', 'sha384sum', 'sha512sum', 'size', 'size+format', 'title', 'year', 'year+month', 'year+month+day'], 'modifiers': [], 'fallbacks': True, 'stripped': {'--decompress': 'archive decompress (--decompress) - stripped', '--delete': 'delete mode - use --mode=remove', '--exif': 'EXIF rename/strip levels (--exif) - stripped', '--needed': 'dependency listing - stripped', '--noconfirm': 'interactive confirm - stripped', '--non-interactive': 'interactive confirm - stripped', '--stats': 'stats mode (--stats) - stripped', '--strip': 'metadata stripping (--strip) - stripped', '--title': 'metadata title rename (--title) - stripped', '--verbose': 'verbose flag - use default output', '--version': '--version'}}
 
 CANONICAL_KEYWORDS = ["year", "month", "day", "year+month", "year+month+day", "created", "created-date", "created-time", "modified", "modified-date", "modified-time", "accessed", "accessed-date", "accessed-time", "mime", "mime-main", "mime-sub", "type", "extension", "ext", "ext-lower", "ext-upper", "filename", "name", "basename", "stem", "original", "size", "format", "size+format", "format+size", "pixel-size", "resolution", "pixel-format", "md5sum", "sha1sum", "sha224sum", "sha256sum", "sha384sum", "sha512sum", "random"]
 CANONICAL_KEYWORDS = CANONICAL_KEYWORDS + ['exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'title']
 
-_ERA_USAGE = """Sort-V20.py - standalone Python edition of Sort-V20.sh
+_ERA_USAGE = """Sort-V21.py - standalone Python edition of Sort-V21.sh
 (Standard library only; no external commands, no other files required.)
 
 USAGE
-    Sort-V20.py [OPTIONS] FILES...
+    Sort-V21.py [OPTIONS] FILES...
 
 MODES (--mode=...)
     copy, dummy, move, remove, shred, trash
 
 OPTIONS
-    --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --subdirs, --target, --type, --undo, inputs
+    --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --scan, --scan-raw, --subdirs, --target, --type, --undo, inputs
     --magic             print a magic-number detection report (237 signature formats) and exit
     --scan-raw DEVICE   scan a raw device or disk image (237 signatures); dry-run report, --mode=copy carves fragments
+    --scan FSFORMAT     scan a raw device/image for partitions (MBR/GPT + lost via filesystem signatures), then scan the selected filesystems for files/lost data; FORMATS: all,ntfs,exfat,fat12,fat16,fat32,ext,btrfs,xfs,reiserfs,hfs,swap,luks; dummy reports, copy carves to Target/FS-CARVE (V21)
 
 TEMPLATE KEYWORDS (for --dirs / --subdirs/--rename/--extension/--dirs)
     accessed, created, day, exif-date, exif-datetime, exif-make, exif-model, exif-orientation, extension, format, format+size, id3-album, id3-artist, id3-genre, id3-title, id3-track, id3-year, md5sum, mime, mime-main, mime-sub, modified, month, name, random, sha1sum, sha224sum, sha256sum, sha384sum, sha512sum, size, size+format, title, year, year+month, year+month+day
@@ -1876,7 +2238,7 @@ OUT OF SCOPE FOR THIS EDITION (stripped; see README.md)
 
 
 def _era_error(msg):
-    print("Sort-V20 edition error: " + msg)
+    print("Sort-V21 edition error: " + msg)
     print("Allowed here -- modes: " + ", ".join(EDITION["modes"]) +
           " | flags: " + ", ".join(EDITION["flags"]) +
           " | keywords: " + ", ".join(EDITION["keywords"]))
@@ -1934,6 +2296,8 @@ def _era_main(argv):
             continue
         name = a.split("=")[0].lower()
         if name == "--scan-raw":
+            continue
+        if name == "--scan":
             continue
         if name == "--mode":
             val = a.split("=", 1)[1].lower() if "=" in a else ""

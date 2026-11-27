@@ -2,15 +2,15 @@
 
 One repository, one branch, one directory per version, four languages + a Qt6 GUI.
 
-## Root - the latest version (V20)
+## Root - the latest version (V21)
 
 | File | What |
 |---|---|
-| `Sort.sh` | latest Bash edition (V20, self-contained, threaded) |
-| `Sort.pas` | latest FreePascal edition (V20 port) |
-| `Sort.py` | latest Python edition (V20 era-gated, --magic + --scan-raw standalone engines, stdlib only) |
-| `Sort.cpp` | latest C++17 edition (V20 port: single file, no dependencies, native magic/dims/hashes/EXIF/ID3, raw device scan) |
-| `Sort-GUI.cpp` | V20 Qt6/QML GUI edition (same engine, all options + --scan-raw in the window; see versions/Sort-V20/README.md) |
+| `Sort.sh` | latest Bash edition (V21, self-contained, threaded) |
+| `Sort.pas` | latest FreePascal edition (V21 port) |
+| `Sort.py` | latest Python edition (V21 era-gated, --magic + --scan-raw + --scan standalone engines, stdlib only) |
+| `Sort.cpp` | latest C++17 edition (V21 port: single file, no dependencies, native magic/dims/hashes/EXIF/ID3, raw + partition FS scan) |
+| `Sort-GUI.cpp` | V21 Qt6/QML GUI edition (same engine, all options + --scan-raw + --scan FS tree with save in the window; see versions/Sort-V21/README.md) |
 
 ## versions/ - every version, in order
 
@@ -24,7 +24,7 @@ files (from V19 on: four languages + the Qt6 GUI + README):
 * `Sort-GUI.cpp`         - its Qt6/QML GUI edition (from V19)
 * `README.md`            - what that version is and does
 
-Lineage: V1.0 - V20 (see `other/Sort-Versions.md` for the full
+Lineage: V1.0 - V21 (see `other/Sort-Versions.md` for the full
 chronology and era table).
 
 ### The Python editions
@@ -53,6 +53,7 @@ them in seconds.
 ```
 ./Sort.sh --help                      # latest (Bash)
 ./Sort.sh --magic Downloads/*          # magic-number detection report
+sudo ./Sort.sh --scan=all /dev/sdb --mode=copy --target=/rescue   # FS partition scan + carve
 python3 Sort.py --mode=dummy Downloads
 g++ -std=c++17 -O2 -pthread -o Sort Sort.cpp   # build the C++ edition
 ./Sort --version && ./Sort --self-test

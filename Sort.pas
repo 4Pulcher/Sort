@@ -2,9 +2,9 @@
 {  NB/This code is not tested yet!                                            }
 {                                                                             }
 {                                                                             }
-{  Script  : Sort-V20.pas                                                         }
-{  Version : 20                                                             }
-{  Desc    : Ejder file organizer - FreePascal translation of Sort.sh v20   }
+{  Script  : Sort-V21.pas                                                         }
+{  Version : 21                                                             }
+{  Desc    : Ejder file organizer - FreePascal translation of Sort.sh v21   }
 {  Author  : HEjder                                                           }
 {                                                                             }
 {  Translated to FreePascal 3.2.2 (target: FPC 3.2.2, mode objfpc, H+).       }
@@ -33,7 +33,7 @@ uses
     Process, StrUtils;
 
 const
-    ScriptVersion = '20';
+    ScriptVersion = '21';
     ClosingPhrase = 'Thanks for using HEjder scripts!';
 
     C_Reset  = #27 + '[0m';
@@ -2134,7 +2134,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := '用法: sort [选项] [目录...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := '请尝试 sort --help 查看完整选项列表。'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder 文件整理器 - Sort.sh v20 的 FreePascal 翻译'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder 文件整理器 - Sort.sh v21 的 FreePascal 翻译'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= 的快捷方式'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove 的快捷方式'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= 的快捷方式'
@@ -2194,7 +2194,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'उपयोग: sort [विकल्प] [निर्देशिका...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'पूरी विकल्प सूची के लिए sort --help आज़माएँ।'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder फ़ाइल आयोजक - Sort.sh v20 का FreePascal अनुवाद'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder फ़ाइल आयोजक - Sort.sh v21 का FreePascal अनुवाद'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= के शॉर्टकट'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove का शॉर्टकट'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= के शॉर्टकट'
@@ -2254,7 +2254,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Uso: sort [OPCIONES] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Pruebe sort --help para la lista completa de opciones.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Organizador de archivos Ejder - traducción FreePascal de Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Organizador de archivos Ejder - traducción FreePascal de Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      atajos de --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  atajo de --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    atajos de --mode='
@@ -2314,7 +2314,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Utilisation : sort [OPTIONS] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Essayez ’sort --help’ pour la liste complète des options.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Organiseur de fichiers Ejder - traduction FreePascal de Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Organiseur de fichiers Ejder - traduction FreePascal de Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      raccourcis de --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  raccourci de --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    raccourcis de --mode='
@@ -2374,7 +2374,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'الاستخدام: sort [خيارات] [دليل...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'جرّب sort --help للحصول على قائمة الخيارات الكاملة.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'منظم ملفات Ejder - ترجمة FreePascal لـ Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'منظم ملفات Ejder - ترجمة FreePascal لـ Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      اختصارات لـ --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  اختصار لـ --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    اختصارات لـ --mode='
@@ -2434,7 +2434,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'ব্যবহার: sort [বিকল্প] [ডিরেক্টরি...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'সম্পূর্ণ বিকল্প তালিকার জন্য sort --help দেখুন।'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder ফাইল সংগঠক - Sort.sh v20 এর FreePascal অনুবাদ'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder ফাইল সংগঠক - Sort.sh v21 এর FreePascal অনুবাদ'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= এর সংক্ষিপ্ত রূপ'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove এর সংক্ষিপ্ত রূপ'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= এর সংক্ষিপ্ত রূপ'
@@ -2494,7 +2494,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Uso: sort [OPÇÕES] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Experimente sort --help para a lista completa de opções.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Organizador de arquivos Ejder - tradução FreePascal de Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Organizador de arquivos Ejder - tradução FreePascal de Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      atalhos para --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  atalho para --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    atalhos para --mode='
@@ -2554,7 +2554,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Использование: sort [ОПЦИИ] [КАТАЛОГ...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Попробуйте sort --help для полного списка опций.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Организатор файлов Ejder - перевод Sort.sh v20 на FreePascal'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Организатор файлов Ejder - перевод Sort.sh v21 на FreePascal'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      сокращения для --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  сокращение для --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    сокращения для --mode='
@@ -2614,7 +2614,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'استعمال: sort [اختیارات] [ڈائریکٹری...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'مکمل آپشن فہرست کے لیے sort --help آزمائیں۔'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder فائل منتظم - Sort.sh v20 کا FreePascal ترجمہ'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder فائل منتظم - Sort.sh v21 کا FreePascal ترجمہ'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= کے شارٹ کٹس'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove کا شارٹ کٹ'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= کے شارٹ کٹس'
@@ -2674,7 +2674,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Penggunaan: sort [OPSI] [DIR...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Coba sort --help untuk daftar opsi lengkap.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Penyusun berkas Ejder - terjemahan FreePascal dari Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Penyusun berkas Ejder - terjemahan FreePascal dari Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      pintasan untuk --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  pintasan untuk --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    pintasan untuk --mode='
@@ -2734,7 +2734,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Aufruf: sort [OPTIONEN] [VERZ...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Versuchen Sie sort --help für die vollständige Optionsliste.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder Datei-Organisator - FreePascal-Übersetzung von Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder Datei-Organisator - FreePascal-Übersetzung von Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      Kurzformen für --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  Kurzform für --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    Kurzformen für --mode='
@@ -2794,7 +2794,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := '使い方: sort [オプション] [ディレクトリ...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := '完全なオプション一覧は sort --help を試してください。'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder ファイル整理ツール - Sort.sh v20 の FreePascal 翻訳'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder ファイル整理ツール - Sort.sh v21 の FreePascal 翻訳'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= の短縮形'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove の短縮形'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= の短縮形'
@@ -2854,7 +2854,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Kullanım: sort [seçenekler] [dizin...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Tüm seçenek listesi için sort --help deneyin.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder Dosya Düzenleyici - Sort.sh v20 FreePascal çevirisi'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder Dosya Düzenleyici - Sort.sh v21 FreePascal çevirisi'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= kısayolu'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove kısayolu'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= kısayolu'
@@ -2914,7 +2914,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := '사용법: sort [옵션] [디렉터리...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := '전체 옵션 목록은 sort --help를 실행해 보십시오.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder 파일 정리 도구 - Sort.sh v20 FreePascal 번역'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder 파일 정리 도구 - Sort.sh v21 FreePascal 번역'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      --mode= 의 단축형'
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  --mode=remove 의 단축형'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    --mode= 의 단축형'
@@ -2974,7 +2974,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Cách dùng: sort [tùy chọn] [thư mục...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Hãy thử sort --help để xem danh sách tùy chọn đầy đủ.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder công cụ sắp xếp tệp - bản dịch FreePascal của Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder công cụ sắp xếp tệp - bản dịch FreePascal của Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      viết tắt của --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  viết tắt của --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    viết tắt của --mode='
@@ -3034,7 +3034,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Uso: sort [opzioni] [directory...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Prova sort --help per l’elenco completo delle opzioni.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder strumento di ordinamento file - traduzione FreePascal di Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder strumento di ordinamento file - traduzione FreePascal di Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      scorciatoia per --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  scorciatoia per --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    scorciatoia per --mode='
@@ -3094,7 +3094,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Użycie: sort [opcje] [katalogi...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Spróbuj sort --help, aby zobaczyć pełną listę opcji.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder narzędzie do porządkowania plików - tłumaczenie FreePascal Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder narzędzie do porządkowania plików - tłumaczenie FreePascal Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      skrót od --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  skrót od --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    skrót od --mode='
@@ -3154,7 +3154,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'Gebruik: sort [opties] [mappen...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'Probeer sort --help voor de volledige optielijst.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'Ejder bestandsorganisatie-tool - FreePascal-vertaling van Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'Ejder bestandsorganisatie-tool - FreePascal-vertaling van Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      sneltoets voor --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  sneltoets voor --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    sneltoets voor --mode='
@@ -3214,7 +3214,7 @@ begin
     begin
         if S = 'Usage: sort [OPTIONS] [DIR...]' then Result := 'روش استفاده: sort [گزینه‌ها] [پوشه‌ها...]'
         else if S = 'Try ''sort --help'' for the full option list.' then Result := 'برای فهرست کامل گزینه‌ها «sort --help» را امتحان کنید.'
-        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v20' then Result := 'ابزار مرتب‌سازی فایل Ejder - ترجمه FreePascal از Sort.sh v20'
+        else if S = 'Ejder file organizer - FreePascal translation of Sort.sh v21' then Result := 'ابزار مرتب‌سازی فایل Ejder - ترجمه FreePascal از Sort.sh v21'
         else if S = '  --copy --move      shortcuts for --mode=' then Result := '  --copy --move      شکل کوتاه --mode='
         else if S = '  --remove --delete  shortcut for --mode=remove' then Result := '  --remove --delete  شکل کوتاه --mode=remove'
         else if S = '  --trash --shred    shortcuts for --mode=' then Result := '  --trash --shred    شکل کوتاه --mode='
@@ -3675,6 +3675,9 @@ var
     RawEntries: array of TRawEntry;
     RawDevice: string = '';
     RawPending: Boolean = False;
+    FsDevice: string = '';
+    FsFormatsArg: string = '';
+    FsPending: Boolean = False;
 
 function Raw_HexVal(const H: string): Int64;
 var
@@ -4302,7 +4305,7 @@ procedure Show_Help;
 begin
     Show_Version;
     WriteLn('');
-    WriteLn(Tr('Ejder file organizer - FreePascal translation of Sort.sh v20'));
+    WriteLn(Tr('Ejder file organizer - FreePascal translation of Sort.sh v21'));
     WriteLn('');
     WriteLn(Tr('MODES:'));
     WriteLn('  --mode=MODE        print (default) / copy / move / remove / trash / shred');
@@ -4336,6 +4339,7 @@ begin
     WriteLn(Tr('EXTRAS:'));
     WriteLn(Tr('  --magic            print a magic-number detection report (237 formats) and exit'));
     WriteLn(Tr('  --scan-raw=DEVICE  scan raw device/disk image (237 signatures); copy carves'));
+    WriteLn(Tr('  --scan=FSFORMAT    scan a raw device or image for partitions (listed + lost), then the selected filesystems for files/lost data; FORMATS: all,ntfs,exfat,fat12,fat16,fat32,ext,btrfs,xfs,reiserfs,hfs,swap,luks; copy carves'));
     WriteLn(Tr('  --exif             add <Camera>/<Date> levels (needs exiftool)'));
     WriteLn(Tr('  --strip            strip EXIF from processed files (needs exiftool)'));
     WriteLn(Tr('  --replace          overwrite existing targets'));
@@ -4469,6 +4473,13 @@ begin
                 else
                     RawPending := True
             end
+            else if K = '--scan' then
+            begin
+                if Pos('=', A) > 0 then
+                    FsFormatsArg := Opt_Value(A)
+                else
+                    FsPending := True
+            end
             else if K = '--usage' then
             begin
                 Show_Usage;
@@ -4498,10 +4509,616 @@ begin
                 RawDevice := A;
                 RawPending := False;
             end
+            else if FsPending then
+            begin
+                FsDevice := A;
+                FsPending := False;
+            end
             else
                 SourceDir := A;  { positional: start directory }
         end
         I := I + 1;
+    end;
+end;
+
+{ FS SCAN MODULE (V21) - --scan=FSFormat: partitions + per-partition scan  }
+{ ========================================================================= }
+{ Two phases: (1) partition discovery from MBR/GPT plus a 512-byte-aligned }
+{ filesystem-signature probe that also finds deleted/lost partitions,      }
+{ (2) the V20 signature engine runs inside each selected partition; a      }
+{ fragment that crosses the partition end or overlaps another partition is  }
+{ marked "broken" (overwritten data). Dummy reports only, copy carves to    }
+{ Target/FS-CARVE. The source is only ever opened read-only.                }
+
+type
+    TFsPart = record
+        StartV, SizeV: Int64;
+        Fs: string;
+        Listed, Used: Boolean;
+    end;
+    TFsPartArray = array of TFsPart;
+
+const
+    Fs_Formats = 'all,ntfs,exfat,fat12,fat16,fat32,ext,btrfs,xfs,reiserfs,hfs,swap,luks';
+
+function Fs_Norm(S: string): string;
+begin
+    Result := LowerCase(Trim(S));
+    if (Result = 'ext2') or (Result = 'ext3') or (Result = 'ext4') then
+        Result := 'ext';
+    if (Result = 'hfs+') or (Result = 'hfsx') or (Result = 'hfsplus') then
+        Result := 'hfs';
+end;
+
+function Fs_Known(const Token: string): Boolean;
+begin
+    Result := Pos(',' + Token + ',', ',' + Fs_Formats + ',') > 0;
+end;
+
+function Fs_Le32(const H: string; C: Integer): Int64;
+var
+    K: Integer;
+    B: Int64;
+begin
+    Result := 0;
+    for K := 0 to 3 do
+    begin
+        B := StrToIntDef('$' + Copy(H, C + K * 2, 2), 0);
+        Result := Result + (B shl (8 * K));
+    end;
+end;
+
+function Fs_Le64(const H: string; C: Integer): Int64;
+var
+    K: Integer;
+    B: Int64;
+begin
+    Result := 0;
+    for K := 0 to 7 do
+    begin
+        B := StrToIntDef('$' + Copy(H, C + K * 2, 2), 0);
+        Result := Result + (B shl (8 * K));
+    end;
+end;
+
+{ Fs_Probe_Hex: filesystem token for a partition-start hex window, or '' }
+function Fs_Probe_Hex(const H: string): string;
+begin
+    Result := '';
+    if Copy(H, 1, 12) = '4c554b53babe' then begin Result := 'luks'; Exit; end;
+    if Copy(H, 7, 16) = '4e54465320202020' then begin Result := 'ntfs'; Exit; end;
+    if Copy(H, 7, 12) = '455846415420' then begin Result := 'exfat'; Exit; end;
+    if Copy(H, 109, 10) = '4641543136' then begin Result := 'fat16'; Exit; end;
+    if Copy(H, 109, 10) = '4641543132' then begin Result := 'fat12'; Exit; end;
+    if Copy(H, 165, 10) = '4641543332' then begin Result := 'fat32'; Exit; end;
+    if Copy(H, 129, 16) = '5f42485266535f4d' then begin Result := 'btrfs'; Exit; end;
+    if Copy(H, 1, 8) = '58465342' then begin Result := 'xfs'; Exit; end;
+    if Copy(H, 105, 12) = '526549734572' then begin Result := 'reiserfs'; Exit; end;
+    if (Copy(H, 2049, 4) = '482b') or (Copy(H, 2049, 4) = '4858') then begin Result := 'hfs'; Exit; end;
+    if Copy(H, 2161, 4) = '53ef' then begin Result := 'ext'; Exit; end;
+    if Copy(H, 2105, 20) = '53574150535041434532' then begin Result := 'swap'; Exit; end;
+end;
+
+{ Fs_Device_Size: byte size of the open stream (0 if unknown) }
+function Fs_Device_Size(S: TFileStream): Int64;
+begin
+    Result := S.Size;
+    if Result > 0 then
+        Exit;
+    Result := 0;
+{$IFDEF LINUX}
+    try
+        if FpIoctl(LongInt(S.Handle), $80081272, Result) <> 0 then
+            Result := 0;
+    except
+        Result := 0;
+    end;
+{$ENDIF}
+end;
+
+{ Fs_Inside_Listed: True when Off falls into a listed partition }
+function Fs_Inside_Listed(const Parts: TFsPartArray; Off: Int64): Boolean;
+var
+    I: Integer;
+begin
+    Result := False;
+    for I := 0 to Length(Parts) - 1 do
+        if Parts[I].Listed and (Off >= Parts[I].StartV) and
+           (Off < Parts[I].StartV + Parts[I].SizeV) then
+            Exit(True);
+end;
+
+{ Fs_Listed: MBR + GPT entries -> Parts (listed only) }
+procedure Fs_Listed(S: TFileStream; Fsize: Int64; var Parts: TFsPartArray);
+var
+    H, G: string;
+    Buf: array of Byte;
+    N, I, K, Tb: Integer;
+    Lba, Nsec, Start, Size, Elba, Nent, Esz, First, Last: Int64;
+    Any: Boolean;
+begin
+    SetLength(Parts, 0);
+    SetLength(Buf, 512);
+    S.Seek(0, soFromBeginning);
+    N := S.Read(Buf[0], 512);
+    if N <> 512 then
+        Exit;
+    H := Raw_BytesToHex(Buf, 512);
+    if Copy(H, 1021, 4) <> '55aa' then
+        Exit;
+    { GPT protective MBR? }
+    if (Copy(H, 893, 2) = 'ee') or (Copy(H, 925, 2) = 'ee') or
+       (Copy(H, 957, 2) = 'ee') or (Copy(H, 989, 2) = 'ee') then
+    begin
+        SetLength(Buf, 512);
+        S.Seek(512, soFromBeginning);
+        N := S.Read(Buf[0], 512);
+        if N <> 512 then
+            Exit;
+        G := Raw_BytesToHex(Buf, 512);
+        if Copy(G, 1, 16) = '4546492050415254' then
+        begin
+            Elba := Fs_Le64(G, 145);
+            Nent := Fs_Le32(G, 161);
+            Esz := Fs_Le32(G, 169);
+            if (Esz >= 128) and (Nent > 0) and (Nent * Esz <= 4 * 1024 * 1024) then
+            begin
+                SetLength(Buf, Nent * Esz);
+                S.Seek(Elba * 512, soFromBeginning);
+                N := S.Read(Buf[0], Nent * Esz);
+                if N = Nent * Esz then
+                begin
+                    G := Raw_BytesToHex(Buf, N);
+                    for K := 0 to Nent - 1 do
+                    begin
+                        Any := False;
+                        for I := 1 to 32 do
+                            if G[K * Esz * 2 + I] <> '0' then
+                                Any := True;
+                        if not Any then
+                            Continue;
+                        First := Fs_Le64(G, K * Esz * 2 + 65);
+                        Last := Fs_Le64(G, K * Esz * 2 + 81);
+                        if Last < First then
+                            Continue;
+                        Start := First * 512;
+                        Size := (Last - First + 1) * 512;
+                        if (Size > 0) and (Start + Size <= Fsize) then
+                        begin
+                            SetLength(Parts, Length(Parts) + 1);
+                            Parts[Length(Parts) - 1].StartV := Start;
+                            Parts[Length(Parts) - 1].SizeV := Size;
+                            Parts[Length(Parts) - 1].Fs := '';
+                            Parts[Length(Parts) - 1].Listed := True;
+                        end;
+                    end;
+                end;
+            end;
+            Exit;
+        end;
+    end;
+    { classic MBR entries }
+    for I := 0 to 3 do
+    begin
+        Tb := StrToIntDef('$' + Copy(H, (446 + 16 * I + 5) * 2, 2), 0);
+        if (Tb = 0) or (Tb = 5) or (Tb = 15) or (Tb = 85) or (Tb = 238) then
+            Continue;
+        Lba := Fs_Le32(H, (446 + 16 * I + 9) * 2);
+        Nsec := Fs_Le32(H, (446 + 16 * I + 13) * 2);
+        if Nsec <= 0 then
+            Continue;
+        Start := Lba * 512;
+        Size := Nsec * 512;
+        if Start + Size <= Fsize then
+        begin
+            SetLength(Parts, Length(Parts) + 1);
+            Parts[Length(Parts) - 1].StartV := Start;
+            Parts[Length(Parts) - 1].SizeV := Size;
+            Parts[Length(Parts) - 1].Fs := '';
+            Parts[Length(Parts) - 1].Listed := True;
+        end;
+    end;
+end;
+
+{ Fs_Broken: fragment leaves its partition or crosses into another one }
+function Fs_Broken(const Parts: TFsPartArray; Idx: Integer;
+    Hit, Size: Int64): Boolean;
+var
+    I: Integer;
+begin
+    Result := False;
+    if Hit + Size > Parts[Idx].StartV + Parts[Idx].SizeV then
+        Exit(True);
+    for I := 0 to Length(Parts) - 1 do
+    begin
+        if I = Idx then
+            Continue;
+        if (Hit < Parts[I].StartV + Parts[I].SizeV) and
+           (Hit + Size > Parts[I].StartV) then
+            Exit(True);
+    end;
+end;
+
+procedure Fs_Scan_Main;
+var
+    S, Src, Dest: TFileStream;
+    Parts, All: TFsPartArray;
+    Hits: array of TRawHit;
+    TmpHit: TRawHit;
+    Block, Head, Carry, Window, WBuf: array of Byte;
+    H, HeadHex, Ext, OutPath, OutDir, Tok, Forms, NewT: string;
+    Base, BufBase, N, I, J, E, P, SigStart, Hit, Lo, Hi, NextVal: Int64;
+    Parts2: TFsPartArray;
+    K: Integer;
+    Off, Est, Fsize, Written, Total: Int64;
+    Count, HitCount, NList, Scanned, NParts: Integer;
+    Found, Broken, Sel: Boolean;
+    Formats: TStringList;
+    Rec: TFsPart;
+begin
+    if (Modus = 'move') or (Modus = 'remove') or (Modus = 'trash')
+        or (Modus = 'shred') then
+    begin
+        WriteLn('SCAN: --scan supports dummy and copy only (mode '''
+            + Modus + ''' refused)');
+        Halt(64);
+    end;
+    Formats := TStringList.Create;
+    try
+        Forms := FsFormatsArg;
+        if Forms = '' then
+            Forms := 'all';
+        while Pos(',', Forms) > 0 do
+            Forms := StringReplace(Forms, ',', ' ', [rfReplaceAll]);
+        Forms := Trim(Forms);
+        while Forms <> '' do
+        begin
+            if Pos(' ', Forms) > 0 then
+            begin
+                Tok := Copy(Forms, 1, Pos(' ', Forms) - 1);
+                Delete(Forms, 1, Pos(' ', Forms));
+            end
+            else
+            begin
+                Tok := Forms;
+                Forms := '';
+            end;
+            Tok := Fs_Norm(Tok);
+            if Tok = '' then
+                Continue;
+            if not Fs_Known(Tok) then
+            begin
+                WriteLn('SCAN: unknown filesystem format ''' + Tok
+                    + ''' (known: ' + Fs_Formats + ')');
+                Halt(64);
+            end;
+            if Formats.IndexOf(Tok) < 0 then
+                Formats.Add(Tok);
+        end;
+        if Formats.Count = 0 then
+            Formats.Add('all');
+    finally
+    end;
+    Raw_Init;
+    S := nil; Src := nil;
+    try
+        try
+            S := TFileStream.Create(FsDevice, fmOpenRead or fmShareDenyNone);
+        except
+            on EStreamError do
+            begin
+                WriteLn('SCAN: cannot open ' + FsDevice);
+                Halt(66);
+            end;
+        end;
+        Fsize := Fs_Device_Size(S);
+        if Fsize <= 0 then
+        begin
+            WriteLn('SCAN: cannot determine size of ' + FsDevice);
+            Halt(66);
+        end;
+
+        { --- phase 1a: listed partitions from MBR/GPT --- }
+        Fs_Listed(S, Fsize, Parts);
+        for I := 0 to Length(Parts) - 1 do
+        begin
+            SetLength(WBuf, 1200);
+            S.Seek(Parts[I].StartV, soFromBeginning);
+            N := S.Read(WBuf[0], 1200);
+            H := Raw_BytesToHex(WBuf, N);
+            Parts[I].Fs := Fs_Probe_Hex(H);
+        end;
+
+        { --- phase 1b: lost partitions via 512-aligned probe --- }
+        SetLength(All, 0);
+        Off := 0;
+        while Off < Fsize do
+        begin
+            if not Fs_Inside_Listed(Parts, Off) then
+            begin
+                SetLength(WBuf, 1200);
+                S.Seek(Off, soFromBeginning);
+                N := S.Read(WBuf[0], 1200);
+                if N > 0 then
+                begin
+                    H := Raw_BytesToHex(WBuf, N);
+                    Tok := Fs_Probe_Hex(H);
+                    if Tok <> '' then
+                    begin
+                        Est := Fsize;
+                        for I := 0 to Length(Parts) - 1 do
+                            if (Parts[I].StartV > Off) and
+                               (Parts[I].StartV < Est) then
+                                Est := Parts[I].StartV;
+                        Rec.StartV := Off;
+                        Rec.SizeV := Est - Off;
+                        Rec.Fs := Tok;
+                        Rec.Listed := False;
+                        SetLength(All, Length(All) + 1);
+                        All[Length(All) - 1] := Rec;
+                    end;
+                end;
+            end;
+            Off := Off + 512;
+        end;
+
+        { --- assemble: sort by start, listed first in numbering --- }
+        { lost partitions sorted by start }
+        for I := 0 to Length(All) - 1 do
+            for J := I + 1 to Length(All) - 1 do
+                if All[J].StartV < All[I].StartV then
+                begin
+                    Rec := All[I];
+                    All[I] := All[J];
+                    All[J] := Rec;
+                end;
+        { final list: listed (sorted by start), then lost (sorted by start) }
+        for I := 0 to Length(Parts) - 1 do
+            for J := I + 1 to Length(Parts) - 1 do
+                if Parts[J].StartV < Parts[I].StartV then
+                begin
+                    Rec := Parts[I];
+                    Parts[I] := Parts[J];
+                    Parts[J] := Rec;
+                end;
+        Parts2 := Parts;
+        for I := 0 to Length(All) - 1 do
+        begin
+            SetLength(Parts2, Length(Parts2) + 1);
+            Parts2[Length(Parts2) - 1] := All[I];
+        end;
+        Parts := Parts2;
+        NParts := Length(Parts);
+
+        { --- report the partition map --- }
+        WriteLn('SCAN: ' + FsDevice);
+        NList := 0;
+        for I := 0 to NParts - 1 do
+        begin
+            if Parts[I].Listed then
+                Inc(NList);
+            Tok := Parts[I].Fs;
+            if Tok = '' then
+                Tok := 'unknown';
+            if Parts[I].Listed then
+                WriteLn(Format('  part %d: 0x%s %d %d %s listed',
+                    [I + 1, LowerCase(IntToHex(Parts[I].StartV, 12)),
+                     Parts[I].StartV, Parts[I].SizeV, Tok]))
+            else
+                WriteLn(Format('  part %d: 0x%s %d ~%d %s lost',
+                    [I + 1, LowerCase(IntToHex(Parts[I].StartV, 12)),
+                     Parts[I].StartV, Parts[I].SizeV, Tok]));
+        end;
+        WriteLn(Format('SCAN: %d partitions found (%d listed, %d lost)',
+            [NParts, NList, NParts - NList]));
+
+        { --- phase 2: per-partition signature scan (V20 engine) --- }
+        if Modus = 'copy' then
+            ForceDirectories(TargetDir + '/FS-CARVE');
+        SetLength(Block, Raw_Block);
+        SetLength(Head, Raw_Block);
+        Total := 0;
+        Scanned := 0;
+        for I := 0 to NParts - 1 do
+        begin
+            Sel := False;
+            for K := 0 to Formats.Count - 1 do
+                if (Formats[K] = 'all') or (Formats[K] = Parts[I].Fs) then
+                    Sel := True;
+            if (Parts[I].Fs = '') or (Parts[I].SizeV <= 0) or not Sel then
+                Continue;
+            Lo := Parts[I].StartV;
+            Hi := Lo + Parts[I].SizeV;
+            WriteLn(Format('SCAN-PART %d %s 0x%s %d', [I + 1, Parts[I].Fs,
+                LowerCase(IntToHex(Lo, 12)), Parts[I].SizeV]));
+
+            { first pass: collect hits inside [Lo, Hi) }
+            SetLength(Hits, 0);
+            HitCount := 0;
+            SetLength(Carry, 0);
+            CarryLen := 0;
+            Base := Lo;
+            S.Seek(Lo, soFromBeginning);
+            while Base < Hi do
+            begin
+                N := S.Read(Block[0], Raw_Block);
+                if N <= 0 then
+                    Break;
+                SetLength(Window, CarryLen + N);
+                if CarryLen > 0 then
+                    Move(Carry[0], Window[0], CarryLen);
+                Move(Block[0], Window[CarryLen], N);
+                H := Raw_BytesToHex(Window, Length(Window));
+                BufBase := Base - CarryLen;
+                for E := 0 to Length(RawEntries) - 1 do
+                begin
+                    if RawEntries[E].AnchorHex = '' then
+                        Continue;
+                    if Length(RawEntries[E].Sig) < 4 then
+                        Continue;
+                    P := PosEx(RawEntries[E].AnchorHex, H, 1);
+                    while P > 0 do
+                    begin
+                        if (P - 1) mod 2 = 0 then
+                        begin
+                            SigStart := (P - 1) - RawEntries[E].AnchorNibble;
+                            if (SigStart mod 2 = 0) and (SigStart >= 0) then
+                                if Raw_SigMatch(H, SigStart + 1, E) then
+                                begin
+                                    Hit := BufBase + SigStart div 2
+                                        - RawEntries[E].Off;
+                                    if (Hit >= Lo) and (Hit < Hi) then
+                                    begin
+                                        Inc(HitCount);
+                                        SetLength(Hits, HitCount);
+                                        Hits[HitCount - 1].Offset := Hit;
+                                        Hits[HitCount - 1].Entry := E;
+                                        Hits[HitCount - 1].Size := 0;
+                                        Hits[HitCount - 1].Exact := False;
+                                    end;
+                                end;
+                        end;
+                        P := PosEx(RawEntries[E].AnchorHex, H, P + 1);
+                    end;
+                end;
+                Base := Base + Raw_Block;
+                if Base < Hi then
+                begin
+                    if Length(Window) > Raw_Carry then
+                    begin
+                        SetLength(Carry, Raw_Carry);
+                        Move(Window[Length(Window) - Raw_Carry],
+                            Carry[0], Raw_Carry);
+                        CarryLen := Raw_Carry;
+                    end
+                    else
+                    begin
+                        SetLength(Carry, Length(Window));
+                        if Length(Window) > 0 then
+                            Move(Window[0], Carry[0], Length(Window));
+                        CarryLen := Length(Window);
+                    end;
+                end;
+            end;
+
+            { sort by (offset, name) - same tie-break as the other editions }
+            for J := 0 to HitCount - 1 do
+                for K := J + 1 to HitCount - 1 do
+                    if (Hits[K].Offset < Hits[J].Offset) or
+                       ((Hits[K].Offset = Hits[J].Offset) and
+                        (RawEntries[Hits[K].Entry].Name <
+                         RawEntries[Hits[J].Entry].Name)) then
+                    begin
+                        TmpHit := Hits[J];
+                        Hits[J] := Hits[K];
+                        Hits[K] := TmpHit;
+                    end;
+
+            { second pass: carve sizes, broken check, report, carve }
+            Count := 0;
+            NextVal := Lo;
+            for J := 0 to HitCount - 1 do
+            begin
+                E := Hits[J].Entry;
+                if (Pos('filesystem', RawEntries[E].Name) > 0) or
+                    (RawEntries[E].Name = 'Linux swap area') then
+                    Continue;
+                if Hits[J].Offset < NextVal then
+                    Continue;
+                S.Seek(Hits[J].Offset, soFromBeginning);
+                N := S.Read(Head[0], Raw_Block);
+                HeadHex := Raw_BytesToHex(Head, N);
+                Raw_CarveSize(HeadHex, RawEntries[E].Name, Hits[J].Size,
+                    Hits[J].Exact);
+                if Hits[J].Exact then
+                    NextVal := Hits[J].Offset + Hits[J].Size
+                else
+                    NextVal := Hits[J].Offset + 1;
+                Broken := Fs_Broken(Parts, I, Hits[J].Offset, Hits[J].Size);
+                Inc(Count);
+                Inc(Total);
+                Ext := Raw_FirstExt(RawEntries[E].Exts);
+                Write('  hit: 0x' + LowerCase(IntToHex(Hits[J].Offset, 12))
+                    + ' ' + IntToStr(Hits[J].Offset) + ' '
+                    + RawEntries[E].Name + ' -> ' + Ext
+                    + ' (carve ' + IntToStr(Hits[J].Size) + ' bytes');
+                if not Hits[J].Exact then
+                    Write(', capped');
+                if Broken then
+                    Write(', broken');
+                WriteLn(')');
+                if Modus = 'copy' then
+                begin
+                    OutDir := TargetDir + '/FS-CARVE/p' + IntToStr(I + 1)
+                        + '-' + LowerCase(IntToHex(Lo, 12));
+                    while True do
+                    begin
+                        try
+                            ForceDirectories(OutDir);
+                            OutPath := OutDir + '/'
+                                + LowerCase(IntToHex(Hits[J].Offset, 12))
+                                + '.' + Ext;
+                            Dest := TFileStream.Create(OutPath, fmCreate);
+                            try
+                                S.Seek(Hits[J].Offset, soFromBeginning);
+                                Written := 0;
+                                while Written < Hits[J].Size do
+                                begin
+                                    if Hits[J].Size - Written > Raw_Block then
+                                        N := Raw_Block
+                                    else
+                                        N := Hits[J].Size - Written;
+                                    N := S.Read(Head[0], N);
+                                    if N <= 0 then
+                                        Break;
+                                    Dest.Write(Head[0], N);
+                                    Written := Written + N;
+                                end;
+                            finally
+                                Dest.Free;
+                            end;
+                            Break;
+                        except
+                            on EStreamError do
+                            begin
+                                WriteLn('SCAN: out of space at ' + OutDir);
+                                Write('SCAN: new target directory '
+                                    + '(empty = abort): ');
+                                Flush(Output);
+                                ReadLn(NewT);
+                                if NewT = '' then
+                                begin
+                                    WriteLn('SCAN: copy aborted by user');
+                                    Halt(65);
+                                end;
+                                OutDir := NewT + '/FS-CARVE/p'
+                                    + IntToStr(I + 1) + '-'
+                                    + LowerCase(IntToHex(Lo, 12));
+                            end;
+                        end;
+                    end;
+                    WriteLn('  carved: ' + OutPath);
+                    if LogFile <> '' then
+                    begin
+                        H := '{"action": "carved", "src": "' + FsDevice + '@'
+                            + IntToStr(Hits[J].Offset) + '", "dst": "'
+                            + OutPath + '", "part": ' + IntToStr(I + 1);
+                        if Broken then
+                            H := H + ', "broken": true';
+                        H := H + '}';
+                        Out_Log(H);
+                    end;
+                end;
+            end;
+            Inc(Scanned);
+            WriteLn(Format('SCAN-PART %d: %d signatures found',
+                [I + 1, Count]));
+        end;
+        WriteLn(Format('SCAN: done, %d signatures in %d partitions',
+            [Total, Scanned]));
+    finally
+        S.Free;
+        Formats.Free;
     end;
 end;
 
@@ -4564,6 +5181,16 @@ begin
     if RawDevice <> '' then
     begin
         Raw_Scan_Main;
+        Halt(0);
+    end;
+    if FsFormatsArg <> '' then
+    begin
+        if FsDevice = '' then
+        begin
+            Out_Err('SCAN: --scan needs a device or image path');
+            Halt(64);
+        end;
+        Fs_Scan_Main;
         Halt(0);
     end;
     Collect_Files;
