@@ -2,7 +2,7 @@
 // Sort-GUI.cpp - Media-Intelligent File Organizer (Qt6/QML edition)
 // ===========================================================================
 // A pure C++17 (standard library only) port of the complete Sort.sh
-// lineage (V1.0 -> V21), matching the feature union of the family:
+// lineage (V1.0 -> V22), matching the feature union of the family:
 //
 //   * no `file`, no ImageMagick, no FFmpeg, no ExifTool, no OpenSSL:
 //     MIME sniffing, media dimensions, hashing (MD5 + SHA-1/2 family),
@@ -10,7 +10,7 @@
 //   * modes: dummy (default dry run), copy, move, remove, trash, shred
 //   * V17 template language: lower:/upper:/raw: prefixes, a|b|c fallbacks,
 //     slugified names, keyword union of the whole lineage
-//   * V17.5 --magic: 237-signature detection report (identical output
+//   * V17.5 --magic: 260-signature detection report (identical output
 //     to the Bash/Pascal/Python editions)
 //   * V15 undo log (JSONL), V14 freedesktop trash + shred, V12 --jobs
 //
@@ -56,9 +56,9 @@
 
 namespace fs = std::filesystem;
 
-static const char* CPP_VERSION = "cpp-21";
+static const char* CPP_VERSION = "cpp-22";
 static const char* LINEAGE_NOTE =
-    "C++17 port of the Sort.sh V1.0-V21 lineage (std library only)";
+    "C++17 port of the Sort.sh V1.0-V22 lineage (std library only)";
 
 // ===========================================================================
 // 1. UI: COLORS, ICONS, INTERNATIONALIZATION
@@ -111,13 +111,13 @@ static const std::map<std::string, LangStrings> TRANSLATIONS = {
             "nach Typ gefiltert: ",
             "Aktion: [A]bbrechen, [C\303\234]berspringen, [C\303\234]berspringen a[L]le, [E]rsetzen, Ersetzen a[L]le: ",
             "Keine Eingabedateien oder -verzeichnisse angegeben."}},
-    {"tr", {"Eylem ba\305\237lad\304\261:", "KURU \303\207ALI\305\236MA - de\304\237i\305\237iklik yap\304\261lmad\304\261",
-            "Hedef", "Mod", "dosya i\305\237lendi",
-            "kopyaland\304\261", "ta\305\237\304\261nd\304\261", "silindi",
+    {"tr", {"Eylem ba\305\260lad\304\261:", "KURU \303\207ALI\305\236MA - de\304\260i\305\260iklik yap\304\261lmad\304\261",
+            "Hedef", "Mod", "dosya i\305\260lendi",
+            "kopyaland\304\261", "ta\305\260\304\261nd\304\261", "silindi",
             "\303\247\303\266pe at\304\261ld\304\261", "imha edildi", "atland\304\261",
-            "ba\305\237ar\304\261s\304\261z", "bo\305\237 klas\303\266r kald\304\261r\304\261ld\304\261: ",
+            "ba\305\260ar\304\261s\304\261z", "bo\305\260 klas\303\266r kald\304\261r\304\261ld\304\261: ",
             "Tamamland\304\261", "Yol bulunamad\304\261: ", "t\303\274re g\303\266re filtrelendi: ",
-            "Eylem: [\304\260]ptal, [A]tla, Atla [H]epsi, [D]e\304\237i\305\237tir, De\304\237i\305\237tir [H]epsi: ",
+            "Eylem: [\304\260]ptal, [A]tla, Atla [H]epsi, [D]e\304\260i\305\260tir, De\304\260i\305\260tir [H]epsi: ",
             "Girdi dosyas\304\261 veya dizin verilmedi."}},
 };
 
@@ -1169,7 +1169,7 @@ static std::map<std::string, std::string> read_id3(const fs::path& p) {
 
 // ===========================================================================
 // MAGIC MODULE (V17.5 lineage) - --magic: magic-number detection report
-// 237 embedded signatures, generated from the Python source of truth.
+// 260 embedded signatures, generated from the Python source of truth.
 // ===========================================================================
 
 static const int MAGIC_SPAN = 32774;
@@ -1203,6 +1203,29 @@ static const MagicEntry MAGIC_TABLE[] = {
     {0, "3c53746174615f6474613e", "Stata dataset", "dta"},
     {0, "64383a616e6e6f756e6365", "BitTorrent metainfo", "torrent"},
     {0, "233f52414449414e4345", "Radiance HDR image", "hdr"},
+{0, "7801730d626260", "Apple DMG disk image", "dmg"},
+{0, "636f6e6563746978", "Virtual PC VHD disk image", "vhd"},
+{0, "4349534f", "Compressed ISO image (CSO)", "cso"},
+{0, "445644", "DVD IFO navigation file", "ifo"},
+{0, "02647373", "Digital Speech Standard audio", "dss"},
+{0, "23204469736b2044", "VMware VMDK descriptor", "vmdk"},
+{0, "7472756500", "TrueType font (Mac)", "ttf"},
+{0, "425047fb", "Better Portable Graphics image", "bpg"},
+{0, "424547494e3a5643", "vCard contact file", "vcf"},
+{0, "d7cdc69a", "Windows metafile graphics", "wmf"},
+{0, "c5d0d3c6", "Encapsulated PostScript (binary)", "eps"},
+{0, "cfad12fe", "Outlook Express mail store (DBX)", "dbx"},
+{0, "49491a0000004845", "Canon CRW raw photo", "crw"},
+{0, "e4525c7b8cd8a74d", "OneNote notebook", "one"},
+{0, "0a166f72672e626974636f696e2e7072", "MultiBit Bitcoin wallet", "wallet"},
+{0, "4f50434c444154", "1Password cloud keychain", "opvault"},
+{0, "455646090d0aff00", "EnCase evidence file (E01)", "e01"},
+{0, "0606edf5d81d46e5bd31efe7fe74b71d", "InDesign document", "indd"},
+{0, "6c33336c", "Skype user database", "dbb"},
+{0, "7e424b00", "Paint Shop Pro image", "psp"},
+{0, "300000004c664c65", "Windows event log (EVT)", "evt"},
+{0, "456c6646696c6500", "Windows event log (EVTX)", "evtx"},
+{0, "434f5744", "VMware COWD sparse disk", "vmdk"},
     {0, "2d2d2d2d2d424547494e", "Armored ASCII block (PGP/PEM/SSH)", "asc,pgp,gpg"},
     {0, "52494646????????57454250", "WEBP image", "webp"},
     {0, "52494646????????57415645", "WAV audio", "wav"},
@@ -1475,7 +1498,7 @@ static std::string magic_report(const fs::path& path) {
 // 6b. RAW DEVICE SCAN (V20) - --scan-raw: signature walk + carving
 // ===========================================================================
 // Scans a raw block device (/dev/sdX) or a disk image file with the same
-// 237-entry table used by --magic. Every byte offset is a candidate; in
+// 260-entry table used by --magic. Every byte offset is a candidate; in
 // copy mode hits are carved out (with format-aware end detection); dummy
 // mode reports only. The device is opened read-only and --scan-raw
 // refuses remove/trash/shred.
@@ -2911,18 +2934,18 @@ static const std::vector<std::string> CANONICAL_KEYWORDS = {
     "id3-album", "id3-artist", "id3-genre", "id3-title", "id3-track", "id3-year", "title"};
 
 static const char* ERA_USAGE =
-    "Sort-V21.cpp - standalone C++ edition of Sort-V21.sh\n"
+    "Sort-V22.cpp - standalone C++ edition of Sort-V22.sh\n"
     "(C++17 only; no external commands, no dependencies required.)\n"
     "\n"
     "USAGE\n"
-    "    Sort-V21.cpp [OPTIONS] FILES...\n"
+    "    Sort-V22.cpp [OPTIONS] FILES...\n"
     "\n"
     "MODES (--mode=...)\n"
     "    copy, dummy, move, remove, shred, trash\n"
     "\n"
     "OPTIONS\n"
     "    --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --scan, --scan-raw, --subdirs, --target, --type, --undo, inputs\n"
-    "    --magic             print a magic-number detection report (237 signature formats) and exit\n    --scan-raw DEVICE   scan a raw device or disk image (237 signatures); dry-run report, --mode=copy carves fragments\n    --scan FSFORMAT     scan a raw device/image for partitions (MBR/GPT + lost via filesystem signatures), then scan the selected filesystems for files/lost data; FORMATS: all,ntfs,exfat,fat12,fat16,fat32,ext,btrfs,xfs,reiserfs,hfs,swap,luks; dummy reports, copy carves to Target/FS-CARVE (V21)\n"
+    "    --magic             print a magic-number detection report (260 signature formats) and exit\n    --scan-raw DEVICE   scan a raw device or disk image (260 signatures); dry-run report, --mode=copy carves fragments\n    --scan FSFORMAT     scan a raw device/image for partitions (MBR/GPT + lost via filesystem signatures), then scan the selected filesystems for files/lost data; FORMATS: all,ntfs,exfat,fat12,fat16,fat32,ext,btrfs,xfs,reiserfs,hfs,swap,luks; dummy reports, copy carves to Target/FS-CARVE (V21)\n"
     "\n"
     "TEMPLATE KEYWORDS (for --dirs / --subdirs/--rename/--extension/--dirs)\n"
     "    accessed, created, day, exif-date, exif-datetime, exif-make, exif-model, exif-orientation, extension, format, format+size, id3-album, id3-artist, id3-genre, id3-title, id3-track, id3-year, md5sum, mime, mime-main, mime-sub, modified, month, name, random, sha1sum, sha224sum, sha256sum, sha384sum, sha512sum, size, size+format, title, year, year+month, year+month+day\n"
@@ -2937,7 +2960,7 @@ static const char* ERA_USAGE =
     "    --decompress: archive decompress (--decompress) - stripped; --delete: delete mode - use --mode=remove; --exif: EXIF rename/strip levels (--exif) - stripped; --needed: dependency listing - stripped; --noconfirm: interactive confirm - stripped; --non-interactive: interactive confirm - stripped; --stats: stats mode (--stats) - stripped; --strip: metadata stripping (--strip) - stripped; --title: metadata title rename (--title) - stripped; --verbose: verbose flag - use default output; --version: --version\n";
 
 static int era_error(const std::string& msg) {
-    std::cout << "Sort-V21 edition error: " << msg << "\n";
+    std::cout << "Sort-V22 edition error: " << msg << "\n";
     std::cout << "Allowed here -- modes: ";
     for (size_t i = 0; i < EDITION_MODES.size(); ++i)
         std::cout << (i ? ", " : "") << EDITION_MODES[i];
@@ -2969,7 +2992,7 @@ static void check_template(const std::string& value, const std::string& arg) {
                         != CANONICAL_KEYWORDS.end()
                     && std::find(EDITION_KEYWORDS.begin(), EDITION_KEYWORDS.end(), kw)
                         == EDITION_KEYWORDS.end()) {
-                    std::exit(era_error("keyword '" + kw + "' is not part of Sort-V21 (argument "
+                    std::exit(era_error("keyword '" + kw + "' is not part of Sort-V22 (argument "
                                         + arg + ")"));
                 }
             }
@@ -3022,11 +3045,11 @@ static int era_main(const std::vector<std::string>& argv) {
             if (a.find('=') != std::string::npos) val = to_lower(a.substr(a.find('=') + 1));
             if (!val.empty()
                 && std::find(EDITION_MODES.begin(), EDITION_MODES.end(), val) == EDITION_MODES.end())
-                return era_error("mode '" + val + "' is not part of Sort-V21");
+                return era_error("mode '" + val + "' is not part of Sort-V22");
             continue;
         }
         if (std::find(allowed.begin(), allowed.end(), name) == allowed.end())
-            return era_error("option '" + name + "' is not part of Sort-V21");
+            return era_error("option '" + name + "' is not part of Sort-V22");
         if (a.find('=') != std::string::npos
             && (name == "--dirs" || name == "--subdirs" || name == "--rename"
                 || name == "--extension"))
@@ -3090,7 +3113,7 @@ static int real_main(const std::vector<std::string>& argv) {
         else { std::cout << "unknown option: " << name << "\n"; return 64; }
     }
     if (want_version) {
-        std::cout << "Sort.cpp cpp-21 (C++17 port of the Sort.sh V1.0-V21 lineage)\n";
+        std::cout << "Sort.cpp cpp-22 (C++17 port of the Sort.sh V1.0-V22 lineage)\n";
         return 0;
     }
     if (want_self_test) return run_self_test();
@@ -3205,7 +3228,7 @@ public:
     bool colors() const { return colors_; }            void setColors(bool v) { if (v != colors_) { colors_ = v; emit colorsChanged(); } }
     bool icons() const { return icons_; }              void setIcons(bool v) { if (v != icons_) { icons_ = v; emit iconsChanged(); } }
     bool running() const { return running_; }
-    QString version() const { return QStringLiteral("gui-21 (Qt6/QML front-end, engine cpp-21)"); }
+    QString version() const { return QStringLiteral("gui-22 (Qt6/QML front-end, engine cpp-22)"); }
     QString scanRaw() const { return scanRaw_; }     void setScanRaw(const QString& v) { if (v != scanRaw_) { scanRaw_ = v; emit scanRawChanged(); } }
     QString scanFsDev() const { return scanFsDev_; } void setScanFsDev(const QString& v) { if (v != scanFsDev_) { scanFsDev_ = v; emit scanFsDevChanged(); } }
     QString scanFsFormats() const { return scanFsFormats_; } void setScanFsFormats(const QString& v) { if (v != scanFsFormats_) { scanFsFormats_ = v; emit scanFsFormatsChanged(); } }
@@ -3438,7 +3461,7 @@ import QtQuick.Dialogs
 ApplicationWindow {
     id: root
     width: 980; height: 720; visible: true
-    title: "Sort V21 - Media-Intelligent File Organizer"
+    title: "Sort V22 - Media-Intelligent File Organizer"
 
     Connections {
         target: Sort
@@ -3452,7 +3475,7 @@ ApplicationWindow {
     header: ToolBar {
         RowLayout {
             anchors.fill: parent; anchors.margins: 6
-            Label { text: "Sort V21"; font.bold: true; font.pixelSize: 18 }
+            Label { text: "Sort V22"; font.bold: true; font.pixelSize: 18 }
             Label { text: Sort.version; color: "gray" }
             Item { Layout.fillWidth: true }
             Label { id: status; text: Sort.running ? "Running..." : "Ready" }
