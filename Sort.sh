@@ -2,8 +2,8 @@
 
 ###############################################################################
 #                                                                             #
-# Script  : Sort-V20.sh                                                           #
-# Version : 20                                                              #
+# Script  : Sort-V21.sh                                                           #
+# Version : 21                                                              #
 # Desc    : Self-contained threaded organizer - all lineage features merged    #
 # Author  : HEjder                                                            #
 #                                                                             #
@@ -5153,6 +5153,7 @@ Type_Filter=''                                             # --type= MIME substr
 Pause=0                                                    # --pause= seconds waited after each file
 LogFile=''                                                 # --log= append a line per action
 Raw_Device=''                                              # --scan-raw device/image to scan
+Fs_Formats_Arg=''                                          # --scan format filter (V21)
 UndoFile=''                                                # --undo[=FILE] write an undo script
 Title_Mode=0                                               # --title metadata-title naming
 Quiet=0                                                    # 1 = per-file details suppressed
@@ -5189,7 +5190,7 @@ T() {
 		zh)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' 缺失且其包名未知' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - 自包含的多线程文件整理器' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - 自包含的多线程文件整理器' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '用法: Sort.sh [选项] <文件|目录> ...' ;;
 				'Common starts:') printf '%s' '常用启动示例:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' '使用 --help 查看完整选项列表和动态值。' ;;
@@ -5325,7 +5326,7 @@ T() {
 		hi)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' अनुपस्थित है और उसका पैकेज नाम अज्ञात है' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - स्वतंत्र मल्टी-थ्रेडेड फ़ाइल व्यवस्थापक' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'उपयोग: Sort.sh [विकल्प] <फ़ाइल|निर्देशिका> ...' ;;
 				'Common starts:') printf '%s' 'सामान्य शुरुआत:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'पूर्ण विकल्प सूची और डायनामिक मानों के लिए --help देखें।' ;;
@@ -5461,7 +5462,7 @@ T() {
 		es)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' falta y su nombre de paquete es desconocido' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - organizador con hilos, autónomo' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - organizador con hilos, autónomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opciones] <archivo|directorio> ...' ;;
 				'Common starts:') printf '%s' 'Inicios comunes:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para la lista completa de opciones y valores dinámicos.' ;;
@@ -5597,7 +5598,7 @@ T() {
 		fr)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps : '\''%s'\'' est absent et son nom de paquet est inconnu' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - organisateur multithread autonome' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - organisateur multithread autonome' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Utilisation : Sort.sh [options] <fichier|répertoire> ...' ;;
 				'Common starts:') printf '%s' 'Démarrages courants :' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Utilisez --help pour la liste complète des options et des valeurs dynamiques.' ;;
@@ -5733,7 +5734,7 @@ T() {
 		ar)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' مفقود واسم حزمته غير معروف' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - منظِّم ملفات متعدد الخيوط قائم بذاته' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'الاستخدام: Sort.sh [الخيارات] <ملف|دليل> ...' ;;
 				'Common starts:') printf '%s' 'بدايات شائعة:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'استخدم --help لقائمة الخيارات الكاملة والقيم الديناميكية.' ;;
@@ -5869,7 +5870,7 @@ T() {
 		bn)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' অনুপস্থিত এবং এর প্যাকেজ নাম অজানা' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - স্বয়ংসম্পূর্ণ মাল্টি-থ্রেডেড ফাইল সংগঠক' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'ব্যবহার: Sort.sh [বিকল্প] <ফাইল|ডিরেক্টরি> ...' ;;
 				'Common starts:') printf '%s' 'সাধারণ শুরু:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'সম্পূর্ণ বিকল্প তালিকা ও ডায়নামিক মানের জন্য --help দেখুন।' ;;
@@ -6005,7 +6006,7 @@ T() {
 		pt)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' está ausente e seu nome de pacote é desconhecido' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - organizador com threads, autônomo' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - organizador com threads, autônomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opções] <arquivo|diretório> ...' ;;
 				'Common starts:') printf '%s' 'Inícios comuns:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Use --help para a lista completa de opções e valores dinâmicos.' ;;
@@ -6141,7 +6142,7 @@ T() {
 		ru)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' отсутствует, и имя его пакета неизвестно' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - автономный многопоточный сортировщик' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - автономный многопоточный сортировщик' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Использование: Sort.sh [параметры] <файл|каталог> ...' ;;
 				'Common starts:') printf '%s' 'Типичные запуски:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Используйте --help для полного списка параметров и динамических значений.' ;;
@@ -6277,7 +6278,7 @@ T() {
 		ur)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غائب ہے اور اس کا پیکج نام نامعلوم ہے' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - خود انحصار ملٹی تھریڈ منتظم' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - خود انحصار ملٹی تھریڈ منتظم' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استعمال: Sort.sh [اختیارات] <فائل|ڈائریکٹری> ...' ;;
 				'Common starts:') printf '%s' 'عام آغاز:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'مکمل آپشن فہرست اور متحرک اقدار کے لیے --help استعمال کریں۔' ;;
@@ -6413,7 +6414,7 @@ T() {
 		id)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' hilang dan nama paketnya tidak diketahui' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - penyusun berkas multithread mandiri' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - penyusun berkas multithread mandiri' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Penggunaan: Sort.sh [opsi] <berkas|direktori> ...' ;;
 				'Common starts:') printf '%s' 'Awalan umum:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Gunakan --help untuk daftar opsi lengkap dan nilai dinamis.' ;;
@@ -6549,7 +6550,7 @@ T() {
 		de)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' fehlt und sein Paketname ist unbekannt' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - eigenständiger Sortierer mit Threads' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - eigenständiger Sortierer mit Threads' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Aufruf: Sort.sh [Optionen] <Datei|Verzeichnis> ...' ;;
 				'Common starts:') printf '%s' 'Häufige Aufrufe:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Verwenden Sie --help für die vollständige Optionsliste und dynamische Werte.' ;;
@@ -6685,7 +6686,7 @@ T() {
 		ja)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' が不足しており、そのパッケージ名は不明です' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - 自己完結型マルチスレッド整理ツール' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - 自己完結型マルチスレッド整理ツール' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '使い方: Sort.sh [オプション] <ファイル|ディレクトリ> ...' ;;
 				'Common starts:') printf '%s' 'よく使う起動例:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'オプション一覧と動的な値は --help をご利用ください。' ;;
@@ -6821,7 +6822,7 @@ T() {
 		tr)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' eksik ve paket adı bilinmiyor' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - kendi kendine yeten, çok iş parçacıklı düzenleyici' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Kullanım: Sort.sh [seçenekler] <dosya|dizin> ...' ;;
 				'Common starts:') printf '%s' 'Sık kullanılan başlangıçlar:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Tam seçenek listesi ve dinamik değerler için --help kullanın.' ;;
@@ -6957,7 +6958,7 @@ T() {
 		ko)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\''이(가) 없으며 패키지 이름을 알 수 없습니다' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - 자체 완결형 멀티스레드 파일 정리 도구' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' '사용법: Sort.sh [옵션] <파일|디렉터리> ...' ;;
 				'Common starts:') printf '%s' '자주 쓰는 시작 예:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' '전체 옵션 목록과 동적 값은 --help를 사용하세요.' ;;
@@ -7093,7 +7094,7 @@ T() {
 		vi)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' bị thiếu và tên gói của nó không rõ' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - công cụ sắp xếp đa luồng tự chứa' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - công cụ sắp xếp đa luồng tự chứa' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Cách dùng: Sort.sh [tùy chọn] <tệp|thư mục> ...' ;;
 				'Common starts:') printf '%s' 'Khởi động thường dùng:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Dùng --help để xem đầy đủ danh sách tùy chọn và giá trị động.' ;;
@@ -7229,7 +7230,7 @@ T() {
 		it)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' manca e il nome del suo pacchetto è sconosciuto' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - organizzatore multithread autonomo' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - organizzatore multithread autonomo' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Uso: Sort.sh [opzioni] <file|directory> ...' ;;
 				'Common starts:') printf '%s' 'Avvii comuni:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Usa --help per l'\''elenco completo delle opzioni e i valori dinamici.' ;;
@@ -7365,7 +7366,7 @@ T() {
 		pl)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' jest brakujące, a nazwa pakietu jest nieznana' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - samodzielny wielowątkowy organizator plików' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - samodzielny wielowątkowy organizator plików' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Użycie: Sort.sh [opcje] <plik|katalog> ...' ;;
 				'Common starts:') printf '%s' 'Częste starty:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Użyj --help, aby zobaczyć pełną listę opcji i wartości dynamiczne.' ;;
@@ -7501,7 +7502,7 @@ T() {
 		nl)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' ontbreekt en de pakketnaam is onbekend' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - zelfstandige multithread bestandsorganisator' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - zelfstandige multithread bestandsorganisator' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'Gebruik: Sort.sh [opties] <bestand|map> ...' ;;
 				'Common starts:') printf '%s' 'Veelgebruikte starts:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'Gebruik --help voor de volledige optielijst en dynamische waarden.' ;;
@@ -7637,7 +7638,7 @@ T() {
 		fa)
 			case "$1" in
 				'deps: '\''%s'\'' is missing and its package name is unknown') printf '%s' 'deps: '\''%s'\'' غایب است و نام بسته آن نامعلوم است' ;;
-				'Sort 20 - self-contained threaded organizer + magic detection, raw scan') printf '%s' 'Sort 17.3 - سازمان‌دهنده چندنخستی خودکفا' ;;
+				'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan') printf '%s' 'Sort 17.3 - سازمان‌دهنده چندنخستی خودکفا' ;;
 				'Usage: Sort.sh [options] <file|directory> ...') printf '%s' 'استفاده: Sort.sh [گزینه‌ها] <فایل|پوشه> ...' ;;
 				'Common starts:') printf '%s' 'شروع‌های رایج:' ;;
 				'Use --help for the full option list and dynamic values.') printf '%s' 'برای فهرست کامل گزینه‌ها و مقادیر پویا از --help استفاده کنید.' ;;
@@ -7821,7 +7822,7 @@ Lang_List() {
 
 
 Usage() {
-	Print_Header "$(T 'Sort 20 - self-contained threaded organizer + magic detection, raw scan')"
+	Print_Header "$(T 'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan')"
 	Print_Message 'Usage: Sort.sh [options] <file|directory> ...'
 	printf '\n'
 	Print_Message 'Common starts:'
@@ -7840,7 +7841,7 @@ Usage() {
 # ---------------------------------------------------------------------------
 
 Help() {
-	Print_Header "$(T 'Sort 20 - self-contained threaded organizer + magic detection, raw scan')"
+	Print_Header "$(T 'Sort 21 - self-contained threaded organizer + magic detection, raw+fs scan')"
 	Print_Message 'Sorts files into a dynamic directory tree built from MIME, dates,'
 	Print_Message 'sizes, media dimensions, checksums and metadata titles.'
 	printf '\n'
@@ -7853,6 +7854,7 @@ Help() {
 	printf '\t%s\n' "$(T '--trash            Send the calculated target to the desktop trash')"
 	printf '\t%s\n' "$(T '--magic            Print a magic-number detection report (237 signature formats) and exit')"
 	printf '\t%s\n' "$(T '--scan-raw=DEVICE Scan a raw device or disk image (237 signatures); Copy carves fragments into the target')"
+	printf '\t%s\n' "$(T '--scan=FSFORMAT Scan a raw device or image for partitions (listed + lost), then the selected filesystems for files/lost data; FORMATS: all,ntfs,exfat,fat12,fat16,fat32,ext,btrfs,xfs,reiserfs,hfs,swap,luks; Copy carves into the target')"
 	printf '\t%s\n' "$(T '--shred            Run shred -u -n 1 on the calculated target')"
 	printf '\t%s\n' "$(T '--mode=VALUE       Long form of any mode above (copy/move/...)')"
 	printf '\n'
@@ -8072,6 +8074,12 @@ Parse_Arguments() {
 		--scan-raw)
 			Raw_Device='NEXT'
 			;;
+		--scan=*)
+			Fs_Formats_Arg=${Item#--scan=}
+			;;
+		--scan)
+			Fs_Formats_Arg='NEXT'
+			;;
 		--usage)
 			Usage
 			exit 0
@@ -8081,7 +8089,7 @@ Parse_Arguments() {
 			exit 0
 			;;
 		--version)
-			printf 'Sort 20\n'
+			printf 'Sort 21\n'
 			exit 0
 			;;
 		--lang=*)
@@ -8101,6 +8109,8 @@ Parse_Arguments() {
 		*)
 			if [ "${Raw_Device:-}" = NEXT ]; then
 				Raw_Device=$Item
+			elif [ "${Fs_Formats_Arg:-}" = NEXT ]; then
+				Fs_Formats_Arg=$Item
 			else
 				Files+=("$Item")
 			fi
@@ -9600,6 +9610,315 @@ Raw_Scan_Main() {
 	return 0
 }
 
+
+# FS SCAN MODULE (V21) - --scan=FSFormat: partitions + per-partition scan
+# ===========================================================================
+# Two phases: (1) partition discovery from MBR/GPT plus a 512-byte-aligned
+# filesystem-signature probe that also finds deleted/lost partitions,
+# (2) the V20 signature engine runs inside each selected partition; a
+# fragment that crosses the partition end or overlaps another partition is
+# marked "broken" (overwritten data). Dummy reports only, Copy carves to
+# Target/FS-CARVE. The source is only ever opened read-only.
+
+declare -a FsLStart FsLSize FsPStart FsPSize FsPFs FsPStatus
+Fs_Formats='all ntfs exfat fat12 fat16 fat32 ext btrfs xfs reiserfs hfs swap luks'
+Fs_Tok=''
+
+# Fs_Probe_Hex <hex> : set Fs_Tok to the filesystem token for a
+# partition-start window (lowercase hex), or empty when none matches
+Fs_Probe_Hex() {
+	local H=$1
+	Fs_Tok=''
+	[ "${H:0:12}"    = '4c554b53babe'     ] && { Fs_Tok=luks;     return 0; }
+	[ "${H:6:16}"    = '4e54465320202020' ] && { Fs_Tok=ntfs;    return 0; }
+	[ "${H:6:12}"    = '455846415420'     ] && { Fs_Tok=exfat;   return 0; }
+	[ "${H:108:10}"  = '4641543136'       ] && { Fs_Tok=fat16;   return 0; }
+	[ "${H:108:10}"  = '4641543132'       ] && { Fs_Tok=fat12;   return 0; }
+	[ "${H:164:10}"  = '4641543332'       ] && { Fs_Tok=fat32;   return 0; }
+	[ "${H:128:16}"  = '5f42485266535f4d' ] && { Fs_Tok=btrfs;   return 0; }
+	[ "${H:0:8}"     = '58465342'         ] && { Fs_Tok=xfs;     return 0; }
+	[ "${H:104:12}"  = '526549734572'     ] && { Fs_Tok=reiserfs; return 0; }
+	[ "${H:2048:4}"  = '482b'             ] && { Fs_Tok=hfs;     return 0; }
+	[ "${H:2048:4}"  = '4858'             ] && { Fs_Tok=hfs;     return 0; }
+	[ "${H:2160:4}"  = '53ef'             ] && { Fs_Tok=ext;     return 0; }
+	[ "${H:2104:20}" = '53574150535041434532' ] && { Fs_Tok=swap; return 0; }
+	return 1
+}
+
+# Fs_Le32 <hex> <charpos> : little-endian u32 at byte position <charpos>/2
+Fs_Le32() {
+	local H=$1 P=$2 V=0 K B
+	for K in 0 1 2 3; do
+		B=$(( 16#${H:$(( P + K * 2 )):2} ))
+		V=$(( V + B * ( 256 ** K ) ))
+	done
+	printf '%s' "$V"
+}
+
+# Fs_Le64 <hex> <charpos> : little-endian u64
+Fs_Le64() {
+	local H=$1 P=$2 V=0 K B
+	for K in 0 1 2 3 4 5 6 7; do
+		B=$(( 16#${H:$(( P + K * 2 )):2} ))
+		V=$(( V + B * ( 256 ** K ) ))
+	done
+	printf '%s' "$V"
+}
+
+# Fs_Device_Size <dev> : byte size of file or block device (empty if unknown)
+Fs_Device_Size() {
+	local S
+	S=$(stat -c %s -- "$1" 2>/dev/null)
+	[ -n "$S" ] && [ "$S" -gt 0 ] && { printf '%s' "$S"; return 0; }
+	S=$(blockdev --getsize64 -- "$1" 2>/dev/null)
+	[ -n "$S" ] && [ "$S" -gt 0 ] && { printf '%s' "$S"; return 0; }
+	return 1
+}
+
+# Fs_Probe <dev> <offset> : set Fs_Tok to the filesystem at an offset
+Fs_Probe() {
+	Fs_Probe_Hex "$(Raw_Head_Hex "$1" "$2" 1200)"
+}
+
+# Fs_Inside_Listed <offset> <count> : 0 when inside any listed range
+Fs_Inside_Listed() {
+	local Off=$1 N=$2 I
+	for (( I = 0; I < N; I++ )); do
+		if [ "$Off" -ge "${FsLStart[$I]}" ] && [ "$Off" -lt $(( FsLStart[$I] + FsLSize[$I] )) ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+# Fs_Listed <dev> <fsize> : fill FsLStart[]/FsLSize[] from MBR/GPT
+Fs_Listed() {
+	local Dev=$1 Fsize=$2 H G I Tb Lba Nsec Start Size Elba Nent Esz E K First Last Guid
+	H=$(Raw_Head_Hex "$Dev" 0 512)
+	[ "${H:1020:4}" = '55aa' ] || return 0
+	FsLStart=() FsLSize=()
+	local -a TbArr=()
+	for I in 0 1 2 3; do
+		TbArr[$I]=$(( 16#${H:$(( ( 446 + 16 * I + 4 ) * 2 )):2} ))
+	done
+	if [ "${TbArr[0]}" = 238 ] || [ "${TbArr[1]}" = 238 ] || \
+	   [ "${TbArr[2]}" = 238 ] || [ "${TbArr[3]}" = 238 ]; then
+		G=$(Raw_Head_Hex "$Dev" 512 512)
+		if [ "${G:0:16}" = '4546492050415254' ]; then
+			Elba=$(Fs_Le64 "$G" 144)
+			Nent=$(Fs_Le32 "$G" 160)
+			Esz=$(Fs_Le32 "$G" 168)
+			if [ "$Esz" -ge 128 ] && [ "$Nent" -gt 0 ] && \
+			   [ $(( Nent * Esz )) -le $(( 4 * 1024 * 1024 )) ]; then
+				G=$(Raw_Head_Hex "$Dev" $(( Elba * 512 )) $(( Nent * Esz )))
+				for (( K = 0; K < Nent; K++ )); do
+					E=$(( K * Esz * 2 ))
+					Guid=${G:$E:32}
+					[ -n "$(printf '%s' "$Guid" | tr -d '0')" ] || continue
+					First=$(Fs_Le64 "$G" $(( E + 64 )))
+					Last=$(Fs_Le64 "$G" $(( E + 80 )))
+					[ "$Last" -lt "$First" ] && continue
+					Start=$(( First * 512 ))
+					Size=$(( ( Last - First + 1 ) * 512 ))
+					if [ "$Size" -gt 0 ] && [ $(( Start + Size )) -le "$Fsize" ]; then
+						FsLStart[${#FsLStart[@]}]=$Start
+						FsLSize[${#FsLSize[@]}]=$Size
+					fi
+				done
+			fi
+			return 0
+		fi
+	fi
+	for I in 0 1 2 3; do
+		Tb=${TbArr[$I]}
+		case $Tb in 0 | 5 | 15 | 85 | 238) continue ;; esac
+		Lba=$(Fs_Le32 "$H" $(( ( 446 + 16 * I + 8 ) * 2 )))
+		Nsec=$(Fs_Le32 "$H" $(( ( 446 + 16 * I + 12 ) * 2 )))
+		[ "$Nsec" -gt 0 ] || continue
+		Start=$(( Lba * 512 ))
+		Size=$(( Nsec * 512 ))
+		if [ $(( Start + Size )) -le "$Fsize" ]; then
+			FsLStart[${#FsLStart[@]}]=$Start
+			FsLSize[${#FsLSize[@]}]=$Size
+		fi
+	done
+	return 0
+}
+
+# Fs_Broken <hit> <size> <skip-idx> : 0 = fragment leaves its partition or
+# crosses into another one (overwritten data)
+Fs_Broken() {
+	local Hit=$1 Size=$2 Skip=$3 I
+	if [ $(( Hit + Size )) -gt $(( FsPStart[$Skip] + FsPSize[$Skip] )) ]; then
+		return 0
+	fi
+	for (( I = 0; I < ${#FsPStart[@]}; I++ )); do
+		[ "$I" = "$Skip" ] && continue
+		if [ "$Hit" -lt $(( FsPStart[$I] + FsPSize[$I] )) ] && \
+		   [ $(( Hit + Size )) -gt "${FsPStart[$I]}" ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+# Fs_Scan_Main <device> <formats> <mode> <outbase> <logfile> : full FS scan
+Fs_Scan_Main() {
+	local Dev=$1 Forms=$2 Mode=$3 OutBase=$4 LogF=$5
+	case $Mode in
+	Move | Remove | Trash | Shred)
+		Print_Error "$(Tf 'SCAN: --scan supports dummy and copy only (mode '\''%s'\'' refused)' "$(printf %s "$Mode" | tr '[:upper:]' '[:lower:]')")"
+		return 64 ;;
+	esac
+	local -A FmtSel
+	local Tok Forms_L=''
+	Forms=${Forms:-all}
+	for Tok in ${Forms//,/ }; do
+		Tok=$(printf '%s' "$Tok" | tr '[:upper:]' '[:lower:]')
+		case $Tok in ext2 | ext3 | ext4) Tok=ext ;; hfs+ | hfsx | hfsplus) Tok=hfs ;; esac
+		if [[ " $Fs_Formats " != *" $Tok "* ]]; then
+			Print_Error "$(Tf 'SCAN: unknown filesystem format '\''%s'\'' (known: %s)' "$Tok" "${Fs_Formats// /,}")"
+			return 64
+		fi
+		FmtSel[$Tok]=1
+	done
+	[ ${#FmtSel[@]} -eq 0 ] && FmtSel[all]=1
+	Raw_Scan_Init
+	local Fsize
+	Fsize=$(Fs_Device_Size "$Dev")
+	if [ -z "$Fsize" ]; then
+		Print_Error "$(Tf 'SCAN: cannot determine size of %s' "$Dev")"
+		return 66
+	fi
+
+	# --- phase 1: partitions (listed from MBR/GPT, lost via probe) ---
+	Fs_Listed "$Dev" "$Fsize"
+	local NL=${#FsLStart[@]}
+	FsPStart=() FsPSize=() FsPFs=() FsPStatus=()
+	local I Off Tok2 Est Hex Base Win=$(( 1024 * 1024 )) Tail=4096
+	local ListT=$(mktemp)
+	for (( I = 0; I < NL; I++ )); do
+		Fs_Probe "$Dev" "${FsLStart[$I]}"
+		printf '%s|%s|%s|%s\n' "${FsLStart[$I]}" "${FsLSize[$I]}" "${Fs_Tok:-unknown}" 'listed' >>"$ListT"
+	done
+	Base=0
+	while [ "$Base" -lt "$Fsize" ]; do
+		Hex=$(Raw_Head_Hex "$Dev" "$Base" $(( Win + Tail )))
+		[ -n "$Hex" ] || break
+		for (( Off = Base; Off < Base + Win && Off < Fsize; Off += 512 )); do
+			Fs_Inside_Listed "$Off" "$NL" && continue
+			Fs_Probe_Hex "${Hex:$(( ( Off - Base ) * 2 )):2400}"
+			[ -n "$Fs_Tok" ] || continue
+			Est=$Fsize
+			for (( I = 0; I < NL; I++ )); do
+				if [ "${FsLStart[$I]}" -gt "$Off" ] && [ "${FsLStart[$I]}" -lt "$Est" ]; then
+					Est=${FsLStart[$I]}
+				fi
+			done
+			printf '%s|%s|%s|%s\n' "$Off" "$(( Est - Off ))" "$Fs_Tok" 'lost' >>"$ListT"
+		done
+		Base=$(( Base + Win ))
+	done
+	local P N=0
+	while IFS='|' read -r Off Est Tok2 Stat; do
+		FsPStart[$N]=$Off; FsPSize[$N]=$Est
+		FsPFs[$N]=$Tok2; FsPStatus[$N]=$Stat
+		N=$(( N + 1 ))
+	done <"$ListT"
+	rm -f "$ListT"
+	local NList=0
+	for (( I = 0; I < N; I++ )); do
+		[ "${FsPStatus[$I]}" = listed ] && NList=$(( NList + 1 ))
+	done
+	printf 'SCAN: %s\n' "$Dev"
+	for (( I = 0; I < N; I++ )); do
+		if [ "${FsPStatus[$I]}" = lost ]; then
+			printf '  part %d: 0x%012x %s ~%s %s %s\n' $(( I + 1 )) \
+				"${FsPStart[$I]}" "${FsPStart[$I]}" "${FsPSize[$I]}" \
+				"${FsPFs[$I]}" "${FsPStatus[$I]}"
+		else
+			printf '  part %d: 0x%012x %s %s %s %s\n' $(( I + 1 )) \
+				"${FsPStart[$I]}" "${FsPStart[$I]}" "${FsPSize[$I]}" \
+				"${FsPFs[$I]}" "${FsPStatus[$I]}"
+		fi
+	done
+	printf 'SCAN: %d partitions found (%d listed, %d lost)\n' "$N" "$NList" $(( N - NList ))
+
+	# --- phase 2: per-partition signature scan (V20 engine, bounded) ---
+	local Cap=$(( 5 * 1024 * 1024 )) Lead=32800
+	local Tmp_Raw_Hex=$(mktemp) Hits=$(mktemp) Sorted=$(mktemp)
+	local Size Exact NextAllowed Name Exts Ext Head Hit Sig Count Scanned=0
+	local Total=0 Lo Hi Out Broken OutDir RStart RLen
+	[ "$Mode" = Copy ] && mkdir -p -- "$OutBase/FS-CARVE"
+	for (( I = 0; I < N; I++ )); do
+		if [ -z "${FmtSel[all]:-}" ] && [ -z "${FmtSel[${FsPFs[$I]}]:-}" ]; then
+			continue
+		fi
+		[ "${FsPFs[$I]}" = unknown ] && continue
+		Lo=${FsPStart[$I]}; Hi=$(( Lo + FsPSize[$I] ))
+		: >"$Hits"
+		Base=$Lo
+		while [ "$Base" -lt "$Hi" ]; do
+			RStart=$Base RLen=$Win
+			if [ "$Base" -gt "$Lo" ]; then RStart=$(( Base - Lead )); RLen=$(( Win + Lead )); fi
+			Raw_Head_Hex "$Dev" "$RStart" "$RLen" >"$Tmp_Raw_Hex"
+			Raw_Scan_Grep "$RStart" | awk -F'|' -v lo="$Lo" -v hi="$Hi" \
+				'{ if ($1 >= lo && $1 < hi) print }' >>"$Hits"
+			Base=$(( Base + Win ))
+		done
+		# hit|name|sig, ties by name (same tie-break as the Python edition)
+		while IFS='|' read -r H2 S2; do
+			printf '%s|%s|%s\n' "$H2" "${RawName[$S2]}" "$S2"
+		done <"$Hits" | sort -t'|' -k1,1n -k2,2 -u >"$Sorted"
+		printf 'SCAN-PART %d %s 0x%012x %s\n' $(( I + 1 )) "${FsPFs[$I]}" "$Lo" "${FsPSize[$I]}"
+		Count=0 NextAllowed=$Lo
+		while IFS='|' read -r Hit Name Sig; do
+			case $Name in *filesystem* | 'Linux swap area') continue ;; esac
+			[ "$Hit" -ge "$NextAllowed" ] || continue
+			Exts=${RawExts[$Sig]}
+			Ext=${Exts%%,*}; [ -n "$Ext" ] || Ext=bin
+			Head=$(Raw_Head_Hex "$Dev" "$Hit" "$Win")
+			read -r Size Exact <<< "$(Raw_Carve_Size "$Head" "$Name" "$Cap")"
+			if [ "$Exact" = exact ]; then NextAllowed=$(( Hit + Size )); else NextAllowed=$(( Hit + 1 )); fi
+			Broken=''
+			Fs_Broken "$Hit" "$Size" "$I" && Broken=', broken'
+			Count=$(( Count + 1 )); Total=$(( Total + 1 ))
+			printf '  hit: 0x%012x %s %s -> %s (carve %s bytes%s%s)\n' \
+				"$Hit" "$Hit" "$Name" "$Ext" "$Size" \
+				"$([ "$Exact" = exact ] || printf ', capped')" "$Broken"
+			if [ "$Mode" = Copy ]; then
+				OutDir=$(printf '%s/FS-CARVE/p%d-%012x' "$OutBase" $(( I + 1 )) "$Lo")
+				while :; do
+					mkdir -p -- "$OutDir"
+					Out=$(printf '%s/%012x.%s' "$OutDir" "$Hit" "$Ext")
+					if dd if="$Dev" of="$Out" bs=64k iflag=skip_bytes,count_bytes \
+						skip=$Hit count=$Size 2>/dev/null && [ -s "$Out" ]; then
+						break
+					fi
+					printf 'SCAN: out of space at %s\n' "$OutDir"
+					printf 'SCAN: new target directory (empty = abort): '
+					if ! read -r OutDir < /dev/tty 2>/dev/null || [ -z "$OutDir" ]; then
+						Print_Error "$(T 'SCAN: copy aborted by user')"
+						return 65
+					fi
+					OutDir=$(printf '%s/FS-CARVE/p%d-%012x' "$OutDir" $(( I + 1 )) "$Lo")
+				done
+				printf '  carved: %s\n' "$Out"
+				if [ -n "$LogF" ]; then
+					printf '{"action": "carved", "src": "%s@%s", "dst": "%s", "part": %d%s}\n' \
+						"$Dev" "$Hit" "$Out" $(( I + 1 )) \
+						"$([ -n "$Broken" ] && printf ', "broken": true')" >>"$LogF"
+				fi
+			fi
+		done <"$Sorted"
+		Scanned=$(( Scanned + 1 ))
+		printf 'SCAN-PART %d: %d signatures found\n' $(( I + 1 )) "$Count"
+	done
+	rm -f "$Tmp_Raw_Hex" "$Hits" "$Sorted"
+	printf 'SCAN: done, %d signatures in %d partitions\n' "$Total" "$Scanned"
+	return 0
+}
+
 # Magic_Report <file> : one report line for a single file
 Magic_Report() {
 	local F=$1 H Detected Key Rest Name Exts Ext Verdict
@@ -9681,6 +10000,16 @@ Main() {
 	# --scan-raw (V20): raw device signature scan, then exit
 	if [ -n "$Raw_Device" ]; then
 		Raw_Scan_Main "$Raw_Device" "$Modus" "$Target_Dir" "$LogFile"
+		return $?
+	fi
+
+	# --scan (V21): partition + per-partition signature scan, then exit
+	if [ -n "$Fs_Formats_Arg" ]; then
+		if [ ${#Files[@]} -eq 0 ]; then
+			Print_Error "$(T 'SCAN: --scan needs a device or image path')"
+			return 64
+		fi
+		Fs_Scan_Main "${Files[0]}" "$Fs_Formats_Arg" "$Modus" "$Target_Dir" "$LogFile"
 		return $?
 	fi
 
