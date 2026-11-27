@@ -2,7 +2,7 @@
 // Sort.cpp - Media-Intelligent File Organizer (C++17 edition)
 // ===========================================================================
 // A pure C++17 (standard library only) port of the complete Sort.sh
-// lineage (V1.0 -> V20), matching the feature union of the family:
+// lineage (V1.0 -> V21), matching the feature union of the family:
 //
 //   * no `file`, no ImageMagick, no FFmpeg, no ExifTool, no OpenSSL:
 //     MIME sniffing, media dimensions, hashing (MD5 + SHA-1/2 family),
@@ -46,6 +46,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <functional>
 #include <unordered_map>
 #include <vector>
 
@@ -55,9 +56,9 @@
 
 namespace fs = std::filesystem;
 
-static const char* CPP_VERSION = "cpp-20";
+static const char* CPP_VERSION = "cpp-21";
 static const char* LINEAGE_NOTE =
-    "C++17 port of the Sort.sh V1.0-V20 lineage (std library only)";
+    "C++17 port of the Sort.sh V1.0-V21 lineage (std library only)";
 
 // ===========================================================================
 // 1. UI: COLORS, ICONS, INTERNATIONALIZATION
@@ -1714,6 +1715,486 @@ static int run_raw_scan(const std::string& dev, const std::string& mode,
 }
 
 // ===========================================================================
+#if defined(__linux__)
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#define SORT_BLKGETSIZE64 0x80081272
+#ifndef BLKGETSIZE64
+#define BLKGETSIZE64 SORT_BLKGETSIZE64
+#endif
+#endif
+#include <cerrno>
+
+// 6c. FS SCAN (V21) - --scan=FSFormat: partition map + per-partition scan
+// -------------------------------------------------------------------------
+// Two phases: (1) partition discovery from MBR/GPT plus a 512-byte-aligned
+// filesystem-signature probe that also finds deleted/lost partitions,
+// (2) the V20 signature engine runs inside each selected partition; a
+// fragment that crosses the partition end or overlaps another partition is
+// marked "broken" (overwritten data). Dummy reports only, copy carves to
+// Target/FS-CARVE. The source is only ever opened read-only.
+
+struct FsPart {
+    unsigned long long start, size;
+    std::string fs;            // may be empty (unknown)
+    bool listed;
+};
+
+static const char* FS_FORMATS[] = {"all", "ntfs", "exfat", "fat12", "fat16",
+    "fat32", "ext", "btrfs", "xfs", "reiserfs", "hfs", "swap", "luks"};
+
+static std::string fs_norm(const std::string& f) {
+    std::string s = f;
+    for (auto& c : s) c = (char)tolower((unsigned char)c);
+    if (s == "ext2" || s == "ext3" || s == "ext4") s = "ext";
+    if (s == "hfs+" || s == "hfsx" || s == "hfsplus") s = "hfs";
+    return s;
+}
+
+static unsigned long long fs_le32(const char* p) {
+    return (unsigned char)p[0] | ((unsigned long long)(unsigned char)p[1] << 8) |
+           ((unsigned long long)(unsigned char)p[2] << 16) |
+           ((unsigned long long)(unsigned char)p[3] << 24);
+}
+
+static unsigned long long fs_le64(const char* p) {
+    unsigned long long v = 0;
+    for (int i = 0; i < 8; ++i)
+        v |= (unsigned long long)(unsigned char)p[i] << (8 * i);
+    return v;
+}
+
+static unsigned long long fs_dev_size(const std::string& path) {
+    std::ifstream f(path, std::ios::binary);
+    f.seekg(0, std::ios::end);
+    if (f.good()) {
+        std::streampos n = f.tellg();
+        if (n > 0) return (unsigned long long)n;
+    }
+#if defined(__linux__)
+    int fd = ::open(path.c_str(), O_RDONLY);
+    if (fd >= 0) {
+        unsigned long long sz = 0;
+        if (ioctl(fd, BLKGETSIZE64, &sz) == 0 && sz > 0) { ::close(fd); return sz; }
+        ::close(fd);
+    }
+#endif
+    return 0;
+}
+
+static std::string fs_probe(const std::string& w) {
+    auto at = [&](size_t off, size_t n) {
+        return w.size() >= off + n;
+    };
+    if (w.size() >= 6 && w.compare(0, 6, "LUKS\xba\xbe", 6) == 0) return "luks";
+    if (w.size() >= 11 && w.compare(3, 8, "NTFS    ") == 0) return "ntfs";
+    if (w.size() >= 8 && w.compare(3, 5, "EXFAT ") == 0) return "exfat";
+    if (w.size() >= 59 && w.compare(54, 5, "FAT16") == 0) return "fat16";
+    if (w.size() >= 59 && w.compare(54, 5, "FAT12") == 0) return "fat12";
+    if (w.size() >= 87 && w.compare(82, 5, "FAT32") == 0) return "fat32";
+    if (w.size() >= 72 && w.compare(64, 8, "_BHRfS_M") == 0) return "btrfs";
+    if (w.size() >= 4 && w.compare(0, 4, "XFSB") == 0) return "xfs";
+    if (w.size() >= 60 && (w.compare(52, 8, "ReIsErFs") == 0 ||
+        w.compare(52, 8, "ReIsEr2F") == 0 ||
+        w.compare(52, 8, "ReIsEr3F") == 0 ||
+        w.compare(52, 8, "ReIsEr4F") == 0)) return "reiserfs";
+    if (w.size() >= 1026 && (w.compare(1024, 2, "H+") == 0 ||
+        w.compare(1024, 2, "HX") == 0)) return "hfs";
+    if (w.size() >= 1082 && (unsigned char)w[1080] == 0x53 &&
+        (unsigned char)w[1081] == 0xef) return "ext";
+    if (w.size() >= 1062 && w.compare(1052, 10, "SWAPSPACE2") == 0) return "swap";
+    (void)at;
+    return "";
+}
+
+static size_t fs_read_at(std::ifstream& f, unsigned long long off,
+                         void* buf, size_t n) {
+    f.clear();
+    f.seekg((std::streamoff)off);
+    if (!f.good()) return 0;
+    f.read((char*)buf, (std::streamsize)n);
+    return f.gcount() > 0 ? (size_t)f.gcount() : 0;
+}
+
+static void fs_listed(std::ifstream& f, unsigned long long fsize,
+                      std::vector<std::pair<unsigned long long,
+                                            unsigned long long>>& out) {
+    char mbr[512];
+    if (fs_read_at(f, 0, mbr, 512) != 512) return;
+    if ((unsigned char)mbr[510] != 0xAA || mbr[511] != 0x55) return;
+    unsigned char types[4];
+    for (int i = 0; i < 4; ++i) types[i] = (unsigned char)mbr[446 + 16 * i + 4];
+    bool gpt = false;
+    for (int i = 0; i < 4; ++i) gpt = gpt || types[i] == 0xEE;
+    if (gpt) {
+        char hdr[512];
+        if (fs_read_at(f, 512, hdr, 512) != 512) return;
+        if (std::memcmp(hdr, "EFI PART", 8) != 0) return;
+        unsigned long long elba = fs_le64(hdr + 72);
+        unsigned long long nent = fs_le32(hdr + 80);
+        unsigned long long esz = fs_le32(hdr + 84);
+        if (esz < 128 || nent == 0 || nent * esz > (4ull << 20)) return;
+        std::vector<char> blob((size_t)(nent * esz));
+        if (fs_read_at(f, elba * 512, blob.data(), blob.size()) != blob.size()) return;
+        for (unsigned long long k = 0; k < nent; ++k) {
+            const char* e = blob.data() + (size_t)(k * esz);
+            bool any = false;
+            for (int b = 0; b < 16; ++b) any = any || e[b] != 0;
+            if (!any) continue;
+            unsigned long long first = fs_le64(e + 32);
+            unsigned long long last = fs_le64(e + 40);
+            if (last < first) continue;
+            unsigned long long start = first * 512;
+            unsigned long long size = (last - first + 1) * 512;
+            if (size > 0 && start + size <= fsize)
+                out.push_back({start, size});
+        }
+        return;
+    }
+    for (int i = 0; i < 4; ++i) {
+        unsigned char tb = types[i];
+        if (tb == 0x00 || tb == 0x05 || tb == 0x0F || tb == 0xEE || tb == 0x85)
+            continue;
+        unsigned long long lba = fs_le32(mbr + 446 + 16 * i + 8);
+        unsigned long long nsec = fs_le32(mbr + 446 + 16 * i + 12);
+        if (nsec == 0) continue;
+        unsigned long long start = lba * 512;
+        unsigned long long size = nsec * 512;
+        if (start + size <= fsize) out.push_back({start, size});
+    }
+}
+
+static bool fs_partitions(const std::string& path,
+                          std::vector<FsPart>& parts,
+                          unsigned long long& fsize) {
+    std::ifstream f(path, std::ios::binary);
+    if (!f) {
+        std::cout << "SCAN: cannot open " << path << "\n";
+        return false;
+    }
+    fsize = fs_dev_size(path);
+    std::vector<std::pair<unsigned long long, unsigned long long>> listed;
+    fs_listed(f, fsize, listed);
+    std::vector<FsPart> all;
+    char w[1200];
+    for (auto& [start, size] : listed) {
+        FsPart p{start, size, "", true};
+        size_t got = fs_read_at(f, start, w, sizeof w);
+        if (got > 0) p.fs = fs_probe(std::string(w, got));
+        all.push_back(p);
+    }
+    if (fsize == 0) {
+        if (all.empty()) {
+            std::cout << "SCAN: cannot determine size of " << path << "\n";
+            return false;
+        }
+        fsize = 0;
+        for (auto& p : all) fsize = std::max(fsize, p.start + p.size);
+    }
+    unsigned long long off = 0;
+    while (off < fsize) {
+        bool inside = false;
+        for (auto& p : all)
+            if (p.listed && off >= p.start && off < p.start + p.size)
+                inside = true;
+        size_t got = inside ? 0 : fs_read_at(f, off, w, sizeof w);
+        if (!inside && got > 0) {
+            std::string tok = fs_probe(std::string(w, got));
+            if (!tok.empty()) {
+                unsigned long long est = fsize;
+                for (auto& p : all)
+                    if (p.listed && p.start > off && p.start < est)
+                        est = p.start;
+                all.push_back({off, est - off, tok, false});
+            }
+        }
+        off += 512;
+    }
+    std::stable_sort(all.begin(), all.end(),
+                     [](const FsPart& a, const FsPart& b) {
+                         return a.start < b.start;
+                     });
+    for (auto& p : all) if (p.listed) parts.push_back(p);
+    for (auto& p : all) if (!p.listed) parts.push_back(p);
+    return true;
+}
+
+static bool fs_overlap(const std::vector<FsPart>& parts, size_t idx,
+                       unsigned long long hit, unsigned long long size) {
+    const FsPart& p = parts[idx];
+    if (hit + size > p.start + p.size) return true;
+    for (size_t i = 0; i < parts.size(); ++i) {
+        if (i == idx) continue;
+        if (hit < parts[i].start + parts[i].size &&
+            hit + size > parts[i].start) return true;
+    }
+    return false;
+}
+
+static void raw_scan_range(const std::string& dev,
+                           unsigned long long lo, unsigned long long hi,
+                           std::vector<RawHit>& out) {
+    raw_build_patterns();
+    std::ifstream f(dev, std::ios::binary);
+    if (!f) { std::cout << "SCAN: cannot open " << dev << "\n"; return; }
+    std::ifstream probe(dev, std::ios::binary);
+    unsigned long long base = lo, next_allowed = lo;
+    std::string carry;
+    std::vector<char> block(RAW_BLOCK_SZ);
+    struct Cand { unsigned long long hit; size_t pi; };
+    std::vector<Cand> cands;
+    while (base < hi) {
+        f.clear();
+        f.seekg((std::streamoff)base);
+        f.read(block.data(), block.size());
+        std::streamsize got = f.gcount();
+        if (got <= 0) break;
+        std::string buf = carry + std::string(block.data(), (size_t)got);
+        std::string hexbuf = raw_hex(buf);
+        unsigned long long buf_base = base - carry.size();
+        cands.clear();
+        for (size_t pi = 0; pi < raw_patterns.size(); ++pi) {
+            const RawPat& p = raw_patterns[pi];
+            size_t apos = 0;
+            while (true) {
+                size_t hit = hexbuf.find(raw_hex(p.anchor), apos);
+                if (hit == std::string::npos) break;
+                apos = hit + 1;
+                if (hit % 2 != 0) continue;
+                size_t sig_start = hit - (size_t)p.anchor_nibble;
+                if (sig_start % 2 != 0) continue;
+                if (raw_sig_match(hexbuf, sig_start, p)) {
+                    unsigned long long off =
+                        buf_base + sig_start / 2 - (unsigned long long)p.off;
+                    if (off >= lo && off < hi) cands.push_back({off, pi});
+                }
+            }
+        }
+        std::stable_sort(cands.begin(), cands.end(),
+                         [&](const Cand& a, const Cand& b) {
+                             if (a.hit != b.hit) return a.hit < b.hit;
+                             return raw_patterns[a.pi].name <
+                                    raw_patterns[b.pi].name;
+                         });
+        for (auto& c : cands) {
+            if (c.hit < next_allowed) continue;
+            const RawPat& p = raw_patterns[c.pi];
+            probe.clear();
+            probe.seekg((std::streamoff)c.hit);
+            std::string head(std::min(RAW_CARVE_MAX, RAW_BLOCK_SZ), '\0');
+            probe.read(head.data(), head.size());
+            head.resize(probe.gcount());
+            auto [size, exact] = raw_carve_size(head, p.name, RAW_CARVE_MAX);
+            next_allowed = exact ? (c.hit + size) : (c.hit + 1);
+            out.push_back({c.hit, p.name, p.exts, size, exact});
+        }
+        base += (unsigned long long)got;
+        carry = buf.size() > RAW_CARRY ? buf.substr(buf.size() - RAW_CARRY)
+                                       : buf;
+    }
+}
+
+struct FsHitInfo {
+    size_t part;
+    std::string fs;
+    unsigned long long offset;
+    size_t size;
+    std::string name, ext;
+    bool exact, broken;
+};
+static std::function<void(const FsHitInfo&)> g_fs_hit_hook;   // set by the GUI
+
+static bool fs_carve_one(const std::string& dev, unsigned long long off,
+                         size_t size, const std::string& ext,
+                         const fs::path& dest_dir) {
+    std::error_code ec;
+    fs::create_directories(dest_dir, ec);
+    char nm[32];
+    std::snprintf(nm, sizeof nm, "%012llx", off);
+    fs::path dest = dest_dir / (std::string(nm) + "." + ext);
+    std::ifstream src_f(dev, std::ios::binary);
+    if (!src_f) return false;
+    std::ofstream dst(dest, std::ios::binary);
+    if (!dst) return false;
+    src_f.seekg((std::streamoff)off);
+    size_t remaining = size;
+    char buf[1 << 20];
+    while (remaining > 0) {
+        size_t want = std::min(remaining, sizeof buf);
+        src_f.read(buf, (std::streamsize)want);
+        std::streamsize got = src_f.gcount();
+        if (got <= 0) break;
+        dst.write(buf, got);
+        if (!dst) return false;
+        remaining -= (size_t)got;
+    }
+    return true;
+}
+
+static int run_fs_scan(const std::string& dev, const std::string& formats,
+                       const std::string& mode, const fs::path& target,
+                       const std::optional<fs::path>& log) {
+    if (mode == "move" || mode == "remove" || mode == "trash" || mode == "shred") {
+        std::cout << "SCAN: --scan supports dummy and copy only "
+                     "(mode '" << mode << "' refused)\n";
+        return 64;
+    }
+    std::vector<std::string> fmts;
+    {
+        std::string s = formats.empty() ? "all" : formats;
+        size_t pos = 0;
+        while (pos <= s.size()) {
+            size_t c = s.find(',', pos);
+            std::string tok = fs_norm(s.substr(pos, c == std::string::npos
+                                               ? std::string::npos : c - pos));
+            if (!tok.empty()) {
+                bool known = false;
+                for (const char* kf : FS_FORMATS)
+                    if (tok == kf) known = true;
+                if (!known) {
+                    std::string list;
+                    for (const char* kf : FS_FORMATS)
+                        list += (list.empty() ? "" : ",") + std::string(kf);
+                    std::cout << "SCAN: unknown filesystem format '" << tok
+                              << "' (known: " << list << ")\n";
+                    return 64;
+                }
+                fmts.push_back(tok);
+            }
+            if (c == std::string::npos) break;
+            pos = c + 1;
+        }
+    }
+    if (fmts.empty() ||
+        std::find(fmts.begin(), fmts.end(), "all") != fmts.end()) {
+        fmts.clear();
+        for (const char* kf : FS_FORMATS)
+            if (std::string(kf) != "all") fmts.push_back(kf);
+    }
+    std::vector<FsPart> parts;
+    unsigned long long fsize = 0;
+    if (!fs_partitions(dev, parts, fsize)) return 66;
+    std::cout << "SCAN: " << dev << "\n";
+    for (size_t i = 0; i < parts.size(); ++i) {
+        std::cout << "  part " << (i + 1) << ": 0x";
+        char h[24];
+        std::snprintf(h, sizeof h, "%012llx",
+                      (unsigned long long)parts[i].start);
+        std::cout << h << " " << parts[i].start << " ";
+        if (!parts[i].listed) std::cout << "~";
+        std::cout << parts[i].size << " "
+                  << (parts[i].fs.empty() ? "unknown" : parts[i].fs)
+                  << (parts[i].listed ? " listed" : " lost") << "\n";
+    }
+    size_t nlist = 0;
+    for (auto& p : parts) if (p.listed) ++nlist;
+    std::cout << "SCAN: " << parts.size() << " partitions found ("
+              << nlist << " listed, " << (parts.size() - nlist)
+              << " lost)\n";
+    std::ifstream src(dev, std::ios::binary);
+    std::vector<RawHit> hits;
+    unsigned long long total = 0;
+    size_t scanned = 0;
+    for (size_t i = 0; i < parts.size(); ++i) {
+        const FsPart& p = parts[i];
+        if (p.fs.empty() || p.size == 0) continue;
+        bool sel = false;
+        for (auto& fk : fmts) if (fk == "all" || fk == p.fs) sel = true;
+        if (!sel) continue;
+        hits.clear();
+        raw_scan_range(dev, p.start, p.start + p.size, hits);
+        std::cout << "SCAN-PART " << (i + 1) << " " << p.fs << " 0x";
+        char h[24];
+        std::snprintf(h, sizeof h, "%012llx", (unsigned long long)p.start);
+        std::cout << h << " " << p.size << "\n";
+        size_t nhits = 0;
+        for (auto& hm : hits) {
+            if (hm.name.find("filesystem") != std::string::npos ||
+                hm.name == "Linux swap area")
+                continue;
+            bool broken = fs_overlap(parts, i, hm.offset, hm.size);
+            ++nhits; ++total;
+            if (g_fs_hit_hook)
+                g_fs_hit_hook({i + 1, p.fs, hm.offset, hm.size, hm.name,
+                               raw_first_ext(hm.exts), hm.exact, broken});
+            char oh[32];
+            std::snprintf(oh, sizeof oh, "0x%012llx %llu",
+                          (unsigned long long)hm.offset,
+                          (unsigned long long)hm.offset);
+            std::cout << "  hit: " << oh << " " << hm.name << " -> "
+                      << raw_first_ext(hm.exts) << " (carve " << hm.size
+                      << " bytes" << (hm.exact ? "" : ", capped")
+                      << (broken ? ", broken" : "") << ")\n";
+            if (mode != "copy" || !src) continue;
+            fs::path outdir = target / "FS-CARVE";
+            char pd[32];
+            std::snprintf(pd, sizeof pd, "p%zu-%012llx", i + 1,
+                          (unsigned long long)p.start);
+            fs::path base_dir = outdir / pd;
+            while (true) {
+                std::error_code ec;
+                fs::create_directories(base_dir, ec);
+                char nm[32];
+                std::snprintf(nm, sizeof nm, "%012llx",
+                              (unsigned long long)hm.offset);
+                fs::path dest = base_dir / (std::string(nm) + "." +
+                                            raw_first_ext(hm.exts));
+                std::ofstream dst(dest, std::ios::binary);
+                src.clear();
+                src.seekg((std::streamoff)hm.offset);
+                size_t remaining = hm.size;
+                char buf[1 << 20];
+                bool wok = true;
+                while (remaining > 0) {
+                    size_t want = std::min(remaining, sizeof buf);
+                    src.read(buf, (std::streamsize)want);
+                    std::streamsize got = src.gcount();
+                    if (got <= 0) break;
+                    dst.write(buf, got);
+                    if (!dst) { wok = false; break; }
+                    remaining -= (size_t)got;
+                }
+                dst.close();
+                if (wok) { base_dir = dest; break; }
+                bool oos = errno == ENOSPC;
+                if (oos && isatty(0)) {
+                    std::cout << "SCAN: out of space at "
+                              << base_dir.string() << "\n";
+                    std::cout << "SCAN: new target directory "
+                                 "(empty = abort): ";
+                    std::string newt;
+                    std::getline(std::cin, newt);
+                    if (newt.empty() || !std::cin) {
+                        std::cout << "SCAN: copy aborted by user\n";
+                        return 65;
+                    }
+                    base_dir = fs::path(newt) / "FS-CARVE" / pd;
+                    continue;
+                }
+                std::cout << "SCAN: cannot write " << dest.string() << "\n";
+                return 65;
+            }
+            std::cout << "  carved: " << base_dir.string() << "\n";
+            if (log) {
+                std::ofstream lf(*log, std::ios::app);
+                lf << "{\"action\": \"carved\", \"src\": "
+                   << raw_json_quote(dev + "@" + std::to_string(hm.offset))
+                   << ", \"dst\": " << raw_json_quote(base_dir.string())
+                   << ", \"part\": " << (i + 1);
+                if (broken) lf << ", \"broken\": true";
+                lf << "}\n";
+            }
+        }
+        ++scanned;
+        std::cout << "SCAN-PART " << (i + 1) << ": " << nhits
+                  << " signatures found\n";
+    }
+    std::cout << "SCAN: done, " << total << " signatures in " << scanned
+              << " partitions\n";
+    return 0;
+}
+
 // 7. MODES: DUMMY / COPY / MOVE / REMOVE / TRASH / SHRED (V14 Safe Transport)
 // ===========================================================================
 
@@ -2405,7 +2886,7 @@ static const std::vector<std::string> EDITION_MODES = {
 static const std::vector<std::string> EDITION_FLAGS = {
     "--dirs", "--extension", "--hidden", "--jobs", "--lang", "--links", "--log",
     "--magic", "--no-colors", "--pause", "--quiet", "--recursive", "--rename",
-    "--replace", "--scan-raw", "--subdirs", "--target", "--type", "--undo"};
+    "--replace", "--scan", "--scan-raw", "--subdirs", "--target", "--type", "--undo"};
 static const std::vector<std::string> EDITION_KEYWORDS = {
     "accessed", "created", "day", "exif-date", "exif-datetime", "exif-make",
     "exif-model", "exif-orientation", "extension", "format", "format+size",
@@ -2425,18 +2906,18 @@ static const std::vector<std::string> CANONICAL_KEYWORDS = {
     "id3-album", "id3-artist", "id3-genre", "id3-title", "id3-track", "id3-year", "title"};
 
 static const char* ERA_USAGE =
-    "Sort-V20.cpp - standalone C++ edition of Sort-V20.sh\n"
+    "Sort-V21.cpp - standalone C++ edition of Sort-V21.sh\n"
     "(C++17 only; no external commands, no dependencies required.)\n"
     "\n"
     "USAGE\n"
-    "    Sort-V20.cpp [OPTIONS] FILES...\n"
+    "    Sort-V21.cpp [OPTIONS] FILES...\n"
     "\n"
     "MODES (--mode=...)\n"
     "    copy, dummy, move, remove, shred, trash\n"
     "\n"
     "OPTIONS\n"
-    "    --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --scan-raw, --subdirs, --target, --type, --undo, inputs\n"
-    "    --magic             print a magic-number detection report (237 signature formats) and exit\n    --scan-raw DEVICE   scan a raw device or disk image (237 signatures); dry-run report, --mode=copy carves fragments\n"
+    "    --dirs, --extension, --hidden, --jobs, --lang, --links, --log, --magic, --mode, --no-colors, --pause, --quiet, --recursive, --rename, --replace, --scan, --scan-raw, --subdirs, --target, --type, --undo, inputs\n"
+    "    --magic             print a magic-number detection report (237 signature formats) and exit\n    --scan-raw DEVICE   scan a raw device or disk image (237 signatures); dry-run report, --mode=copy carves fragments\n    --scan FSFORMAT     scan a raw device/image for partitions (MBR/GPT + lost via filesystem signatures), then scan the selected filesystems for files/lost data; FORMATS: all,ntfs,exfat,fat12,fat16,fat32,ext,btrfs,xfs,reiserfs,hfs,swap,luks; dummy reports, copy carves to Target/FS-CARVE (V21)\n"
     "\n"
     "TEMPLATE KEYWORDS (for --dirs / --subdirs/--rename/--extension/--dirs)\n"
     "    accessed, created, day, exif-date, exif-datetime, exif-make, exif-model, exif-orientation, extension, format, format+size, id3-album, id3-artist, id3-genre, id3-title, id3-track, id3-year, md5sum, mime, mime-main, mime-sub, modified, month, name, random, sha1sum, sha224sum, sha256sum, sha384sum, sha512sum, size, size+format, title, year, year+month, year+month+day\n"
@@ -2451,7 +2932,7 @@ static const char* ERA_USAGE =
     "    --decompress: archive decompress (--decompress) - stripped; --delete: delete mode - use --mode=remove; --exif: EXIF rename/strip levels (--exif) - stripped; --needed: dependency listing - stripped; --noconfirm: interactive confirm - stripped; --non-interactive: interactive confirm - stripped; --stats: stats mode (--stats) - stripped; --strip: metadata stripping (--strip) - stripped; --title: metadata title rename (--title) - stripped; --verbose: verbose flag - use default output; --version: --version\n";
 
 static int era_error(const std::string& msg) {
-    std::cout << "Sort-V20 edition error: " << msg << "\n";
+    std::cout << "Sort-V21 edition error: " << msg << "\n";
     std::cout << "Allowed here -- modes: ";
     for (size_t i = 0; i < EDITION_MODES.size(); ++i)
         std::cout << (i ? ", " : "") << EDITION_MODES[i];
@@ -2483,7 +2964,7 @@ static void check_template(const std::string& value, const std::string& arg) {
                         != CANONICAL_KEYWORDS.end()
                     && std::find(EDITION_KEYWORDS.begin(), EDITION_KEYWORDS.end(), kw)
                         == EDITION_KEYWORDS.end()) {
-                    std::exit(era_error("keyword '" + kw + "' is not part of Sort-V20 (argument "
+                    std::exit(era_error("keyword '" + kw + "' is not part of Sort-V21 (argument "
                                         + arg + ")"));
                 }
             }
@@ -2530,16 +3011,17 @@ static int era_main(const std::vector<std::string>& argv) {
         std::string name = a.substr(0, a.find('='));
         for (auto& c : name) c = (char)std::tolower((unsigned char)c);
         if (name == "--scan-raw") continue;
+        if (name == "--scan") continue;
         if (name == "--mode") {
             std::string val;
             if (a.find('=') != std::string::npos) val = to_lower(a.substr(a.find('=') + 1));
             if (!val.empty()
                 && std::find(EDITION_MODES.begin(), EDITION_MODES.end(), val) == EDITION_MODES.end())
-                return era_error("mode '" + val + "' is not part of Sort-V20");
+                return era_error("mode '" + val + "' is not part of Sort-V21");
             continue;
         }
         if (std::find(allowed.begin(), allowed.end(), name) == allowed.end())
-            return era_error("option '" + name + "' is not part of Sort-V20");
+            return era_error("option '" + name + "' is not part of Sort-V21");
         if (a.find('=') != std::string::npos
             && (name == "--dirs" || name == "--subdirs" || name == "--rename"
                 || name == "--extension"))
@@ -2554,6 +3036,7 @@ static int real_main(const std::vector<std::string>& argv) {
     Options opts;
     fs::path undo;
     std::string scan_raw;
+    std::string scan_formats;
     bool want_self_test = false, want_version = false, want_help = false;
     auto need_val = [&](const std::vector<std::string>& a, size_t& i,
                         const std::string& inline_val) -> std::string {
@@ -2593,6 +3076,7 @@ static int real_main(const std::vector<std::string>& argv) {
         else if (name == "--log") opts.log = need_val(argv, i, inline_val);
         else if (name == "--undo") undo = need_val(argv, i, inline_val);
         else if (name == "--scan-raw") scan_raw = need_val(argv, i, inline_val);
+        else if (name == "--scan") scan_formats = need_val(argv, i, inline_val);
         else if (name == "--no-cleanup") opts.cleanup_empty = false;
         else if (name == "--no-colors") opts.colors = false;
         else if (name == "--no-icons") opts.icons = false;
@@ -2601,7 +3085,7 @@ static int real_main(const std::vector<std::string>& argv) {
         else { std::cout << "unknown option: " << name << "\n"; return 64; }
     }
     if (want_version) {
-        std::cout << "Sort.cpp cpp-20 (C++17 port of the Sort.sh V1.0-V20 lineage)\n";
+        std::cout << "Sort.cpp cpp-21 (C++17 port of the Sort.sh V1.0-V21 lineage)\n";
         return 0;
     }
     if (want_self_test) return run_self_test();
@@ -2609,6 +3093,14 @@ static int real_main(const std::vector<std::string>& argv) {
     if (!undo.empty()) return undo_log(undo);
     if (!scan_raw.empty())
         return run_raw_scan(scan_raw, opts.mode, opts.target, opts.log);
+    if (!scan_formats.empty()) {
+        if (opts.inputs.empty()) {
+            std::cout << "SCAN: --scan needs a device or image path\n";
+            return 64;
+        }
+        return run_fs_scan(opts.inputs[0], scan_formats, opts.mode,
+                           opts.target, opts.log);
+    }
     if (opts.inputs.empty()) { std::cout << ERA_USAGE; return 0; }
     return Organizer(opts).run();
 }
