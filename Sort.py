@@ -5,7 +5,7 @@ Sort.py - Media-Intelligent File Organizer (Python edition)
 ===========================================================
 
 A pure-Python (standard library only) implementation of the complete Bash
-`Sort.sh` lineage (V1.0 -> V17.4), designed to match the feature union of the
+`Sort.sh` lineage (V1.0 -> V17.5), designed to match the feature union of the
 whole family with ZERO external dependencies:
 
 * no `file`, no ImageMagick, no FFmpeg, no ExifTool, no GNU coreutils calls:
@@ -61,8 +61,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-__version__ = "py-17.4"          # corresponds to the latest Bash edition
-LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V17.4 lineage (stdlib only)"
+__version__ = "py-17.5"          # corresponds to the latest Bash edition
+LINEAGE_NOTE = "Python port of the Sort.sh V1.0-V17.5 lineage (stdlib only)"
 
 # ===========================================================================
 # 1. UI: COLORS, ICONS, INTERNATIONALIZATION
@@ -1349,59 +1349,197 @@ TemplateEngine.keyword_value = _meta_keyword_value
 
 
 # ===========================================================================
-# MAGIC MODULE (V17.4) - --magic: magic-number detection report
-# Native stdlib signature matching, no external calls.
-# ===========================================================================
+# MAGIC MODULE (V17.5) - --magic: magic-number detection report
+# Comprehensive embedded signature table (153+ formats). Pure
+# standard library; no external commands.
+_MAGIC_SPAN = 32774
 
-_MAGIC_PREFIX = [
-    ("25504446", "PDF", "pdf"),
-    ("89504e47", "PNG", "png"),
-    ("ffd8ff", "JPEG", "jpg,jpeg,jfif"),
-    ("47494638", "GIF", "gif"),
-    ("424d", "BMP", "bmp"),
-    ("1a45dfa3", "MKV/WEBM", "mkv,webm,mka"),
-    ("494433", "MP3 (ID3)", "mp3"),
-    ("fff3", "MP3 (MPEG)", "mp3"),
-    ("fffb", "MP3 (MPEG)", "mp3"),
-    ("4f676753", "OGG", "ogg,oga,opus"),
-    ("664c6143", "FLAC", "flac"),
-    ("504b0708", "ZIP/Office", "zip,docx,xlsx,pptx,odt,jar,apk,epub"),
-    ("504b0506", "ZIP/Office", "zip,docx,xlsx,pptx,odt,jar,apk,epub"),
-    ("504b0304", "ZIP/Office", "zip,docx,xlsx,pptx,odt,jar,apk,epub"),
-    ("377abcaf271c", "7-Zip", "7z"),
-    ("5261727", "RAR", "rar"),
-    ("1f8b", "GZIP", "gz,tgz"),
-    ("425a68", "BZIP2", "bz2,tbz2"),
-    ("fd377a585a", "XZ", "xz,txz"),
-    ("28b52ffd", "ZSTD", "zst"),
-    ("7f454c46", "ELF binary", "so,bin"),
-    ("53514c69746520666f726d61742033", "SQLite", "db,sqlite"),
-    ("cafebabe", "Java class", "class"),
-    ("2321", "Script (#!)", "sh,py,pl,rb"),
+_MAGIC_TABLE = [
+    (32769, "4344303031", "ISO 9660 image", "iso,img"),
+    (257, "7573746172", "TAR archive", "tar"),
+    (60, "424f4f4b4d4f4249", "MOBI e-book", "mobi,prc"),
+    (44, "5343524d", "S3M module", "s3m"),
+    (108, "4d2e4b", "Amiga MOD module", "mod"),
+    (0, "457874656e646564204d6f64756c65", "FastTracker XM module", "xm"),
+    (0, "53514c69746520666f726d61742033", "SQLite database", "db,sqlite,sqlite3"),
+    (0, "0000000c6a5020200d0a870a", "JPEG 2000 (JP2)", "jp2"),
+    (0, "233f52414449414e4345", "Radiance HDR image", "hdr"),
+    (0, "52494646????????57454250", "WEBP image", "webp"),
+    (0, "52494646????????57415645", "WAV audio", "wav"),
+    (0, "52494646????????41564920", "AVI video", "avi"),
+    (0, "52494646????????414d5620", "AMV video", "amv"),
+    (0, "464f524d????????41494646", "AIFF audio", "aiff,aif"),
+    (0, "464f524d????????41494643", "AIFC audio", "aifc"),
+    (0, "????????6674797071742020", "QuickTime MOV video", "mov"),
+    (0, "????????667479704d344120", "M4A audio", "m4a"),
+    (0, "????????667479704d345620", "M4V video", "m4v"),
+    (0, "????????6674797068656963", "HEIC/HEIF image", "heic,heif,hif"),
+    (0, "????????6674797068656978", "HEIC/HEIF image", "heic,heif,hif"),
+    (0, "????????6674797068656966", "HEIC/HEIF image", "heic,heif,hif"),
+    (0, "????????667479706d696631", "HEIC/HEIF image", "heic,heif,hif"),
+    (0, "????????667479706d736631", "HEIC/HEIF image", "heic,heif,hif"),
+    (0, "????????6674797061766966", "AVIF image", "avif"),
+    (0, "????????6674797061766973", "AVIF image", "avif"),
+    (0, "????????667479706a703220", "JPEG 2000 (JP2)", "jp2"),
+    (0, "????????6674797033677034", "3GP video", "3gp"),
+    (0, "????????6674797033677035", "3GP video", "3gp"),
+    (0, "????????6674797033677036", "3GP video", "3gp"),
+    (0, "????????6674797033673261", "3G2 video", "3g2"),
+    (0, "????????6674797069736f6d", "MP4 video", "mp4"),
+    (0, "????????6674797069736f32", "MP4 video", "mp4"),
+    (0, "????????667479706d703431", "MP4 video", "mp4"),
+    (0, "????????667479706d703432", "MP4 video", "mp4"),
+    (0, "????????6674797061766331", "MP4 video", "mp4"),
+    (0, "????????6674797064617368", "DASH video", "mpd,m4s,mp4"),
+    (0, "????????6674797066347620", "Flash F4V video", "f4v"),
+    (0, "67696d7020786366", "GIMP XCF image", "xcf"),
+    (0, "3026b2758e66cf11", "ASF media (WMA/WMV)", "wma,wmv,asf"),
+    (0, "d0cf11e0a1b11ae1", "MS Office/OLE compound", "doc,xls,ppt,msi,cfg"),
+    (0, "41542654464f524d", "DjVu document", "djvu,djv"),
+    (0, "49544f4c49544c53", "MS Reader LIT e-book", "lit"),
+    (0, "7668647866696c65", "Hyper-V VHDX disk", "vhdx"),
+    (0, "213c617263683e", "AR archive (deb/static lib)", "a,deb"),
+    (0, "233f52474245", "Radiance HDR image", "hdr"),
+    (0, "377abcaf271c", "7-Zip archive", "7z"),
+    (0, "526172211a07", "RAR archive", "rar"),
+    (0, "303730373031", "CPIO archive (newc)", "cpio"),
+    (0, "303730373037", "CPIO archive (odc)", "cpio"),
+    (0, "2a2a4143452a", "ACE archive", "ace"),
+    (0, "7b5c72746631", "RTF document", "rtf"),
+    (0, "4c554b53babe", "LUKS encrypted volume", "luks,img"),
+    (0, "0d0a870a0a", "JPEG XL container", "jxl"),
+    (0, "3c3f786d6c", "XML document", "xml,svg,fb2,rss,xsl,plist"),
+    (0, "2321414d52", "AMR speech audio", "amr"),
+    (0, "fd377a585a", "XZ stream", "xz,txz"),
+    (0, "4d5357494d", "Windows Imaging archive", "wim"),
+    (0, "????????66747970", "MP4/QuickTime container", "mp4,m4a,mov,3gp,heic"),
+    (0, "89504e47", "PNG image", "png"),
+    (0, "ff4fff51", "JPEG 2000 codestream", "j2k,jpc"),
+    (0, "47494638", "GIF image", "gif"),
+    (0, "49492a00", "TIFF image (little-endian)", "tif,tiff"),
+    (0, "4d4d002a", "TIFF image (big-endian)", "tif,tiff"),
+    (0, "38425053", "Photoshop PSD image", "psd,pdd"),
+    (0, "44445320", "DirectDraw Surface texture", "dds"),
+    (0, "762f3101", "OpenEXR image", "exr"),
+    (0, "00020000", "Windows cursor", "cur"),
+    (0, "00010000", "ICO icon / TrueType font", "ico,ttf,otf"),
+    (0, "69636e73", "Apple ICNS icon", "icns"),
+    (0, "3c737667", "SVG image", "svg"),
+    (0, "52494646", "RIFF container", "wav,avi,webp"),
+    (0, "46524d38", "DSDIFF audio (DFF)", "dff"),
+    (0, "63616666", "Apple CAF audio", "caf"),
+    (0, "44534420", "DSD streamfile audio (DSF)", "dsf"),
+    (0, "664c6143", "FLAC audio", "flac"),
+    (0, "4f676753", "OGG media", "ogg,oga,opus,ogv,ogx"),
+    (0, "4d546864", "MIDI music", "mid,midi,rmi,kar"),
+    (0, "2e736e64", "NeXT/Sun AU audio", "au,snd"),
+    (0, "4d414320", "Monkey Audio (APE)", "ape"),
+    (0, "7770766b", "WavPack audio", "wv"),
+    (0, "4d50434b", "Musepack audio (SV8)", "mpc"),
+    (0, "54544131", "True Audio (TTA)", "tta"),
+    (0, "616a6b67", "Shorten audio", "shn"),
+    (0, "494d504d", "Impulse Tracker module", "it"),
+    (0, "1a45dfa3", "Matroska/WebM video", "mkv,webm,mka,mks"),
+    (0, "000001ba", "MPEG program stream", "mpg,mpeg,vob,ps"),
+    (0, "000001b3", "MPEG elementary video", "m2v,mpv,mpg"),
+    (0, "2e524d46", "RealMedia video", "rm,rmvb"),
+    (0, "060e2b34", "MXF video", "mxf"),
+    (0, "504b0304", "ZIP/Office document", "zip,docx,xlsx,pptx,odt,jar,apk,epub"),
+    (0, "504b0506", "ZIP archive (empty)", "zip"),
+    (0, "504b0708", "ZIP archive (spanned)", "zip"),
+    (0, "28b52ffd", "Zstandard stream", "zst"),
+    (0, "04224d18", "LZ4 frame", "lz4"),
+    (0, "5d000080", "LZMA-alone stream", "lzma"),
+    (0, "894c5a4f", "LZO compressed archive", "lzo"),
+    (0, "4d534346", "MS Cabinet archive", "cab"),
+    (0, "edabeedb", "RPM package", "rpm"),
+    (0, "50415231", "Apache Parquet data", "parquet"),
+    (0, "25504446", "PDF document", "pdf"),
+    (0, "25215053", "PostScript/EPS document", "ps,eps,ai"),
+    (0, "49545346", "MS Compiled HTML (CHM)", "chm"),
+    (0, "4f54544f", "OpenType (CFF) font", "otf"),
+    (0, "74746366", "TrueType collection", "ttc"),
+    (0, "774f4646", "WOFF font", "woff"),
+    (0, "774f4632", "WOFF2 font", "woff2"),
+    (0, "7f454c46", "ELF binary", "so,bin,elf,o,ko"),
+    (0, "feedface", "Mach-O binary (32-bit BE)", "bin"),
+    (0, "cefaedfe", "Mach-O binary (32-bit LE)", "bin"),
+    (0, "feedfacf", "Mach-O binary (64-bit BE)", "bin"),
+    (0, "cffaedfe", "Mach-O binary (64-bit LE)", "bin"),
+    (0, "cafebabe", "Java class / Mach-O fat binary", "class,bin"),
+    (0, "0061736d", "WebAssembly module", "wasm"),
+    (0, "6465780a", "Android DEX bytecode", "dex,odex"),
+    (0, "72656766", "Windows registry hive", "dat,hive,reg"),
+    (0, "a1b2c3d4", "pcap packet capture", "pcap,cap"),
+    (0, "d4c3b2a1", "pcap packet capture (swapped)", "pcap,cap"),
+    (0, "0a0d0d0a", "pcapng packet capture", "pcapng"),
+    (0, "4f626a01", "Apache Avro object container", "avro"),
+    (0, "43723234", "Chrome extension (CRX)", "crx"),
+    (0, "514649fb", "QEMU copy-on-write disk", "qcow,qcow2"),
+    (0, "4b444d56", "VMware VMDK disk", "vmdk"),
+    (0, "ffd8ff", "JPEG image", "jpg,jpeg,jfif"),
+    (0, "0a0000", "PCX image", "pcx"),
+    (0, "0a0200", "PCX image", "pcx"),
+    (0, "0a0300", "PCX image", "pcx"),
+    (0, "0a0500", "PCX image", "pcx"),
+    (0, "494433", "MP3 audio (ID3v2 tag)", "mp3"),
+    (0, "4d502b", "Musepack audio", "mpc"),
+    (0, "464c56", "Flash video (FLV)", "flv"),
+    (0, "42494b", "Bink video", "bik,bk2"),
+    (0, "425a68", "BZIP2 stream", "bz2,tbz2"),
+    (0, "1f9d8d", "compress (.Z) archive", "z"),
+    (0, "5a4f4f", "ZOO archive", "zoo"),
+    (0, "435753", "Shockwave Flash (compressed)", "swf"),
+    (0, "465753", "Shockwave Flash", "swf"),
+    (0, "5a5753", "Shockwave Flash (LZMA)", "swf"),
+    (0, "ff0a", "JPEG XL codestream", "jxl"),
+    (0, "424d", "BMP image", "bmp,dib"),
+    (0, "5034", "PBM image", "pbm"),
+    (0, "5035", "PGM image", "pgm"),
+    (0, "5036", "PPM image", "ppm"),
+    (0, "fffb", "MP3 audio (MPEG-1)", "mp3"),
+    (0, "fff3", "MP3 audio (MPEG-2)", "mp3"),
+    (0, "fff2", "MP3 audio (MPEG-2.5)", "mp3"),
+    (0, "ffe3", "MP3 audio (MPEG-2.5 LSF)", "mp3"),
+    (0, "fff1", "AAC audio (ADTS)", "aac,adts"),
+    (0, "fff9", "AAC audio (ADTS)", "aac,adts"),
+    (0, "1f8b", "GZIP stream", "gz,tgz"),
+    (0, "60ea", "ARJ archive", "arj"),
+    (0, "7ffe", "Bourne shell archive", "shar"),
+    (0, "4d5a", "DOS/PE executable", "exe,dll,sys,ocx,scr"),
+    (0, "2321", "Script (#!)", "sh,py,pl,rb,el,js,ts"),
 ]
 
 
 def magic_hex(path) -> str:
-    """First 16 bytes of the file as one lowercase hex string."""
+    """First 32774 bytes of the file as one lowercase hex string."""
     try:
         with open(path, "rb") as fh:
-            return fh.read(16).hex()
+            return fh.read(_MAGIC_SPAN).hex()
     except OSError:
         return ""
+
+
+def _magic_match(h: str, off: int, sig: str) -> bool:
+    """True when sig (hex, '?' = any nibble) matches h at byte offset off."""
+    pos = off * 2
+    if len(h) < pos + len(sig):
+        return False
+    for i, c in enumerate(sig):
+        if c != "?" and h[pos + i] != c:
+            return False
+    return True
 
 
 def magic_detect(hexstr: str):
     """Match a hex signature against the table -> (name, exts) or ('?', '')."""
     h = hexstr.lower()
-    if len(h) >= 16:
-        if h[:8] == "52494646" and h[16:24] == "57454250":
-            return "WEBP", "webp"
-        if h[:8] == "52494646" and h[16:24] == "57415645":
-            return "WAV", "wav"
-        if h[8:16] == "66747970":
-            return "MP4/MOV", "mp4,mov,m4a,3gp"
-    for sig, name, exts in _MAGIC_PREFIX:
-        if h.startswith(sig):
+    # MPEG transport stream: 0x47 sync bytes at offsets 0, 188 and 376
+    if (len(h) >= 754 and h[0:2] == "47"
+            and h[376:378] == "47" and h[752:754] == "47"):
+        return "MPEG-TS", "ts,m2ts,mts"
+    for off, sig, name, exts in _MAGIC_TABLE:
+        if _magic_match(h, off, sig):
             return name, exts
     return "?", ""
 
@@ -1419,26 +1557,26 @@ def magic_report(path) -> str:
         verdict = "MATCH"
     else:
         verdict = "MISMATCH"
-    return (f"{path}\nmagic: {h}\ndetected: {name}\n"
+    return (f"{path}\nmagic: {h[:32]}\ndetected: {name}\n"
             f"extension: {ext}\nverdict: {verdict}")
 
 
 # ===========================================================================
-# EDITION GATE - auto-generated for Sort-V17.4
-# Scope derived mechanically from Sort-V17.4.sh (era vocabulary).
+# EDITION GATE - auto-generated for Sort-V17.5
+# Scope derived mechanically from Sort-V17.5.sh (era vocabulary).
 # Run with --self-test to verify this engine, -h for the era usage.
 # ===========================================================================
 
-EDITION = {'version': 'V17.4', 'modes': ['copy', 'dummy', 'move', 'remove', 'shred', 'trash'], 'flags': ['--dirs', '--extension', '--hidden', '--jobs', '--lang', '--links', '--log', '--magic', '--no-colors', '--pause', '--quiet', '--recursive', '--rename', '--replace', '--subdirs', '--target', '--type', '--undo'], 'keywords': ['accessed', 'created', 'day', 'exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'extension', 'format', 'format+size', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'md5sum', 'mime', 'mime-main', 'mime-sub', 'modified', 'month', 'name', 'random', 'sha1sum', 'sha224sum', 'sha256sum', 'sha384sum', 'sha512sum', 'size', 'size+format', 'title', 'year', 'year+month', 'year+month+day'], 'modifiers': [], 'fallbacks': True, 'stripped': {'--decompress': 'archive decompress (--decompress) - stripped', '--delete': 'delete mode - use --mode=remove', '--exif': 'EXIF rename/strip levels (--exif) - stripped', '--needed': 'dependency listing - stripped', '--noconfirm': 'interactive confirm - stripped', '--non-interactive': 'interactive confirm - stripped', '--stats': 'stats mode (--stats) - stripped', '--strip': 'metadata stripping (--strip) - stripped', '--title': 'metadata title rename (--title) - stripped', '--verbose': 'verbose flag - use default output', '--version': '--version'}}
+EDITION = {'version': 'V17.5', 'modes': ['copy', 'dummy', 'move', 'remove', 'shred', 'trash'], 'flags': ['--dirs', '--extension', '--hidden', '--jobs', '--lang', '--links', '--log', '--magic', '--no-colors', '--pause', '--quiet', '--recursive', '--rename', '--replace', '--subdirs', '--target', '--type', '--undo'], 'keywords': ['accessed', 'created', 'day', 'exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'extension', 'format', 'format+size', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'md5sum', 'mime', 'mime-main', 'mime-sub', 'modified', 'month', 'name', 'random', 'sha1sum', 'sha224sum', 'sha256sum', 'sha384sum', 'sha512sum', 'size', 'size+format', 'title', 'year', 'year+month', 'year+month+day'], 'modifiers': [], 'fallbacks': True, 'stripped': {'--decompress': 'archive decompress (--decompress) - stripped', '--delete': 'delete mode - use --mode=remove', '--exif': 'EXIF rename/strip levels (--exif) - stripped', '--needed': 'dependency listing - stripped', '--noconfirm': 'interactive confirm - stripped', '--non-interactive': 'interactive confirm - stripped', '--stats': 'stats mode (--stats) - stripped', '--strip': 'metadata stripping (--strip) - stripped', '--title': 'metadata title rename (--title) - stripped', '--verbose': 'verbose flag - use default output', '--version': '--version'}}
 
 CANONICAL_KEYWORDS = ["year", "month", "day", "year+month", "year+month+day", "created", "created-date", "created-time", "modified", "modified-date", "modified-time", "accessed", "accessed-date", "accessed-time", "mime", "mime-main", "mime-sub", "type", "extension", "ext", "ext-lower", "ext-upper", "filename", "name", "basename", "stem", "original", "size", "format", "size+format", "format+size", "pixel-size", "resolution", "pixel-format", "md5sum", "sha1sum", "sha224sum", "sha256sum", "sha384sum", "sha512sum", "random"]
 CANONICAL_KEYWORDS = CANONICAL_KEYWORDS + ['exif-date', 'exif-datetime', 'exif-make', 'exif-model', 'exif-orientation', 'id3-album', 'id3-artist', 'id3-genre', 'id3-title', 'id3-track', 'id3-year', 'title']
 
-_ERA_USAGE = """Sort-V17.4.py - standalone Python edition of Sort-V17.4.sh
+_ERA_USAGE = """Sort-V17.5.py - standalone Python edition of Sort-V17.5.sh
 (Standard library only; no external commands, no other files required.)
 
 USAGE
-    Sort-V17.4.py [OPTIONS] FILES...
+    Sort-V17.5.py [OPTIONS] FILES...
 
 MODES (--mode=...)
     copy, dummy, move, remove, shred, trash
@@ -1462,7 +1600,7 @@ OUT OF SCOPE FOR THIS EDITION (stripped; see README.md)
 
 
 def _era_error(msg):
-    print("Sort-V17.4 edition error: " + msg)
+    print("Sort-V17.5 edition error: " + msg)
     print("Allowed here -- modes: " + ", ".join(EDITION["modes"]) +
           " | flags: " + ", ".join(EDITION["flags"]) +
           " | keywords: " + ", ".join(EDITION["keywords"]))
@@ -1493,7 +1631,7 @@ def _check_template(value, arg):
 
 
 def _era_main(argv):
-    # --magic (V17.4): magic-number detection report, then exit
+    # --magic (V17.5): magic-number detection report, then exit
     if "--magic" in argv:
         inputs = [a for a in argv if not a.startswith("-")]
         if not inputs:

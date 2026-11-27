@@ -2,13 +2,13 @@
 
 One repository, one branch, one directory per version, three languages each.
 
-## Root - the latest version (V17.3)
+## Root - the latest version (V17.5)
 
 | File | What |
 |---|---|
-| `Sort.sh` | latest Bash edition (V17.4, self-contained, threaded) |
-| `Sort.pas` | latest FreePascal edition (V17.4 port) |
-| `Sort.py` | latest Python edition (V17.4 era-gated, with --magic (standalone engine, stdlib only) |
+| `Sort.sh` | latest Bash edition (V17.5, self-contained, threaded) |
+| `Sort.pas` | latest FreePascal edition (V17.5 port) |
+| `Sort.py` | latest Python edition (V17.5 era-gated, with --magic standalone engine, stdlib only) |
 
 ## versions/ - every version, in order
 
@@ -20,7 +20,7 @@ four files:
 * `Sort-V<version>.py`   - its standalone Python edition
 * `README.md`            - what that version is and does
 
-Lineage: V1.0 - V17.4 (see `other/Sort-Versions.md` for the full
+Lineage: V1.0 - V17.5 (see `other/Sort-Versions.md` for the full
 chronology and era table).
 
 ### The Python editions

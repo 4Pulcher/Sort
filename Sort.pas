@@ -3,7 +3,7 @@
 {                                                                             }
 {                                                                             }
 {  Script  : Sort-V17.3.pas                                                         }
-{  Version : 17.4                                                             }
+{  Version : 17.5                                                             }
 {  Desc    : Ejder file organizer - FreePascal translation of Sort.sh v17.3   }
 {  Author  : HEjder                                                           }
 {                                                                             }
@@ -32,7 +32,7 @@ uses
     SysUtils, Classes, Math, SyncObjs, MD5, SHA1, Zipper, BaseUnix, Process;
 
 const
-    ScriptVersion = '17.4';
+    ScriptVersion = '17.5';
     ClosingPhrase = 'Thanks for using HEjder scripts!';
 
     C_Reset  = #27 + '[0m';
@@ -76,7 +76,7 @@ var
     DoExif         : Boolean;
     DoDecompress   : Boolean;
     DoSelfTest     : Boolean;
-    Magic_Mode     : Boolean;      { V17.4: --magic detection report }
+    Magic_Mode     : Boolean;      { V17.5: --magic detection report }
 
     { State }
     Files          : TStringList;
@@ -3314,15 +3314,16 @@ end;
 
 { Show_Help: print the full option help }
 { ------------------------------------------------------------------ }
-{ MAGIC MODULE (V17.4) - --magic: magic-number detection report       }
-{ Reads the first bytes of each input file, matches them against the }
-{ embedded signature table and prints a per-file report.             }
+{ MAGIC MODULE (V17.5) - --magic: magic-number detection report       }
+{ Comprehensive embedded signature table (153+ formats): images,   }
+{ audio, video, archives, documents, fonts, executables, data and disk }
+{ formats. Pure TFileStream + hex comparison. Zero external calls.      }
 { ------------------------------------------------------------------ }
 
 function Magic_Hex(const Path: string): string;
 var
     F: TFileStream;
-    Buf: array[0..15] of Byte;
+    Buf: array[0..32773] of Byte;
     N: Integer;
     I: Integer;
 begin
@@ -3330,7 +3331,7 @@ begin
     try
         F := TFileStream.Create(Path, fmOpenRead or fmShareDenyNone);
         try
-            N := F.Read(Buf, 16);
+            N := F.Read(Buf, 32774);
             for I := 0 to N - 1 do
                 Result := Result + LowerCase(IntToHex(Buf[I], 2));
         finally
@@ -3341,9 +3342,17 @@ begin
     end;
 end;
 
-function Magic_Has(const H, Sig: string): Boolean;
+function Magic_Match(const H: string; Off: Integer; const Sig: string): Boolean;
+var
+    I: Integer;
 begin
-    Magic_Has := (Length(H) >= Length(Sig)) and (Copy(H, 1, Length(Sig)) = Sig);
+    Magic_Match := False;
+    if Length(H) < Off * 2 + Length(Sig) then
+        Exit;
+    for I := 1 to Length(Sig) do
+        if (Sig[I] <> '?') and (H[Off * 2 + I] <> Sig[I]) then
+            Exit;
+    Magic_Match := True;
 end;
 
 procedure Magic_Detect(const H: string; out Name: string; out Exts: string);
@@ -3352,44 +3361,168 @@ begin
     Exts := '';
     if H = '' then
         Exit;
-    { offset signatures }
-    if Magic_Has(H, '52494646') and (Copy(H, 17, 8) = '57454250') then
-    begin Name := 'WEBP'; Exts := 'webp'; Exit; end;
-    if Magic_Has(H, '52494646') and (Copy(H, 17, 8) = '57415645') then
-    begin Name := 'WAV'; Exts := 'wav'; Exit; end;
-    if (Length(H) >= 16) and (Copy(H, 9, 8) = '66747970') then
-    begin Name := 'MP4/MOV'; Exts := 'mp4,mov,m4a,3gp'; Exit; end;
-    { prefix signatures }
-    if Magic_Has(H, '25504446') then begin Name := 'PDF'; Exts := 'pdf'; Exit; end;
-    if Magic_Has(H, '89504e47') then begin Name := 'PNG'; Exts := 'png'; Exit; end;
-    if Magic_Has(H, 'ffd8ff')   then begin Name := 'JPEG'; Exts := 'jpg,jpeg,jfif'; Exit; end;
-    if Magic_Has(H, '47494638') then begin Name := 'GIF'; Exts := 'gif'; Exit; end;
-    if Magic_Has(H, '424d')     then begin Name := 'BMP'; Exts := 'bmp'; Exit; end;
-    if Magic_Has(H, '1a45dfa3') then begin Name := 'MKV/WEBM'; Exts := 'mkv,webm,mka'; Exit; end;
-    if Magic_Has(H, '494433')   then begin Name := 'MP3 (ID3)'; Exts := 'mp3'; Exit; end;
-    if Magic_Has(H, 'fffb') or Magic_Has(H, 'fff3') or Magic_Has(H, 'fff2') then
-        begin Name := 'MP3 (MPEG)'; Exts := 'mp3'; Exit; end;
-    if Magic_Has(H, '4f676753') then begin Name := 'OGG'; Exts := 'ogg,oga,opus'; Exit; end;
-    if Magic_Has(H, '664c6143') then begin Name := 'FLAC'; Exts := 'flac'; Exit; end;
-    if Magic_Has(H, '504b0304') or Magic_Has(H, '504b0506') or Magic_Has(H, '504b0708') then
-        begin Name := 'ZIP/Office'; Exts := 'zip,docx,xlsx,pptx,odt,jar,apk,epub'; Exit; end;
-    if Magic_Has(H, '377abcaf271c') then begin Name := '7-Zip'; Exts := '7z'; Exit; end;
-    if Magic_Has(H, '5261727') then begin Name := 'RAR'; Exts := 'rar'; Exit; end;
-    if Magic_Has(H, '1f8b')   then begin Name := 'GZIP'; Exts := 'gz,tgz'; Exit; end;
-    if Magic_Has(H, '425a68') then begin Name := 'BZIP2'; Exts := 'bz2,tbz2'; Exit; end;
-    if Magic_Has(H, 'fd377a585a') then begin Name := 'XZ'; Exts := 'xz,txz'; Exit; end;
-    if Magic_Has(H, '28b52ffd') then begin Name := 'ZSTD'; Exts := 'zst'; Exit; end;
-    if Magic_Has(H, '7f454c46') then begin Name := 'ELF binary'; Exts := 'so,bin'; Exit; end;
-    if Magic_Has(H, '53514c69746520666f726d61742033') then
-        begin Name := 'SQLite'; Exts := 'db,sqlite'; Exit; end;
-    if Magic_Has(H, 'cafebabe') then begin Name := 'Java class'; Exts := 'class'; Exit; end;
-    if Magic_Has(H, '2321')   then begin Name := 'Script (#!)'; Exts := 'sh,py,pl,rb'; Exit; end;
+    { MPEG transport stream: 0x47 sync bytes at offsets 0, 188 and 376 }
+    if (Length(H) >= 754) and (Copy(H, 1, 2) = '47')
+        and (Copy(H, 377, 2) = '47') and (Copy(H, 753, 2) = '47') then
+    begin Name := 'MPEG-TS'; Exts := 'ts,m2ts,mts'; Exit; end;
+    if Magic_Match(H, 32769, '4344303031') then begin Name := 'ISO 9660 image'; Exts := 'iso,img'; Exit; end;
+    if Magic_Match(H, 257, '7573746172') then begin Name := 'TAR archive'; Exts := 'tar'; Exit; end;
+    if Magic_Match(H, 60, '424f4f4b4d4f4249') then begin Name := 'MOBI e-book'; Exts := 'mobi,prc'; Exit; end;
+    if Magic_Match(H, 44, '5343524d') then begin Name := 'S3M module'; Exts := 's3m'; Exit; end;
+    if Magic_Match(H, 108, '4d2e4b') then begin Name := 'Amiga MOD module'; Exts := 'mod'; Exit; end;
+    if Magic_Match(H, 0, '457874656e646564204d6f64756c65') then begin Name := 'FastTracker XM module'; Exts := 'xm'; Exit; end;
+    if Magic_Match(H, 0, '53514c69746520666f726d61742033') then begin Name := 'SQLite database'; Exts := 'db,sqlite,sqlite3'; Exit; end;
+    if Magic_Match(H, 0, '0000000c6a5020200d0a870a') then begin Name := 'JPEG 2000 (JP2)'; Exts := 'jp2'; Exit; end;
+    if Magic_Match(H, 0, '233f52414449414e4345') then begin Name := 'Radiance HDR image'; Exts := 'hdr'; Exit; end;
+    if Magic_Match(H, 0, '52494646????????57454250') then begin Name := 'WEBP image'; Exts := 'webp'; Exit; end;
+    if Magic_Match(H, 0, '52494646????????57415645') then begin Name := 'WAV audio'; Exts := 'wav'; Exit; end;
+    if Magic_Match(H, 0, '52494646????????41564920') then begin Name := 'AVI video'; Exts := 'avi'; Exit; end;
+    if Magic_Match(H, 0, '52494646????????414d5620') then begin Name := 'AMV video'; Exts := 'amv'; Exit; end;
+    if Magic_Match(H, 0, '464f524d????????41494646') then begin Name := 'AIFF audio'; Exts := 'aiff,aif'; Exit; end;
+    if Magic_Match(H, 0, '464f524d????????41494643') then begin Name := 'AIFC audio'; Exts := 'aifc'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797071742020') then begin Name := 'QuickTime MOV video'; Exts := 'mov'; Exit; end;
+    if Magic_Match(H, 0, '????????667479704d344120') then begin Name := 'M4A audio'; Exts := 'm4a'; Exit; end;
+    if Magic_Match(H, 0, '????????667479704d345620') then begin Name := 'M4V video'; Exts := 'm4v'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797068656963') then begin Name := 'HEIC/HEIF image'; Exts := 'heic,heif,hif'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797068656978') then begin Name := 'HEIC/HEIF image'; Exts := 'heic,heif,hif'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797068656966') then begin Name := 'HEIC/HEIF image'; Exts := 'heic,heif,hif'; Exit; end;
+    if Magic_Match(H, 0, '????????667479706d696631') then begin Name := 'HEIC/HEIF image'; Exts := 'heic,heif,hif'; Exit; end;
+    if Magic_Match(H, 0, '????????667479706d736631') then begin Name := 'HEIC/HEIF image'; Exts := 'heic,heif,hif'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797061766966') then begin Name := 'AVIF image'; Exts := 'avif'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797061766973') then begin Name := 'AVIF image'; Exts := 'avif'; Exit; end;
+    if Magic_Match(H, 0, '????????667479706a703220') then begin Name := 'JPEG 2000 (JP2)'; Exts := 'jp2'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797033677034') then begin Name := '3GP video'; Exts := '3gp'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797033677035') then begin Name := '3GP video'; Exts := '3gp'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797033677036') then begin Name := '3GP video'; Exts := '3gp'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797033673261') then begin Name := '3G2 video'; Exts := '3g2'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797069736f6d') then begin Name := 'MP4 video'; Exts := 'mp4'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797069736f32') then begin Name := 'MP4 video'; Exts := 'mp4'; Exit; end;
+    if Magic_Match(H, 0, '????????667479706d703431') then begin Name := 'MP4 video'; Exts := 'mp4'; Exit; end;
+    if Magic_Match(H, 0, '????????667479706d703432') then begin Name := 'MP4 video'; Exts := 'mp4'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797061766331') then begin Name := 'MP4 video'; Exts := 'mp4'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797064617368') then begin Name := 'DASH video'; Exts := 'mpd,m4s,mp4'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797066347620') then begin Name := 'Flash F4V video'; Exts := 'f4v'; Exit; end;
+    if Magic_Match(H, 0, '67696d7020786366') then begin Name := 'GIMP XCF image'; Exts := 'xcf'; Exit; end;
+    if Magic_Match(H, 0, '3026b2758e66cf11') then begin Name := 'ASF media (WMA/WMV)'; Exts := 'wma,wmv,asf'; Exit; end;
+    if Magic_Match(H, 0, 'd0cf11e0a1b11ae1') then begin Name := 'MS Office/OLE compound'; Exts := 'doc,xls,ppt,msi,cfg'; Exit; end;
+    if Magic_Match(H, 0, '41542654464f524d') then begin Name := 'DjVu document'; Exts := 'djvu,djv'; Exit; end;
+    if Magic_Match(H, 0, '49544f4c49544c53') then begin Name := 'MS Reader LIT e-book'; Exts := 'lit'; Exit; end;
+    if Magic_Match(H, 0, '7668647866696c65') then begin Name := 'Hyper-V VHDX disk'; Exts := 'vhdx'; Exit; end;
+    if Magic_Match(H, 0, '213c617263683e') then begin Name := 'AR archive (deb/static lib)'; Exts := 'a,deb'; Exit; end;
+    if Magic_Match(H, 0, '233f52474245') then begin Name := 'Radiance HDR image'; Exts := 'hdr'; Exit; end;
+    if Magic_Match(H, 0, '377abcaf271c') then begin Name := '7-Zip archive'; Exts := '7z'; Exit; end;
+    if Magic_Match(H, 0, '526172211a07') then begin Name := 'RAR archive'; Exts := 'rar'; Exit; end;
+    if Magic_Match(H, 0, '303730373031') then begin Name := 'CPIO archive (newc)'; Exts := 'cpio'; Exit; end;
+    if Magic_Match(H, 0, '303730373037') then begin Name := 'CPIO archive (odc)'; Exts := 'cpio'; Exit; end;
+    if Magic_Match(H, 0, '2a2a4143452a') then begin Name := 'ACE archive'; Exts := 'ace'; Exit; end;
+    if Magic_Match(H, 0, '7b5c72746631') then begin Name := 'RTF document'; Exts := 'rtf'; Exit; end;
+    if Magic_Match(H, 0, '4c554b53babe') then begin Name := 'LUKS encrypted volume'; Exts := 'luks,img'; Exit; end;
+    if Magic_Match(H, 0, '0d0a870a0a') then begin Name := 'JPEG XL container'; Exts := 'jxl'; Exit; end;
+    if Magic_Match(H, 0, '3c3f786d6c') then begin Name := 'XML document'; Exts := 'xml,svg,fb2,rss,xsl,plist'; Exit; end;
+    if Magic_Match(H, 0, '2321414d52') then begin Name := 'AMR speech audio'; Exts := 'amr'; Exit; end;
+    if Magic_Match(H, 0, 'fd377a585a') then begin Name := 'XZ stream'; Exts := 'xz,txz'; Exit; end;
+    if Magic_Match(H, 0, '4d5357494d') then begin Name := 'Windows Imaging archive'; Exts := 'wim'; Exit; end;
+    if Magic_Match(H, 0, '????????66747970') then begin Name := 'MP4/QuickTime container'; Exts := 'mp4,m4a,mov,3gp,heic'; Exit; end;
+    if Magic_Match(H, 0, '89504e47') then begin Name := 'PNG image'; Exts := 'png'; Exit; end;
+    if Magic_Match(H, 0, 'ff4fff51') then begin Name := 'JPEG 2000 codestream'; Exts := 'j2k,jpc'; Exit; end;
+    if Magic_Match(H, 0, '47494638') then begin Name := 'GIF image'; Exts := 'gif'; Exit; end;
+    if Magic_Match(H, 0, '49492a00') then begin Name := 'TIFF image (little-endian)'; Exts := 'tif,tiff'; Exit; end;
+    if Magic_Match(H, 0, '4d4d002a') then begin Name := 'TIFF image (big-endian)'; Exts := 'tif,tiff'; Exit; end;
+    if Magic_Match(H, 0, '38425053') then begin Name := 'Photoshop PSD image'; Exts := 'psd,pdd'; Exit; end;
+    if Magic_Match(H, 0, '44445320') then begin Name := 'DirectDraw Surface texture'; Exts := 'dds'; Exit; end;
+    if Magic_Match(H, 0, '762f3101') then begin Name := 'OpenEXR image'; Exts := 'exr'; Exit; end;
+    if Magic_Match(H, 0, '00020000') then begin Name := 'Windows cursor'; Exts := 'cur'; Exit; end;
+    if Magic_Match(H, 0, '00010000') then begin Name := 'ICO icon / TrueType font'; Exts := 'ico,ttf,otf'; Exit; end;
+    if Magic_Match(H, 0, '69636e73') then begin Name := 'Apple ICNS icon'; Exts := 'icns'; Exit; end;
+    if Magic_Match(H, 0, '3c737667') then begin Name := 'SVG image'; Exts := 'svg'; Exit; end;
+    if Magic_Match(H, 0, '52494646') then begin Name := 'RIFF container'; Exts := 'wav,avi,webp'; Exit; end;
+    if Magic_Match(H, 0, '46524d38') then begin Name := 'DSDIFF audio (DFF)'; Exts := 'dff'; Exit; end;
+    if Magic_Match(H, 0, '63616666') then begin Name := 'Apple CAF audio'; Exts := 'caf'; Exit; end;
+    if Magic_Match(H, 0, '44534420') then begin Name := 'DSD streamfile audio (DSF)'; Exts := 'dsf'; Exit; end;
+    if Magic_Match(H, 0, '664c6143') then begin Name := 'FLAC audio'; Exts := 'flac'; Exit; end;
+    if Magic_Match(H, 0, '4f676753') then begin Name := 'OGG media'; Exts := 'ogg,oga,opus,ogv,ogx'; Exit; end;
+    if Magic_Match(H, 0, '4d546864') then begin Name := 'MIDI music'; Exts := 'mid,midi,rmi,kar'; Exit; end;
+    if Magic_Match(H, 0, '2e736e64') then begin Name := 'NeXT/Sun AU audio'; Exts := 'au,snd'; Exit; end;
+    if Magic_Match(H, 0, '4d414320') then begin Name := 'Monkey Audio (APE)'; Exts := 'ape'; Exit; end;
+    if Magic_Match(H, 0, '7770766b') then begin Name := 'WavPack audio'; Exts := 'wv'; Exit; end;
+    if Magic_Match(H, 0, '4d50434b') then begin Name := 'Musepack audio (SV8)'; Exts := 'mpc'; Exit; end;
+    if Magic_Match(H, 0, '54544131') then begin Name := 'True Audio (TTA)'; Exts := 'tta'; Exit; end;
+    if Magic_Match(H, 0, '616a6b67') then begin Name := 'Shorten audio'; Exts := 'shn'; Exit; end;
+    if Magic_Match(H, 0, '494d504d') then begin Name := 'Impulse Tracker module'; Exts := 'it'; Exit; end;
+    if Magic_Match(H, 0, '1a45dfa3') then begin Name := 'Matroska/WebM video'; Exts := 'mkv,webm,mka,mks'; Exit; end;
+    if Magic_Match(H, 0, '000001ba') then begin Name := 'MPEG program stream'; Exts := 'mpg,mpeg,vob,ps'; Exit; end;
+    if Magic_Match(H, 0, '000001b3') then begin Name := 'MPEG elementary video'; Exts := 'm2v,mpv,mpg'; Exit; end;
+    if Magic_Match(H, 0, '2e524d46') then begin Name := 'RealMedia video'; Exts := 'rm,rmvb'; Exit; end;
+    if Magic_Match(H, 0, '060e2b34') then begin Name := 'MXF video'; Exts := 'mxf'; Exit; end;
+    if Magic_Match(H, 0, '504b0304') then begin Name := 'ZIP/Office document'; Exts := 'zip,docx,xlsx,pptx,odt,jar,apk,epub'; Exit; end;
+    if Magic_Match(H, 0, '504b0506') then begin Name := 'ZIP archive (empty)'; Exts := 'zip'; Exit; end;
+    if Magic_Match(H, 0, '504b0708') then begin Name := 'ZIP archive (spanned)'; Exts := 'zip'; Exit; end;
+    if Magic_Match(H, 0, '28b52ffd') then begin Name := 'Zstandard stream'; Exts := 'zst'; Exit; end;
+    if Magic_Match(H, 0, '04224d18') then begin Name := 'LZ4 frame'; Exts := 'lz4'; Exit; end;
+    if Magic_Match(H, 0, '5d000080') then begin Name := 'LZMA-alone stream'; Exts := 'lzma'; Exit; end;
+    if Magic_Match(H, 0, '894c5a4f') then begin Name := 'LZO compressed archive'; Exts := 'lzo'; Exit; end;
+    if Magic_Match(H, 0, '4d534346') then begin Name := 'MS Cabinet archive'; Exts := 'cab'; Exit; end;
+    if Magic_Match(H, 0, 'edabeedb') then begin Name := 'RPM package'; Exts := 'rpm'; Exit; end;
+    if Magic_Match(H, 0, '50415231') then begin Name := 'Apache Parquet data'; Exts := 'parquet'; Exit; end;
+    if Magic_Match(H, 0, '25504446') then begin Name := 'PDF document'; Exts := 'pdf'; Exit; end;
+    if Magic_Match(H, 0, '25215053') then begin Name := 'PostScript/EPS document'; Exts := 'ps,eps,ai'; Exit; end;
+    if Magic_Match(H, 0, '49545346') then begin Name := 'MS Compiled HTML (CHM)'; Exts := 'chm'; Exit; end;
+    if Magic_Match(H, 0, '4f54544f') then begin Name := 'OpenType (CFF) font'; Exts := 'otf'; Exit; end;
+    if Magic_Match(H, 0, '74746366') then begin Name := 'TrueType collection'; Exts := 'ttc'; Exit; end;
+    if Magic_Match(H, 0, '774f4646') then begin Name := 'WOFF font'; Exts := 'woff'; Exit; end;
+    if Magic_Match(H, 0, '774f4632') then begin Name := 'WOFF2 font'; Exts := 'woff2'; Exit; end;
+    if Magic_Match(H, 0, '7f454c46') then begin Name := 'ELF binary'; Exts := 'so,bin,elf,o,ko'; Exit; end;
+    if Magic_Match(H, 0, 'feedface') then begin Name := 'Mach-O binary (32-bit BE)'; Exts := 'bin'; Exit; end;
+    if Magic_Match(H, 0, 'cefaedfe') then begin Name := 'Mach-O binary (32-bit LE)'; Exts := 'bin'; Exit; end;
+    if Magic_Match(H, 0, 'feedfacf') then begin Name := 'Mach-O binary (64-bit BE)'; Exts := 'bin'; Exit; end;
+    if Magic_Match(H, 0, 'cffaedfe') then begin Name := 'Mach-O binary (64-bit LE)'; Exts := 'bin'; Exit; end;
+    if Magic_Match(H, 0, 'cafebabe') then begin Name := 'Java class / Mach-O fat binary'; Exts := 'class,bin'; Exit; end;
+    if Magic_Match(H, 0, '0061736d') then begin Name := 'WebAssembly module'; Exts := 'wasm'; Exit; end;
+    if Magic_Match(H, 0, '6465780a') then begin Name := 'Android DEX bytecode'; Exts := 'dex,odex'; Exit; end;
+    if Magic_Match(H, 0, '72656766') then begin Name := 'Windows registry hive'; Exts := 'dat,hive,reg'; Exit; end;
+    if Magic_Match(H, 0, 'a1b2c3d4') then begin Name := 'pcap packet capture'; Exts := 'pcap,cap'; Exit; end;
+    if Magic_Match(H, 0, 'd4c3b2a1') then begin Name := 'pcap packet capture (swapped)'; Exts := 'pcap,cap'; Exit; end;
+    if Magic_Match(H, 0, '0a0d0d0a') then begin Name := 'pcapng packet capture'; Exts := 'pcapng'; Exit; end;
+    if Magic_Match(H, 0, '4f626a01') then begin Name := 'Apache Avro object container'; Exts := 'avro'; Exit; end;
+    if Magic_Match(H, 0, '43723234') then begin Name := 'Chrome extension (CRX)'; Exts := 'crx'; Exit; end;
+    if Magic_Match(H, 0, '514649fb') then begin Name := 'QEMU copy-on-write disk'; Exts := 'qcow,qcow2'; Exit; end;
+    if Magic_Match(H, 0, '4b444d56') then begin Name := 'VMware VMDK disk'; Exts := 'vmdk'; Exit; end;
+    if Magic_Match(H, 0, 'ffd8ff') then begin Name := 'JPEG image'; Exts := 'jpg,jpeg,jfif'; Exit; end;
+    if Magic_Match(H, 0, '0a0000') then begin Name := 'PCX image'; Exts := 'pcx'; Exit; end;
+    if Magic_Match(H, 0, '0a0200') then begin Name := 'PCX image'; Exts := 'pcx'; Exit; end;
+    if Magic_Match(H, 0, '0a0300') then begin Name := 'PCX image'; Exts := 'pcx'; Exit; end;
+    if Magic_Match(H, 0, '0a0500') then begin Name := 'PCX image'; Exts := 'pcx'; Exit; end;
+    if Magic_Match(H, 0, '494433') then begin Name := 'MP3 audio (ID3v2 tag)'; Exts := 'mp3'; Exit; end;
+    if Magic_Match(H, 0, '4d502b') then begin Name := 'Musepack audio'; Exts := 'mpc'; Exit; end;
+    if Magic_Match(H, 0, '464c56') then begin Name := 'Flash video (FLV)'; Exts := 'flv'; Exit; end;
+    if Magic_Match(H, 0, '42494b') then begin Name := 'Bink video'; Exts := 'bik,bk2'; Exit; end;
+    if Magic_Match(H, 0, '425a68') then begin Name := 'BZIP2 stream'; Exts := 'bz2,tbz2'; Exit; end;
+    if Magic_Match(H, 0, '1f9d8d') then begin Name := 'compress (.Z) archive'; Exts := 'z'; Exit; end;
+    if Magic_Match(H, 0, '5a4f4f') then begin Name := 'ZOO archive'; Exts := 'zoo'; Exit; end;
+    if Magic_Match(H, 0, '435753') then begin Name := 'Shockwave Flash (compressed)'; Exts := 'swf'; Exit; end;
+    if Magic_Match(H, 0, '465753') then begin Name := 'Shockwave Flash'; Exts := 'swf'; Exit; end;
+    if Magic_Match(H, 0, '5a5753') then begin Name := 'Shockwave Flash (LZMA)'; Exts := 'swf'; Exit; end;
+    if Magic_Match(H, 0, 'ff0a') then begin Name := 'JPEG XL codestream'; Exts := 'jxl'; Exit; end;
+    if Magic_Match(H, 0, '424d') then begin Name := 'BMP image'; Exts := 'bmp,dib'; Exit; end;
+    if Magic_Match(H, 0, '5034') then begin Name := 'PBM image'; Exts := 'pbm'; Exit; end;
+    if Magic_Match(H, 0, '5035') then begin Name := 'PGM image'; Exts := 'pgm'; Exit; end;
+    if Magic_Match(H, 0, '5036') then begin Name := 'PPM image'; Exts := 'ppm'; Exit; end;
+    if Magic_Match(H, 0, 'fffb') then begin Name := 'MP3 audio (MPEG-1)'; Exts := 'mp3'; Exit; end;
+    if Magic_Match(H, 0, 'fff3') then begin Name := 'MP3 audio (MPEG-2)'; Exts := 'mp3'; Exit; end;
+    if Magic_Match(H, 0, 'fff2') then begin Name := 'MP3 audio (MPEG-2.5)'; Exts := 'mp3'; Exit; end;
+    if Magic_Match(H, 0, 'ffe3') then begin Name := 'MP3 audio (MPEG-2.5 LSF)'; Exts := 'mp3'; Exit; end;
+    if Magic_Match(H, 0, 'fff1') then begin Name := 'AAC audio (ADTS)'; Exts := 'aac,adts'; Exit; end;
+    if Magic_Match(H, 0, 'fff9') then begin Name := 'AAC audio (ADTS)'; Exts := 'aac,adts'; Exit; end;
+    if Magic_Match(H, 0, '1f8b') then begin Name := 'GZIP stream'; Exts := 'gz,tgz'; Exit; end;
+    if Magic_Match(H, 0, '60ea') then begin Name := 'ARJ archive'; Exts := 'arj'; Exit; end;
+    if Magic_Match(H, 0, '7ffe') then begin Name := 'Bourne shell archive'; Exts := 'shar'; Exit; end;
+    if Magic_Match(H, 0, '4d5a') then begin Name := 'DOS/PE executable'; Exts := 'exe,dll,sys,ocx,scr'; Exit; end;
+    if Magic_Match(H, 0, '2321') then begin Name := 'Script (#!)'; Exts := 'sh,py,pl,rb,el,js,ts'; Exit; end;
 end;
 
 procedure Magic_Report(const Path: string);
 var
     H, Name, Exts, Ext, Verdict: string;
-    Comma: string;
 begin
     H := Magic_Hex(Path);
     if H = '' then
@@ -3409,9 +3542,8 @@ begin
         else
             Verdict := 'MISMATCH';
     end;
-    Comma := '';
     WriteLn(Path);
-    WriteLn(#9'magic: ', H);
+    WriteLn(#9'magic: ', Copy(H, 1, 32));
     WriteLn(#9'detected: ', Name);
     WriteLn(#9'extension: ', Ext);
     WriteLn(#9'verdict: ', Verdict);
