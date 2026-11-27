@@ -3315,7 +3315,7 @@ end;
 { Show_Help: print the full option help }
 { ------------------------------------------------------------------ }
 { MAGIC MODULE (V17.5) - --magic: magic-number detection report       }
-{ Comprehensive embedded signature table (153+ formats): images,   }
+{ Comprehensive embedded signature table (237 formats): images,   }
 { audio, video, archives, documents, fonts, executables, data and disk }
 { formats. Pure TFileStream + hex comparison. Zero external calls.      }
 { ------------------------------------------------------------------ }
@@ -3365,15 +3365,34 @@ begin
     if (Length(H) >= 754) and (Copy(H, 1, 2) = '47')
         and (Copy(H, 377, 2) = '47') and (Copy(H, 753, 2) = '47') then
     begin Name := 'MPEG-TS'; Exts := 'ts,m2ts,mts'; Exit; end;
+    if Magic_Match(H, 64, '3c3c3c3c204f7261636c6520564d2056') then begin Name := 'VirtualBox VDI disk'; Exts := 'vdi'; Exit; end;
+    if Magic_Match(H, 4086, '535741505350414345') then begin Name := 'Linux swap area'; Exts := 'img'; Exit; end;
+    if Magic_Match(H, 60, '424f4f4b4d4f4249') then begin Name := 'MOBI e-book'; Exts := 'mobi,prc'; Exit; end;
+    if Magic_Match(H, 3, '4e54465320202020') then begin Name := 'NTFS filesystem'; Exts := 'img'; Exit; end;
+    if Magic_Match(H, 64, '5f42485266535f4d') then begin Name := 'Btrfs filesystem'; Exts := 'img'; Exit; end;
     if Magic_Match(H, 32769, '4344303031') then begin Name := 'ISO 9660 image'; Exts := 'iso,img'; Exit; end;
     if Magic_Match(H, 257, '7573746172') then begin Name := 'TAR archive'; Exts := 'tar'; Exit; end;
-    if Magic_Match(H, 60, '424f4f4b4d4f4249') then begin Name := 'MOBI e-book'; Exts := 'mobi,prc'; Exit; end;
+    if Magic_Match(H, 1, '2d6c683?2d') then begin Name := 'LHA/LZH archive'; Exts := 'lzh,lha'; Exit; end;
     if Magic_Match(H, 44, '5343524d') then begin Name := 'S3M module'; Exts := 's3m'; Exit; end;
+    if Magic_Match(H, 108, '4d214b21') then begin Name := 'Amiga MOD module'; Exts := 'mod'; Exit; end;
+    if Magic_Match(H, 108, '46545434') then begin Name := 'Amiga MOD module'; Exts := 'mod'; Exit; end;
+    if Magic_Match(H, 108, '46545438') then begin Name := 'Amiga MOD module'; Exts := 'mod'; Exit; end;
+    if Magic_Match(H, 108, '3443484e') then begin Name := 'Amiga MOD module'; Exts := 'mod'; Exit; end;
+    if Magic_Match(H, 108, '3643484e') then begin Name := 'Amiga MOD module'; Exts := 'mod'; Exit; end;
+    if Magic_Match(H, 108, '3843484e') then begin Name := 'Amiga MOD module'; Exts := 'mod'; Exit; end;
+    if Magic_Match(H, 8, '2142444e') then begin Name := 'Outlook PST database'; Exts := 'pst'; Exit; end;
     if Magic_Match(H, 108, '4d2e4b') then begin Name := 'Amiga MOD module'; Exts := 'mod'; Exit; end;
+    if Magic_Match(H, 1080, '53ef') then begin Name := 'Linux ext2/3/4 filesystem'; Exts := 'img'; Exit; end;
+    if Magic_Match(H, 0, '4c0000000114020000000000c0000000') then begin Name := 'Windows shortcut'; Exts := 'lnk'; Exit; end;
     if Magic_Match(H, 0, '457874656e646564204d6f64756c65') then begin Name := 'FastTracker XM module'; Exts := 'xm'; Exit; end;
     if Magic_Match(H, 0, '53514c69746520666f726d61742033') then begin Name := 'SQLite database'; Exts := 'db,sqlite,sqlite3'; Exit; end;
+    if Magic_Match(H, 0, '437265617469766520566f696365') then begin Name := 'Creative Voice audio (VOC)'; Exts := 'voc'; Exit; end;
+    if Magic_Match(H, 0, '414e44524f4944204241434b5550') then begin Name := 'Android backup'; Exts := 'ab'; Exit; end;
     if Magic_Match(H, 0, '0000000c6a5020200d0a870a') then begin Name := 'JPEG 2000 (JP2)'; Exts := 'jp2'; Exit; end;
+    if Magic_Match(H, 0, '3c53746174615f6474613e') then begin Name := 'Stata dataset'; Exts := 'dta'; Exit; end;
+    if Magic_Match(H, 0, '64383a616e6e6f756e6365') then begin Name := 'BitTorrent metainfo'; Exts := 'torrent'; Exit; end;
     if Magic_Match(H, 0, '233f52414449414e4345') then begin Name := 'Radiance HDR image'; Exts := 'hdr'; Exit; end;
+    if Magic_Match(H, 0, '2d2d2d2d2d424547494e') then begin Name := 'Armored ASCII block (PGP/PEM/SSH)'; Exts := 'asc,pgp,gpg'; Exit; end;
     if Magic_Match(H, 0, '52494646????????57454250') then begin Name := 'WEBP image'; Exts := 'webp'; Exit; end;
     if Magic_Match(H, 0, '52494646????????57415645') then begin Name := 'WAV audio'; Exts := 'wav'; Exit; end;
     if Magic_Match(H, 0, '52494646????????41564920') then begin Name := 'AVI video'; Exts := 'avi'; Exit; end;
@@ -3402,13 +3421,32 @@ begin
     if Magic_Match(H, 0, '????????6674797061766331') then begin Name := 'MP4 video'; Exts := 'mp4'; Exit; end;
     if Magic_Match(H, 0, '????????6674797064617368') then begin Name := 'DASH video'; Exts := 'mpd,m4s,mp4'; Exit; end;
     if Magic_Match(H, 0, '????????6674797066347620') then begin Name := 'Flash F4V video'; Exts := 'f4v'; Exit; end;
+    if Magic_Match(H, 0, '52494646????????41434f4e') then begin Name := 'Windows animated cursor'; Exts := 'ani'; Exit; end;
+    if Magic_Match(H, 0, '464f524d????????494c424d') then begin Name := 'Amiga ILBM image'; Exts := 'iff,lbm'; Exit; end;
+    if Magic_Match(H, 0, '464f524d????????38535658') then begin Name := 'Amiga 8SVX audio'; Exts := 'iff,8svx'; Exit; end;
+    if Magic_Match(H, 0, '464f524d????????4d415544') then begin Name := 'Amiga MAUD audio'; Exts := 'maud'; Exit; end;
+    if Magic_Match(H, 0, '52494646????????524d4944') then begin Name := 'RIFF MIDI (RMID)'; Exts := 'rmi'; Exit; end;
+    if Magic_Match(H, 0, '52494646????????7366626b') then begin Name := 'SoundFont SF2'; Exts := 'sf2'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797068766331') then begin Name := 'HEVC video'; Exts := 'hevc,h265'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797068657631') then begin Name := 'HEVC video'; Exts := 'hevc,h265'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797061763031') then begin Name := 'AV1 video'; Exts := 'av1'; Exit; end;
+    if Magic_Match(H, 0, '????????6674797044495658') then begin Name := 'DivX video'; Exts := 'divx'; Exit; end;
+    if Magic_Match(H, 0, '????????667479704d344220') then begin Name := 'M4B audiobook'; Exts := 'm4b'; Exit; end;
     if Magic_Match(H, 0, '67696d7020786366') then begin Name := 'GIMP XCF image'; Exts := 'xcf'; Exit; end;
     if Magic_Match(H, 0, '3026b2758e66cf11') then begin Name := 'ASF media (WMA/WMV)'; Exts := 'wma,wmv,asf'; Exit; end;
     if Magic_Match(H, 0, 'd0cf11e0a1b11ae1') then begin Name := 'MS Office/OLE compound'; Exts := 'doc,xls,ppt,msi,cfg'; Exit; end;
     if Magic_Match(H, 0, '41542654464f524d') then begin Name := 'DjVu document'; Exts := 'djvu,djv'; Exit; end;
     if Magic_Match(H, 0, '49544f4c49544c53') then begin Name := 'MS Reader LIT e-book'; Exts := 'lit'; Exit; end;
     if Magic_Match(H, 0, '7668647866696c65') then begin Name := 'Hyper-V VHDX disk'; Exts := 'vhdx'; Exit; end;
+    if Magic_Match(H, 0, '2321414d522d5742') then begin Name := 'AMR-WB speech audio'; Exts := 'amr'; Exit; end;
+    if Magic_Match(H, 0, '50532d5820455845') then begin Name := 'PlayStation executable'; Exts := 'exe'; Exit; end;
+    if Magic_Match(H, 0, '414e44524f494421') then begin Name := 'Android boot image'; Exts := 'img'; Exit; end;
+    if Magic_Match(H, 0, '5041474544554d50') then begin Name := 'Windows kernel dump'; Exts := 'dmp'; Exit; end;
+    if Magic_Match(H, 0, '5041474544553634') then begin Name := 'Windows kernel dump (64-bit)'; Exts := 'dmp'; Exit; end;
+    if Magic_Match(H, 0, '52494646????????434452') then begin Name := 'CorelDRAW document'; Exts := 'cdr'; Exit; end;
     if Magic_Match(H, 0, '213c617263683e') then begin Name := 'AR archive (deb/static lib)'; Exts := 'a,deb'; Exit; end;
+    if Magic_Match(H, 0, '53747566664974') then begin Name := 'StuffIt archive'; Exts := 'sit'; Exit; end;
+    if Magic_Match(H, 0, '49492a00????????4352') then begin Name := 'Canon CR2 raw image'; Exts := 'cr2'; Exit; end;
     if Magic_Match(H, 0, '233f52474245') then begin Name := 'Radiance HDR image'; Exts := 'hdr'; Exit; end;
     if Magic_Match(H, 0, '377abcaf271c') then begin Name := '7-Zip archive'; Exts := '7z'; Exit; end;
     if Magic_Match(H, 0, '526172211a07') then begin Name := 'RAR archive'; Exts := 'rar'; Exit; end;
@@ -3417,11 +3455,16 @@ begin
     if Magic_Match(H, 0, '2a2a4143452a') then begin Name := 'ACE archive'; Exts := 'ace'; Exit; end;
     if Magic_Match(H, 0, '7b5c72746631') then begin Name := 'RTF document'; Exts := 'rtf'; Exit; end;
     if Magic_Match(H, 0, '4c554b53babe') then begin Name := 'LUKS encrypted volume'; Exts := 'luks,img'; Exit; end;
+    if Magic_Match(H, 0, '53494d504c45') then begin Name := 'FITS astronomy image'; Exts := 'fits'; Exit; end;
+    if Magic_Match(H, 0, '4152524f5731') then begin Name := 'Apache Arrow IPC data'; Exts := 'arrow'; Exit; end;
+    if Magic_Match(H, 0, '4d41544c4142') then begin Name := 'MATLAB MAT-file'; Exts := 'mat'; Exit; end;
     if Magic_Match(H, 0, '0d0a870a0a') then begin Name := 'JPEG XL container'; Exts := 'jxl'; Exit; end;
     if Magic_Match(H, 0, '3c3f786d6c') then begin Name := 'XML document'; Exts := 'xml,svg,fb2,rss,xsl,plist'; Exit; end;
     if Magic_Match(H, 0, '2321414d52') then begin Name := 'AMR speech audio'; Exts := 'amr'; Exit; end;
     if Magic_Match(H, 0, 'fd377a585a') then begin Name := 'XZ stream'; Exts := 'xz,txz'; Exit; end;
     if Magic_Match(H, 0, '4d5357494d') then begin Name := 'Windows Imaging archive'; Exts := 'wim'; Exit; end;
+    if Magic_Match(H, 0, '4e45534d1a') then begin Name := 'NES sound file'; Exts := 'nsf'; Exit; end;
+    if Magic_Match(H, 0, '5245444953') then begin Name := 'Redis RDB snapshot'; Exts := 'rdb'; Exit; end;
     if Magic_Match(H, 0, '????????66747970') then begin Name := 'MP4/QuickTime container'; Exts := 'mp4,m4a,mov,3gp,heic'; Exit; end;
     if Magic_Match(H, 0, '89504e47') then begin Name := 'PNG image'; Exts := 'png'; Exit; end;
     if Magic_Match(H, 0, 'ff4fff51') then begin Name := 'JPEG 2000 codestream'; Exts := 'j2k,jpc'; Exit; end;
@@ -3487,6 +3530,43 @@ begin
     if Magic_Match(H, 0, '43723234') then begin Name := 'Chrome extension (CRX)'; Exts := 'crx'; Exit; end;
     if Magic_Match(H, 0, '514649fb') then begin Name := 'QEMU copy-on-write disk'; Exts := 'qcow,qcow2'; Exit; end;
     if Magic_Match(H, 0, '4b444d56') then begin Name := 'VMware VMDK disk'; Exts := 'vmdk'; Exit; end;
+    if Magic_Match(H, 0, '4d4d002b') then begin Name := 'TIFF image (BigTIFF)'; Exts := 'tif,tiff'; Exit; end;
+    if Magic_Match(H, 0, '4949524f') then begin Name := 'Olympus ORF raw image'; Exts := 'orf'; Exit; end;
+    if Magic_Match(H, 0, '49495500') then begin Name := 'Panasonic RW2 raw image'; Exts := 'rw2'; Exit; end;
+    if Magic_Match(H, 0, '4949bc01') then begin Name := 'JPEG XR image'; Exts := 'jxr,wdp,hdp'; Exit; end;
+    if Magic_Match(H, 0, '464c4946') then begin Name := 'FLIF image'; Exts := 'flif'; Exit; end;
+    if Magic_Match(H, 0, 'ab4b5458') then begin Name := 'KTX/KTX2 texture'; Exts := 'ktx,ktx2'; Exit; end;
+    if Magic_Match(H, 0, '716f6966') then begin Name := 'QOI image'; Exts := 'qoi'; Exit; end;
+    if Magic_Match(H, 0, '4f465220') then begin Name := 'OptimFROG audio'; Exts := 'ofr'; Exit; end;
+    if Magic_Match(H, 0, '7fff8001') then begin Name := 'DTS audio'; Exts := 'dts'; Exit; end;
+    if Magic_Match(H, 0, '50534944') then begin Name := 'Commodore SID tune'; Exts := 'sid'; Exit; end;
+    if Magic_Match(H, 0, '56676d20') then begin Name := 'Video Game Music tune'; Exts := 'vgm'; Exit; end;
+    if Magic_Match(H, 0, '6e75742f') then begin Name := 'NUT video'; Exts := 'nut'; Exit; end;
+    if Magic_Match(H, 0, '78617221') then begin Name := 'XAR archive'; Exts := 'xar'; Exit; end;
+    if Magic_Match(H, 0, '5041434b') then begin Name := 'Git packfile / Quake PAK'; Exts := 'pack,pak'; Exit; end;
+    if Magic_Match(H, 0, '4d50511a') then begin Name := 'Blizzard MPQ archive'; Exts := 'mpq'; Exit; end;
+    if Magic_Match(H, 0, '49574144') then begin Name := 'Doom IWAD game archive'; Exts := 'wad'; Exit; end;
+    if Magic_Match(H, 0, '50574144') then begin Name := 'Doom PWAD game archive'; Exts := 'wad'; Exit; end;
+    if Magic_Match(H, 0, '444d5321') then begin Name := 'Amiga DMS archive'; Exts := 'dms'; Exit; end;
+    if Magic_Match(H, 0, '4e45531a') then begin Name := 'NES ROM image'; Exts := 'nes'; Exit; end;
+    if Magic_Match(H, 0, '80371240') then begin Name := 'Nintendo 64 ROM'; Exts := 'n64,z64'; Exit; end;
+    if Magic_Match(H, 0, '37804012') then begin Name := 'Nintendo 64 ROM (swapped)'; Exts := 'n64,v64'; Exit; end;
+    if Magic_Match(H, 0, '53454741') then begin Name := 'SEGA Mega Drive ROM'; Exts := 'md,gen'; Exit; end;
+    if Magic_Match(H, 0, '3f5f0300') then begin Name := 'Windows Help file'; Exts := 'hlp'; Exit; end;
+    if Magic_Match(H, 0, '504e5264') then begin Name := 'eReader PDB e-book'; Exts := 'pdb'; Exit; end;
+    if Magic_Match(H, 0, '3c3f7068') then begin Name := 'PHP script'; Exts := 'php'; Exit; end;
+    if Magic_Match(H, 0, '4d444d50') then begin Name := 'Windows minidump'; Exts := 'dmp'; Exit; end;
+    if Magic_Match(H, 0, 'aced0005') then begin Name := 'Java serialized object'; Exts := 'ser'; Exit; end;
+    if Magic_Match(H, 0, 'feedfeed') then begin Name := 'Java keystore'; Exts := 'jks'; Exit; end;
+    if Magic_Match(H, 0, '58465342') then begin Name := 'XFS filesystem'; Exts := 'img'; Exit; end;
+    if Magic_Match(H, 0, '89484446') then begin Name := 'HDF5 dataset'; Exts := 'h5,hdf5'; Exit; end;
+    if Magic_Match(H, 0, '43444601') then begin Name := 'NetCDF classic dataset'; Exts := 'nc'; Exit; end;
+    if Magic_Match(H, 0, '43444602') then begin Name := 'NetCDF 64-bit dataset'; Exts := 'nc'; Exit; end;
+    if Magic_Match(H, 0, '52445832') then begin Name := 'R binary data'; Exts := 'rdata,rds'; Exit; end;
+    if Magic_Match(H, 0, '42414d01') then begin Name := 'BAM sequence data'; Exts := 'bam'; Exit; end;
+    if Magic_Match(H, 0, '4352414d') then begin Name := 'CRAM sequence data'; Exts := 'cram'; Exit; end;
+    if Magic_Match(H, 0, '44495243') then begin Name := 'Git index'; Exts := 'index'; Exit; end;
+    if Magic_Match(H, 0, '4d4d443?') then begin Name := 'Amiga MED module'; Exts := 'med'; Exit; end;
     if Magic_Match(H, 0, 'ffd8ff') then begin Name := 'JPEG image'; Exts := 'jpg,jpeg,jfif'; Exit; end;
     if Magic_Match(H, 0, '0a0000') then begin Name := 'PCX image'; Exts := 'pcx'; Exit; end;
     if Magic_Match(H, 0, '0a0200') then begin Name := 'PCX image'; Exts := 'pcx'; Exit; end;
@@ -3502,6 +3582,10 @@ begin
     if Magic_Match(H, 0, '435753') then begin Name := 'Shockwave Flash (compressed)'; Exts := 'swf'; Exit; end;
     if Magic_Match(H, 0, '465753') then begin Name := 'Shockwave Flash'; Exts := 'swf'; Exit; end;
     if Magic_Match(H, 0, '5a5753') then begin Name := 'Shockwave Flash (LZMA)'; Exts := 'swf'; Exit; end;
+    if Magic_Match(H, 0, '50370a') then begin Name := 'PAM image'; Exts := 'pam'; Exit; end;
+    if Magic_Match(H, 0, '4d544d') then begin Name := 'Multitracker module'; Exts := 'mtm'; Exit; end;
+    if Magic_Match(H, 0, '800106') then begin Name := 'Type 1 font (PFB)'; Exts := 'pfb'; Exit; end;
+    if Magic_Match(H, 0, '4f5243') then begin Name := 'Apache ORC data'; Exts := 'orc'; Exit; end;
     if Magic_Match(H, 0, 'ff0a') then begin Name := 'JPEG XL codestream'; Exts := 'jxl'; Exit; end;
     if Magic_Match(H, 0, '424d') then begin Name := 'BMP image'; Exts := 'bmp,dib'; Exit; end;
     if Magic_Match(H, 0, '5034') then begin Name := 'PBM image'; Exts := 'pbm'; Exit; end;
@@ -3593,7 +3677,7 @@ begin
     WriteLn(Tr('  --rename=compressed  rename archive to its main inner directory/file'));
     WriteLn('');
     WriteLn(Tr('EXTRAS:'));
-    WriteLn(Tr('  --magic            print a magic-number detection report (153 formats) and exit'));
+    WriteLn(Tr('  --magic            print a magic-number detection report (237 formats) and exit'));
     WriteLn(Tr('  --exif             add <Camera>/<Date> levels (needs exiftool)'));
     WriteLn(Tr('  --strip            strip EXIF from processed files (needs exiftool)'));
     WriteLn(Tr('  --replace          overwrite existing targets'));
