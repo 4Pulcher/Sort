@@ -1,0 +1,20 @@
+procedure Show_Help;
+begin
+    Show_Version;
+    WriteLn('');
+    WriteLn('Ejder file organizer - FreePascal translation of Sort-V16.1.sh');
+    WriteLn('');
+    WriteLn('MODES:');
+    WriteLn('  --copy          copy files');
+    WriteLn('  --move          move files');
+    WriteLn('');
+    WriteLn('STRUCTURE:');
+    WriteLn('  --rename=VALUE       rename mode: extension long none random short title');
+    WriteLn('  --extension=VALUE     extension mode: none/mime/mime-sub/mime-ext/literal');
+    WriteLn('');
+    WriteLn('EXTRAS:');
+    WriteLn('  --jobs=N          parallel workers');
+    WriteLn('  --quiet         quiet');
+    WriteLn('');
+    WriteLn('  --usage --help --version');
+end;

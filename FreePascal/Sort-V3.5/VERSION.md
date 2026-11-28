@@ -1,0 +1,17 @@
+# VERSION.md - Sort V3.5 (FreePascal)
+
+## About
+
+Tiny launcher/wrapper scripts that call the main Sort script (e.g. 2Sort.sh) with preset options.
+
+| Version | Language | Era | Source |
+|---|---|---|---|
+| V3.5 | FreePascal | V3.x — Launchers / wrappers | B2 `nmORtYau` |
+
+## Changes
+
+- See the era table in the repository VERSION.md.
+
+## Thanks
+
+Written by **Ali ISIN (HEjder / Ejder)**. Thanks for using HEjder scripts!

@@ -1,0 +1,26 @@
+procedure Show_Help;
+begin
+    Show_Version;
+    WriteLn('');
+    WriteLn('Ejder file organizer - FreePascal translation of Sort-V8.7.sh');
+    WriteLn('');
+    WriteLn('MODES:');
+    WriteLn('   --mode=MODE        copy/move/remove (default: print)');
+    WriteLn('');
+    WriteLn('STRUCTURE:');
+    WriteLn('  --dirs=LEVELS      directory levels: extension mime mime-main mime-sub year');
+    WriteLn('  --subdirs=LEVELS   sub-levels below --dirs: format mime-sub');
+    WriteLn('  --rename=VALUE       rename mode: extension none');
+    WriteLn('  --extension=VALUE     extension mode: none/mime/mime-sub/mime-ext/literal');
+    WriteLn('');
+    WriteLn('FILTERS / SCOPE:');
+    WriteLn('  --type=VALUE     only files whose MIME contains VALUE');
+    WriteLn('  --source=DIR      start point');
+    WriteLn('  --target=DIR      root for the new tree');
+    WriteLn('  --recursive     walk subdirectories');
+    WriteLn('');
+    WriteLn('EXTRAS:');
+    WriteLn('  --pause=SEC      sleep between files');
+    WriteLn('');
+    WriteLn('  --help');
+end;

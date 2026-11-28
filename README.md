@@ -1,61 +1,61 @@
-# Sort - unified repository
+# Sort - Media-Intelligent File Organizer
 
-One repository, one branch, one directory per version, four languages + a Qt6 GUI.
+One repository, four languages, 105 versions. **Sort** organizes
+files by their real content (magic bytes, dimensions, hashes, EXIF/ID3 tags),
+not just by name - and from V20/V21 it also recovers data: raw device scans,
+partition discovery and file carving.
 
-## Root - the latest version (V22)
+| Directory | Language | What |
+|---|---|---|
+| `SHELL/` | Bash | every `Sort-V#.#.sh` edition, one directory per version |
+| `FreePascal/` | FreePascal | every `Sort-V#.#.pas` port |
+| `Python/` | Python 3 | every standalone `Sort-V#.#.py` edition (stdlib only) |
+| `C++/` | C++17 + Qt6 | every `Sort-V#.#.cpp` edition and the Qt6 `Sort-GUI.cpp` files |
+| `FUNCTIONS/` | all | every function used in the versions, one file per function per version (`FUNCTIONS/$LANG/<Name>/<Name>-V#.#`) |
+| `VARIA/` | all | non-lineage material: legacy branches, prototype mini-lineages, dev trees, docs |
 
-| File | What |
-|---|---|
-| `Sort.sh` | latest Bash edition (V22, self-contained, threaded) |
-| `Sort.pas` | latest FreePascal edition (V22 port) |
-| `Sort.py` | latest Python edition (V22 era-gated, --magic + --scan-raw + --scan standalone engines, 260 signatures, stdlib only) |
-| `Sort.cpp` | latest C++17 edition (V22 port: single file, no dependencies, native magic/dims/hashes/EXIF/ID3, raw + partition FS scan) |
-| `Sort-GUI.cpp` | V22 Qt6/QML GUI edition (same engine, all options + --scan-raw + --scan FS tree with save in the window; see versions/Sort-V22/README.md) |
+Latest version: **V22** (in `SHELL/Sort-V22`, `FreePascal/Sort-V22`,
+`Python/Sort-V22`, `C++/Sort-V22`). The lineage runs V1.0 to V22; see
+[VERSION.md](VERSION.md) for the era table and
+[VARIA/Docs/Sort-Versions.md](VARIA/Docs/Sort-Versions.md) for the full
+chronology.
 
-## versions/ - every version, in order
+## Download
 
-Each era lives in `versions/Sort-V<version>/` and always contains the same
-files (from V19 on: four languages + the Qt6 GUI + README):
+- Repository: <https://github.com/4Pulcher/Sort>
+- Zip of the latest state: <https://github.com/4Pulcher/Sort/archive/refs/heads/main.zip>
+- Single file, plain: `https://raw.githubusercontent.com/4Pulcher/Sort/main/SHELL/Sort-V22/Sort-V22.sh`
 
-* `Sort-V<version>.sh`   - the Bash edition of that era
-* `Sort-V<version>.pas`  - its FreePascal translation
-* `Sort-V<version>.py`   - its standalone Python edition
-* `Sort-V<version>.cpp`  - its standalone C++17 edition (from V18)
-* `Sort-GUI.cpp`         - its Qt6/QML GUI edition (from V19)
-* `README.md`            - what that version is and does
+## Caution - test phase
 
-Lineage: V1.0 - V22 (see `other/Sort-Versions.md` for the full
-chronology and era table).
+**Be careful with these scripts.** The Sort code is in a **test phase**: every
+version passes syntax checks (`bash -n`, `--self-test` where available), but it
+is not field-tested on real data. Always try a version on a scratch copy of a
+few files first, and read the dry-run preview before confirming any action.
+Destructive modes (`--mode=remove`, `shred`, ...) exist: keep backups.
 
-### The Python editions
+## About the author
 
-Every `Sort-V#.##.py` is / fully **independent**: pure Python standard
-library, no external commands (`file`, `ffprobe`, `identify`, `exiftool`...)
-and no imports of other project files. Run it anywhere with just `python3`.
-Each one is gated to its era's own modes, options and keywords, and prints
-its exact scope with `-h`. Where the Bash era needed an external tool with
-no native equivalent, that option is **stripped** (documented in the
-version's README). `/python3 Sort-V17.3.py --self-test/` verifies any of
-them in seconds.
+Sort is written by **Ali ISIN (HEjder / Ejder)**, writing under the nickname **Ejder / HEjder**.
+Every script is a HEjder edition: syntax errors corrected, formatting unified,
+every function commented, and the Bash editions end with
+`Thanks for using HEjder scripts!`.
 
-## other/ - everything that is not a version
+## Languages and versions
 
-* `Sort.cpp` - the C++20 interactive organizer
-* `functions/` - the Bash function toolkit (used by the V16.x lineage)
-* `FUNCTIONS/` - the earliest legacy helper library
-* `Legacy/` - the archived 4Pulcher-CSort branch (v2.0 "with colors" era)
-* `python/` - the Python development tree (engine + per-line packages)
-* `Metadata-driven/`, `Media-Intelligent/` - the two separate mini-lineages
-* `Sort-Flow.md`, `Sort-Versions.md`, `VERSIONS.txt` - maps and docs
+- **Bash (SHELL/)**: 105 versions, V1.0 to V22 - the reference lineage.
+- **FreePascal (FreePascal/)**: a port of every version, FreePascal 3.2.2 (`-Mobjfpc -Sh`).
+- **Python (Python/)**: standalone editions from the V17.x era onward - era-gated, pure standard library, `--self-test`.
+- **C++17 (C++/)**: single-file ports from V18 onward, plus the Qt6/QML GUI editions from V19 onward.
 
-## Quick start
+Build examples: `bash SHELL/Sort-V22/Sort-V22.sh --help`,
+`python3 Python/Sort-V22/Sort-V22.py --self-test`,
+`g++ -std=c++17 -O2 -pthread -o Sort C++/Sort-V22/Sort-V22.cpp`.
 
-```
-./Sort.sh --help                      # latest (Bash)
-./Sort.sh --magic Downloads/*          # magic-number detection report
-sudo ./Sort.sh --scan=all /dev/sdb --mode=copy --target=/rescue   # FS partition scan + carve
-python3 Sort.py --mode=dummy Downloads
-g++ -std=c++17 -O2 -pthread -o Sort Sort.cpp   # build the C++ edition
-./Sort --version && ./Sort --self-test
-python3 versions/Sort-V9.3/Sort-V9.3.py -h     # any historical era
-```
+## Thanks
+
+Thanks to everyone who followed the HEjder scripts lineage from the earliest
+Ejder-scripts organizer to today's four-language family - and to Garry's
+magic-number collection, which feeds the V22 signature engine.
+
+*Thanks for using HEjder scripts!*
