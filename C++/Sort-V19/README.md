@@ -23,7 +23,7 @@ dry-run preview before confirming any action.
 
 ## Build / run
 
-`g++ -std=c++17 -O2 -pthread -o Sort-VV19 Sort-VV19.cpp`
+`g++ -std=c++17 -O2 -pthread -o Sort-V19 Sort-V19.cpp`
 Qt6 GUI edition: `moc Sort-GUI.cpp -o Sort-GUI.moc; g++ -std=c++17 -fPIC -O2 $(pkg-config --cflags Qt6Quick) Sort-GUI.cpp Sort-GUI.moc $(pkg-config --libs Qt6Quick) -o Sort-GUI`
 
 ## About the author

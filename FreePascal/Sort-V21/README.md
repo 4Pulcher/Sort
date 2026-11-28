@@ -21,8 +21,8 @@ dry-run preview before confirming any action.
 
 ## Build / run
 
-`fpc -Mobjfpc -Sh Sort-VV21.pas`
-Qt6 GUI edition: `moc Sort-GUI.cpp -o Sort-GUI.moc; g++ -std=c++17 -fPIC -O2 $(pkg-config --cflags Qt6Quick) Sort-GUI.cpp Sort-GUI.moc $(pkg-config --libs Qt6Quick) -o Sort-GUI`
+`fpc -Mobjfpc -Sh Sort-V21.pas (FreePascal 3.2.2)`
+
 
 ## About the author
 

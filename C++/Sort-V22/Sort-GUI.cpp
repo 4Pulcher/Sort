@@ -470,12 +470,12 @@ static const std::vector<Sig> BINARY_SIGNATURES = {
     SIG(0, "MM\x00*", "image", "tiff"),
     SIG(0, "\x1f\x8b", "archive", "gzip"),
     SIG(0, "BZh", "archive", "bzip2"),
-    SIG(0, "\xfd7zXZ\x00", "archive", "xz"),
+    SIG(0, "\xfd" "7zXZ\x00", "archive", "xz"),
     SIG(0, "7z\xbc\xaf\x27\x1c", "archive", "7z"),
     SIG(0, "Rar!\x1a\x07", "archive", "rar"),
     SIG(0, "%PDF", "document", "pdf"),
     SIG(0, "{\\rtf", "document", "rtf"),
-    SIG(0, "\x7fELF", "binary", "elf"),
+    SIG(0, "\x7f" "ELF", "binary", "elf"),
     SIG(0, "MZ", "binary", "exe"),
     SIG(0, "\xca\xfe\xba\xbe", "binary", "java-class"),
     SIG(0, "FLV\x01", "video", "flv"),
@@ -528,7 +528,7 @@ static std::pair<std::string, std::string> sniff_mime(const fs::path& path,
             if (starts_with(head, 8, "WEBP", 4)) return {"image", "webp"};
             return {hit->main, hit->sub};
         }
-        if (starts_with(head, 0, "\x1aE\xdf\xa3", 4)) {
+        if (starts_with(head, 0, "\x1a" "E\xdf\xa3", 4)) {
             if (head.find("webm") != std::string::npos &&
                 head.find("webm") < 64) return {"video", "webm"};
             return {"video", "matroska"};
@@ -593,7 +593,10 @@ static std::pair<std::string, std::string> sniff_mime(const fs::path& path,
 static std::optional<std::pair<unsigned, unsigned>> image_dimensions(const fs::path& path) {
     std::ifstream f(path, std::ios::binary);
     if (!f) return std::nullopt;
-    auto size = fs::file_size(path, std::error_code());
+    std::error_code ec_fsize;
+        auto size = fs::file_size(path, ec_fsize);
+        if (ec_fsize)
+            return std::nullopt;
     std::string head(64, '\0');
     f.read(head.data(), 64);
     head.resize(f.gcount());
@@ -2481,9 +2484,7 @@ private:
             std::string new_ext = TemplateEngine(opts_.extension, "extension", tag).resolve(facts);
 
             fs::path destination;
-            if (opts_.mode == "remove" || opts_.mode == "trash" || opts_.mode == "shred") {
-                destination = path;
-            } else {
+            {
                 fs::path folder = target_root;
                 if (!rel_dir.empty()) folder /= rel_dir;
                 if (!rel_sub.empty()) folder /= rel_sub;
@@ -2517,24 +2518,38 @@ private:
                     " -> " + ui_.path(destination.string()));
             return;
         }
+        if (opts_.mode == "remove" || opts_.mode == "trash" || opts_.mode == "shred") {
+            // Bash reference semantics: act on the calculated TARGET, not the source
+            if (!fs::exists(destination, ec) && ec) { bump("failed"); return; }
+            if (!fs::exists(destination)) {
+                bump("failed");
+                ui_.say(ui_.icon("error") + ui_.err(ui_.T("failed")) + " " +
+                        ui_.path(path.string()) + " -> " + ui_.path(destination.string()));
+                return;
+            }
+        }
         if (opts_.mode == "remove") {
-            fs::remove(path, ec);
-            bump("removed");
-            log_action("removed", "src", path.string());
-            ui_.say(ui_.icon("remove") + ui_.err(ui_.T("removed")) + " " + ui_.path(path.string()));
-            if (opts_.cleanup_empty) cleanup_empty(path.parent_path());
+            if (fs::remove(destination, ec) && !ec) {
+                bump("removed");
+            } else {
+                bump("failed");
+                return;
+            }
+            log_action("removed", "src", destination.string());
+            ui_.say(ui_.icon("remove") + ui_.err(ui_.T("removed")) + " " + ui_.path(destination.string()));
+            if (opts_.cleanup_empty) cleanup_empty(destination.parent_path());
             return;
         }
         if (opts_.mode == "trash") {
-            freedesktop_trash(path);
+            freedesktop_trash(destination);
             bump("trashed");
-            log_action("trashed", "src", path.string());
+            log_action("trashed", "src", destination.string());
             return;
         }
         if (opts_.mode == "shred") {
-            shred_file(path);
+            shred_file(destination);
             bump("shredded");
-            log_action("shredded", "src", path.string());
+            log_action("shredded", "src", destination.string());
             return;
         }
         std::string decision = resolve_collision(path, destination);
@@ -2636,7 +2651,8 @@ private:
 
     void run_threaded(const std::vector<fs::path>& files) {
         std::vector<std::thread> pool;
-        std::queue<fs::path> queue(files.begin(), files.end());
+        std::queue<fs::path> queue;
+        for (const auto& f : files) queue.push(f);
         std::mutex qm;
         int n = std::max(1, opts_.jobs);
         for (int i = 0; i < n; ++i) {

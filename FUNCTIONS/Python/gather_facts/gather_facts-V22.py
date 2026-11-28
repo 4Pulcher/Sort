@@ -10,7 +10,6 @@ def gather_facts(path: Path, want_hashes: set) -> FileFacts:
     )
     if main == "image" or sub in ("webm", "mp4", "avi", "quicktime", "matroska"):
         facts.dims = image_dimensions(path)
-    for kw in want_hashes:
-        if path.is_file() and path.stat().st_size:
-            facts.hashes[kw] = hash_file(path, kw)
+    if want_hashes and path.is_file() and st.st_size:
+        facts.hashes.update(hash_file_multi(path, want_hashes))
     return facts

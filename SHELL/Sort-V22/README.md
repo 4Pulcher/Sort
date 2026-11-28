@@ -22,8 +22,8 @@ dry-run preview before confirming any action.
 
 ## Build / run
 
-No build needed: `chmod +x Sort-VV22.sh && ./Sort-VV22.sh`
-Qt6 GUI edition: `moc Sort-GUI.cpp -o Sort-GUI.moc; g++ -std=c++17 -fPIC -O2 $(pkg-config --cflags Qt6Quick) Sort-GUI.cpp Sort-GUI.moc $(pkg-config --libs Qt6Quick) -o Sort-GUI`
+`chmod +x Sort-V22.sh && ./Sort-V22.sh (bash 4+)`
+
 
 ## About the author
 

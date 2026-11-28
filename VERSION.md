@@ -32,6 +32,10 @@
 - **V21**: filesystem partition scan (`--scan=FSFORMAT`, MBR/GPT + lost
   partitions, carving, GUI fragment tree).
 - **V22**: signature table expanded to 260 formats from Garry's magic-number CSV.
+- **V22.1 (in place)**: external audit corrections - C++ compile blockers and
+  hex-signature literals fixed across V18-V22, remove/trash/shred unified on
+  the calculated TARGET in all languages, Python hashing/thread-safety
+  optimisations, FreePascal header and `--compare` cleanup.
 
 ## Thanks
 

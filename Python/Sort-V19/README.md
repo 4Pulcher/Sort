@@ -23,8 +23,8 @@ dry-run preview before confirming any action.
 
 ## Build / run
 
-No build needed: `python3 Sort-VV19.py` (`--self-test` verifies the engine)
-Qt6 GUI edition: `moc Sort-GUI.cpp -o Sort-GUI.moc; g++ -std=c++17 -fPIC -O2 $(pkg-config --cflags Qt6Quick) Sort-GUI.cpp Sort-GUI.moc $(pkg-config --libs Qt6Quick) -o Sort-GUI`
+`python3 Sort-V19.py (pure stdlib; --self-test verifies the engine)`
+
 
 ## About the author
 

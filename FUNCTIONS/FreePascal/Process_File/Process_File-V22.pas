@@ -30,38 +30,45 @@ begin
 
     if (Modus = 'remove') or (Modus = 'trash') or (Modus = 'shred') then
     begin
+        { Bash reference semantics: act on the calculated TARGET, not the source }
+        if not FileExists(Target) then
+        begin
+            Out_Err(Tf(Tr('FAILED) target not found: %s'), [Target]));
+            Bump(CountFailed);
+            Exit;
+        end;
         if Modus = 'remove' then
         begin
-            if DeleteFile(F) then
+            if DeleteFile(Target) then
             begin
-                Out_Tagged('REMOVED', F);
+                Out_Tagged('REMOVED', Target);
                 Bump(CountRemoved);
-                Out_Log('rm ' + F);
+                Out_Log('rm ' + Target);
             end
             else
             begin
-                Out_Err(Tf(Tr('FAILED) rm %s'), [F]));
+                Out_Err(Tf(Tr('FAILED) rm %s'), [Target]));
                 Bump(CountFailed);
             end;
         end
         else if Modus = 'trash' then
         begin
-            Rc := Trash_File(F, Tmp);
+            Rc := Trash_File(Target, Tmp);
             if Rc = 0 then
             begin
-                Out_Tagged('TRASHED', F);
+                Out_Tagged('TRASHED', Target);
                 Bump(CountTrashed);
             end
             else
             begin
-                Out_Err(Tf(Tr('FAILED) trash %s (rc %s)'), [F, IntToStr(Rc)]));
+                Out_Err(Tf(Tr('FAILED) trash %s (rc %s)'), [Target, IntToStr(Rc)]));
                 Bump(CountFailed);
             end;
         end
         else
         begin
-            Shred_File(F);
-            Out_Tagged('SHREDDED', F);
+            Shred_File(Target);
+            Out_Tagged('SHREDDED', Target);
             Bump(CountShredded);
         end;
         Exit;

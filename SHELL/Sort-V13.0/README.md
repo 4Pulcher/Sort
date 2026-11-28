@@ -19,7 +19,7 @@ dry-run preview before confirming any action.
 
 ## Build / run
 
-No build needed: `chmod +x Sort-VV13.0.sh && ./Sort-VV13.0.sh`
+`chmod +x Sort-V13.0.sh && ./Sort-V13.0.sh (bash 4+)`
 
 
 ## About the author

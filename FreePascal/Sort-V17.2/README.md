@@ -62,7 +62,7 @@ dry-run preview before confirming any action.
 
 ## Build / run
 
-`fpc -Mobjfpc -Sh Sort-VV17.2.pas`
+`fpc -Mobjfpc -Sh Sort-V17.2.pas (FreePascal 3.2.2)`
 
 
 ## About the author

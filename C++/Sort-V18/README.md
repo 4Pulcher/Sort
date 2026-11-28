@@ -23,7 +23,7 @@ dry-run preview before confirming any action.
 
 ## Build / run
 
-`g++ -std=c++17 -O2 -pthread -o Sort-VV18 Sort-VV18.cpp`
+`g++ -std=c++17 -O2 -pthread -o Sort-V18 Sort-V18.cpp`
 
 
 ## About the author

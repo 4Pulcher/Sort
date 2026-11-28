@@ -55,6 +55,7 @@ import re
 import shutil
 import struct
 import sys
+import threading
 import tempfile
 import time
 import unicodedata
@@ -391,6 +392,17 @@ def hash_file(path: Path, algo_key: str) -> str:
     return h.hexdigest()
 
 
+def hash_file_multi(path: Path, algo_keys) -> dict:
+    """Read the file once and compute every requested algorithm in one pass."""
+    digests = {kw: hashlib.new(HASH_ALGOS.get(kw, kw.replace("sum", "")) or "md5")
+               for kw in algo_keys}
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            for d in digests.values():
+                d.update(chunk)
+    return {kw: d.hexdigest() for kw, d in digests.items()}
+
+
 # ===========================================================================
 # 5. FILE METADATA (V2.x getters, unified into one record)
 # ===========================================================================
@@ -434,9 +446,8 @@ def gather_facts(path: Path, want_hashes: set) -> FileFacts:
     )
     if main == "image" or sub in ("webm", "mp4", "avi", "quicktime", "matroska"):
         facts.dims = image_dimensions(path)
-    for kw in want_hashes:
-        if path.is_file() and path.stat().st_size:
-            facts.hashes[kw] = hash_file(path, kw)
+    if want_hashes and path.is_file() and st.st_size:
+        facts.hashes.update(hash_file_multi(path, want_hashes))
     return facts
 
 
@@ -656,6 +667,7 @@ class Organizer:
         self.ui = UI(opts.colors, opts.icons, opts.lang, opts.quiet)
         self.counters = {"copied": 0, "moved": 0, "removed": 0, "trashed": 0,
                          "shredded": 0, "skipped": 0, "failed": 0, "filtered": 0}
+        self.state_lock = threading.Lock()   # audit: shared counters need a lock
         self.log_fh = open(opts.log, "a", encoding="utf-8") if opts.log else None
         self.skip_all = False
         self.replace_all = False
@@ -754,7 +766,8 @@ class Organizer:
                 return
             facts = gather_facts(path, self._hashes_wanted)
             if not self.matches_filter(facts):
-                self.counters["filtered"] += 1
+                with self.state_lock:
+                    self.counters["filtered"] += 1
                 self.ui.say(f"{self.ui.icon('skip')}{self.ui.dim(self.ui.T('filtered'))} "
                             f"{self.ui.path(str(path))}")
                 return
@@ -765,28 +778,27 @@ class Organizer:
             new_name = TemplateEngine(self.opts.rename, "name", tag).resolve(facts)
             new_ext = TemplateEngine(self.opts.extension, "extension", tag).resolve(facts)
 
-            if self.opts.mode in ("remove", "trash", "shred"):
-                destination = path
+            # remove/trash/shred act on the calculated TARGET (Bash reference semantics)
+            folder = target_root / rel_dir if rel_dir else target_root
+            if rel_sub:
+                folder = folder / rel_sub
+            if self.opts.mode == "dummy":
+                name_disp = new_name if self.opts.rename else facts.name
+                ext_disp = ("." + new_ext) if self.opts.extension else \
+                    (("." + facts.ext) if facts.ext else "")
+                destination = folder / (name_disp if self.opts.rename
+                                        else facts.name + (ext_disp if self.opts.extension else ""))
             else:
-                folder = target_root / rel_dir if rel_dir else target_root
-                if rel_sub:
-                    folder = folder / rel_sub
-                if self.opts.mode == "dummy":
-                    name_disp = new_name if self.opts.rename else facts.name
-                    ext_disp = ("." + new_ext) if self.opts.extension else \
-                        (("." + facts.ext) if facts.ext else "")
-                    destination = folder / (name_disp if self.opts.rename
-                                            else facts.name + (ext_disp if self.opts.extension else ""))
-                else:
-                    stem = new_name if new_name else facts.stem
-                    ext = ("." + new_ext) if new_ext else \
-                        (("." + facts.ext) if facts.ext else "")
-                    destination = folder / (stem + ext)
+                stem = new_name if new_name else facts.stem
+                ext = ("." + new_ext) if new_ext else \
+                    (("." + facts.ext) if facts.ext else "")
+                destination = folder / (stem + ext)
             self.act(path, facts, destination)
             if self.opts.pause > 0:
                 time.sleep(self.opts.pause)
         except Exception as exc:                     # noqa: BLE001
-            self.counters["failed"] += 1
+            with self.state_lock:
+                self.counters["failed"] += 1
             self.ui.say(f"{self.ui.icon('error')}{self.ui.err('ERROR:')} {exc} "
                         f"[{self.ui.path(str(path))}]")
 
@@ -796,35 +808,48 @@ class Organizer:
             ui.say(f"{ui.icon('info')}{ui.dim(ui.T('dry'))} "
                    f"{ui.path(str(path))} -> {ui.path(str(destination))}")
             return
+        if o.mode in ("remove", "trash", "shred"):
+            # Bash reference semantics: act on the calculated TARGET, not the source
+            if not destination.exists():
+                with self.state_lock:
+                    self.counters["failed"] += 1
+                ui.say(f"{ui.icon('error')}{ui.err(ui.T('failed'))} "
+                       f"{ui.path(str(path))} -> {ui.path(str(destination))}")
+                return
         if o.mode == "remove":
-            path.unlink()
-            self.counters["removed"] += 1
-            self.log_action("removed", src=str(path))
+            destination.unlink()
+            with self.state_lock:
+                self.counters["removed"] += 1
+            self.log_action("removed", src=str(destination))
             ui.say(f"{ui.icon('remove')}{ui.err(ui.T('removed'))} "
-                   f"{ui.path(str(path))}")
+                   f"{ui.path(str(destination))}")
             if o.cleanup_empty:
-                self._cleanup_empty(path.parent, ui)
+                self._cleanup_empty(destination.parent, ui)
             return
         if o.mode == "trash":
-            freedesktop_trash(path, ui)
-            self.counters["trashed"] += 1
-            self.log_action("trashed", src=str(path))
+            freedesktop_trash(destination, ui)
+            with self.state_lock:
+                self.counters["trashed"] += 1
+            self.log_action("trashed", src=str(destination))
             return
         if o.mode == "shred":
-            shred_file(path, ui)
-            self.counters["shredded"] += 1
-            self.log_action("shredded", src=str(path))
+            shred_file(destination, ui)
+            with self.state_lock:
+                self.counters["shredded"] += 1
+            self.log_action("shredded", src=str(destination))
             return
         decision = self.resolve_collision(path, destination)
         if decision in ("skip", "cancel"):
-            self.counters["skipped"] += 1
+            with self.state_lock:
+                self.counters["skipped"] += 1
             return
         destination.parent.mkdir(parents=True, exist_ok=True)
         if o.mode == "copy":
             if decision == "replace" and destination.exists():
                 destination.unlink()
             shutil.copy2(str(path), str(destination))
-            self.counters["copied"] += 1
+            with self.state_lock:
+                self.counters["copied"] += 1
             self.log_action("copied", src=str(path), dst=str(destination))
             ui.say(f"{ui.icon('copy')}{ui.ok(ui.T('copied'))} "
                    f"{ui.path(str(path))} -> {ui.path(str(destination))}")
@@ -832,7 +857,8 @@ class Organizer:
             if decision == "replace" and destination.exists():
                 destination.unlink()
             shutil.move(str(path), str(destination))
-            self.counters["moved"] += 1
+            with self.state_lock:
+                self.counters["moved"] += 1
             self.log_action("moved", src=str(path), dst=str(destination))
             ui.say(f"{ui.icon('move')}{ui.ok(ui.T('moved'))} "
                    f"{ui.path(str(path))} -> {ui.path(str(destination))}")

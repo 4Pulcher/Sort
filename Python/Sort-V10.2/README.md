@@ -19,7 +19,7 @@ dry-run preview before confirming any action.
 
 ## Build / run
 
-No build needed: `python3 Sort-VV10.2.py` (`--self-test` verifies the engine)
+`python3 Sort-V10.2.py (pure stdlib; --self-test verifies the engine)`
 
 
 ## About the author

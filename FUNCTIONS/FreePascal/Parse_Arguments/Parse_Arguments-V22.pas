@@ -76,8 +76,6 @@ begin
                 DoDecompress := True
             else if K = '--title' then
                 RenameVal := 'title'
-            else if K = '--compare' then
-                CompareFile := 'yes'
             else if K = '--self-test' then
                 DoSelfTest := True
             else if K = '--lang' then
