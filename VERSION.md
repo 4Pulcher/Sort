@@ -36,6 +36,13 @@
   hex-signature literals fixed across V18-V22, remove/trash/shred unified on
   the calculated TARGET in all languages, Python hashing/thread-safety
   optimisations, FreePascal header and `--compare` cleanup.
+- **V22.1b (in place)**: Bash header version corrected to 22, C++ `-Wextra`
+  unused-parameter warning silenced across V18-V22 (CLI + GUI), and all
+  READMEs extended with the recovery cautions: dry-run default, remove/trash/
+  shred act on the calculated TARGET and shred is irrecoverable, POSIX-only
+  support (Windows: WSL/MSYS2), zip-bomb warning for `--decompress`, and for
+  V20+ the scan rules (read-only image, never carve onto the scanned disk,
+  carve cap, broken marking).
 
 ## Thanks
 

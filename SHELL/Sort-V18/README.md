@@ -21,6 +21,15 @@ version passes syntax checks and the available self-tests, but it is not
 field-tested on real data. Always run it on a scratch copy first, and read the
 dry-run preview before confirming any action.
 
+- Without `--mode` the tool only **previews** (dry run); nothing is touched.
+- `--mode=remove`, `trash` and `shred` act on the calculated TARGET and are
+  destructive: `shred` overwrites before deleting, making recovery impossible
+  even with carving tools. Keep backups.
+- Linux/macOS only: trash, shred and raw device scans rely on POSIX paths
+  and tools (Windows: use WSL or MSYS2).
+- `--decompress` unpacks archives into a temp dir first: beware zip bombs and
+  very large archives filling `/tmp`.
+
 ## Build / run
 
 `chmod +x Sort-V18.sh && ./Sort-V18.sh (bash 4+)`

@@ -3,7 +3,7 @@
 ###############################################################################
 #                                                                             #
 # Script  : Sort-V22.sh                                                           #
-# Version : 21                                                              #
+# Version : 22                                                              #
 # Desc    : Self-contained threaded organizer - all lineage features merged    #
 # Author  : HEjder                                                            #
 #                                                                             #

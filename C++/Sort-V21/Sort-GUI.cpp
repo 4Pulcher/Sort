@@ -2491,6 +2491,7 @@ private:
     }
 
     void act(const fs::path& path, FileFacts& facts, const fs::path& destination) {
+        (void)facts;   // kept for pipeline parity; act() uses path/destination only
         std::error_code ec;
         if (opts_.mode == "dummy") {
             ui_.say(ui_.icon("info") + ui_.dim(ui_.T("dry")) + " " + ui_.path(path.string()) +

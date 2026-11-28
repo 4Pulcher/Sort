@@ -32,7 +32,14 @@ chronology.
 version passes syntax checks (`bash -n`, `--self-test` where available), but it
 is not field-tested on real data. Always try a version on a scratch copy of a
 few files first, and read the dry-run preview before confirming any action.
-Destructive modes (`--mode=remove`, `shred`, ...) exist: keep backups.
+Destructive modes (`--mode=remove`, `trash`, `shred`) act on the calculated
+TARGET; `shred` overwrites before deleting, making recovery impossible. Keep
+backups. Trash/shred and raw device scans need Linux/macOS (Windows: WSL/MSYS2).
+
+For `--scan-raw` / `--scan` recovery: prefer a read-only disk image over a live
+device, and never write the carve `--target` onto the disk you are scanning -
+it would overwrite the data you are trying to recover. Fragments without an
+end marker run to the carve cap (about 5 MiB).
 
 ## About the author
 
